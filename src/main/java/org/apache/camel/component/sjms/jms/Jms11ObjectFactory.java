@@ -134,7 +134,7 @@ public class Jms11ObjectFactory implements JmsObjectFactory {
             boolean persistent,
             long ttl)
             throws Exception {
-        // NOTE: the object must be closed byt the client
+        // NOTE: the object must be closed by the client
         MessageProducer messageProducer = session.createProducer(destination); // NOSONAR
         messageProducer.setDeliveryMode(persistent ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT);
         if (ttl > 0) {
