@@ -1,0 +1,28 @@
+// SJMS 2.5 — Prisma Schema
+// This is the base schema. Domain models will be added in subsequent phases.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Base audit model pattern ────────────────────────────────────────────
+// All domain models will include: id, createdAt, updatedAt, createdBy, updatedBy
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  keycloakId String  @unique @map("keycloak_id")
+  email     String   @unique
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  title     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
