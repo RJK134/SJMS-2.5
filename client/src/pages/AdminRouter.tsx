@@ -15,6 +15,8 @@ import ModuleDetail from './modules/ModuleDetail';
 import EnrolmentList from './enrolments/EnrolmentList';
 import EnrolmentCreate from './enrolments/EnrolmentCreate';
 import EnrolmentDetail from './enrolments/EnrolmentDetail';
+import BulkModuleRegistration from './enrolments/BulkModuleRegistration';
+import StatusChanges from './enrolments/StatusChanges';
 
 // Phase 5B — Admissions
 import ApplicationPipeline from './admissions/ApplicationPipeline';
@@ -120,6 +122,8 @@ function AdminContent() {
       <Route path="/admin/modules" component={ModuleList} />
 
       {/* Enrolments */}
+      <Route path="/admin/enrolments/module-registration" component={BulkModuleRegistration} />
+      <Route path="/admin/enrolments/status-changes" component={StatusChanges} />
       <Route path="/admin/enrolments/new" component={EnrolmentCreate} />
       <Route path="/admin/enrolments/:id" component={EnrolmentDetail} />
       <Route path="/admin/enrolments" component={EnrolmentList} />
