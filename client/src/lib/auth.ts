@@ -135,7 +135,8 @@ function scheduleProactiveRefresh(token: string): void {
 
 export function login(redirectUri?: string): void {
   const endpoints = getOpenIDEndpoints();
-  const redirect = redirectUri || window.location.origin + window.location.pathname;
+  // Always redirect back to the base origin (no hash) — the callback handler picks up the code
+  const redirect = redirectUri || window.location.origin + '/';
   const params = new URLSearchParams({
     client_id: KEYCLOAK_CLIENT_ID,
     redirect_uri: redirect,
@@ -143,6 +144,43 @@ export function login(redirectUri?: string): void {
     scope: "openid profile email",
   });
   window.location.href = `${endpoints.auth}?${params}`;
+}
+
+/**
+ * Check if the current URL has an authorization code from Keycloak redirect.
+ * If so, exchange it for tokens and return true.
+ */
+export async function handleCallback(): Promise<boolean> {
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get('code');
+  if (!code) return false;
+
+  try {
+    // Exchange the code — redirect_uri must exactly match what was sent in login()
+    const endpoints = getOpenIDEndpoints();
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: KEYCLOAK_CLIENT_ID,
+      code,
+      redirect_uri: window.location.origin + '/',
+    });
+
+    const res = await fetch(endpoints.token, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+
+    if (!res.ok) throw new Error("Token exchange failed");
+    const data: TokenResponse = await res.json();
+    setTokens(data.access_token, data.refresh_token);
+
+    // Clean the URL — remove ?code=...&session_state=... so it doesn't re-trigger
+    window.history.replaceState({}, '', window.location.origin + '/');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function exchangeCode(code: string): Promise<TokenResponse> {

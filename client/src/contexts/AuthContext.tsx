@@ -5,6 +5,7 @@ import {
   getRolesFromToken,
   isTokenExpired,
   refreshAccessToken,
+  handleCallback,
   clearTokens,
   login as kcLogin,
   logout as kcLogout,
@@ -52,6 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function init() {
+      // 1. Check if this is a Keycloak callback with ?code=...
+      const wasCallback = await handleCallback();
+      if (wasCallback) {
+        const token = getToken();
+        if (token) {
+          processToken(token);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 2. Check for existing token in memory
       const token = getToken();
       if (token && !isTokenExpired(token)) {
         processToken(token);
