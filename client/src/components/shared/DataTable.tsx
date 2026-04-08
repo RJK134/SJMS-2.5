@@ -28,7 +28,7 @@ interface DataTableProps<T> {
   emptyMessage?: string;
 }
 
-export default function DataTable<T extends Record<string, unknown>>({
+export default function DataTable<T extends object>({
   columns, data, pagination, isLoading, searchPlaceholder = 'Search...',
   onSearch, onPageChange, onSort, onRowClick, currentSort, currentOrder,
   emptyMessage = 'No records found',
@@ -56,7 +56,7 @@ export default function DataTable<T extends Record<string, unknown>>({
   const exportCsv = () => {
     const header = columns.map(c => c.label).join(',');
     const rows = data.map(row => columns.map(c => {
-      const val = row[c.key];
+      const val = (row as Record<string, unknown>)[c.key];
       return typeof val === 'string' && val.includes(',') ? `"${val}"` : String(val ?? '');
     }).join(','));
     const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' });
@@ -131,7 +131,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 >
                   {columns.map(col => (
                     <TableCell key={col.key} className={col.className}>
-                      {col.render ? col.render(row) : String(row[col.key] ?? '—')}
+                      {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '—')}
                     </TableCell>
                   ))}
                 </TableRow>
