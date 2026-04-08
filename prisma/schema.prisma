@@ -945,6 +945,58 @@ enum ConsentType {
   DATA_SHARING
   PHOTOGRAPHY
   ALUMNI
+  THIRD_PARTY
+}
+
+enum FinTxnType {
+  CHARGE
+  PAYMENT
+  CREDIT_NOTE
+  REFUND
+  WRITE_OFF
+  TRANSFER
+}
+
+enum FinTxnStatus {
+  POSTED
+  REVERSED
+  PENDING
+}
+
+enum FinPeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum ReconciliationStatus {
+  BALANCED
+  UNBALANCED
+  PENDING_REVIEW
+}
+
+enum DataClassLevel {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+  SPECIAL_CATEGORY
+}
+
+enum GdprBasis {
+  CONSENT
+  LEGITIMATE_INTEREST
+  LEGAL_OBLIGATION
+  VITAL_INTEREST
+  PUBLIC_TASK
+  OFFICIAL_AUTHORITY
+}
+
+enum HESAYearType {
+  STANDARD
+  SANDWICH
+  STUDY_ABROAD
+  INTERCALATED
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1020,6 +1072,7 @@ model PersonAddress {
   city        String
   county      String?
   postcode    String?
+  hesaPostcode String?    @map("hesa_postcode")
   countryCode String?     @map("country_code")
   startDate   DateTime    @map("start_date") @db.Date
   endDate     DateTime?   @map("end_date") @db.Date
@@ -1221,6 +1274,8 @@ model Student {
   dataProtectionRequests      DataProtectionRequest[]
   consentRecords              ConsentRecord[]
   examBoardDecisions          ExamBoardDecision[]
+  courseSessions              StudentCourseSession[]
+  studentInstances            StudentInstance[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -1460,6 +1515,8 @@ model Programme {
   examBoards            ExamBoard[]
   awardRecords          AwardRecord[]
   qualificationAims     QualificationAim[]
+  courseSessions        StudentCourseSession[]
+  studentInstances      StudentInstance[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2703,13 +2760,20 @@ model StudentAccount {
   studentId    String  @map("student_id")
   student      Student @relation(fields: [studentId], references: [id])
   academicYear String  @map("academic_year")
-  balance      Decimal @default(0) @db.Decimal(10, 2)
-  creditLimit  Decimal @default(0) @map("credit_limit") @db.Decimal(10, 2)
-  status       String  @default("active")
+  balance              Decimal @default(0) @db.Decimal(10, 2)
+  creditLimit          Decimal @default(0) @map("credit_limit") @db.Decimal(10, 2)
+  status               String  @default("active")
+  totalDebits          Decimal @default(0) @map("total_debits") @db.Decimal(10, 2)
+  totalCredits         Decimal @default(0) @map("total_credits") @db.Decimal(10, 2)
+  lastTransactionDate  DateTime? @map("last_transaction_date")
+  reconciliationStatus ReconciliationStatus @default(BALANCED) @map("reconciliation_status")
+  lastReconciledDate   DateTime? @map("last_reconciled_date")
+  lastReconciledBy     String?   @map("last_reconciled_by")
 
-  chargeLines       ChargeLine[]
-  invoices          Invoice[]
-  payments          Payment[]
+  chargeLines            ChargeLine[]
+  invoices               Invoice[]
+  payments               Payment[]
+  financialTransactions  FinancialTransaction[]
   paymentPlans      PaymentPlan[]
   sponsorAgreements SponsorAgreement[]
   refundApprovals   RefundApproval[]
@@ -4667,12 +4731,15 @@ model DataProtectionRequest {
   id            String            @id @default(cuid())
   studentId     String            @map("student_id")
   student       Student           @relation(fields: [studentId], references: [id])
-  requestType   DataRequestType   @map("request_type")
-  description   String            @db.Text
-  receivedDate  DateTime          @map("received_date")
-  dueDate       DateTime          @map("due_date") @db.Date
-  completedDate DateTime?         @map("completed_date")
-  status        DataRequestStatus @default(RECEIVED)
+  requestType      DataRequestType   @map("request_type")
+  description      String            @db.Text
+  receivedDate     DateTime          @map("received_date")
+  acknowledgedDate DateTime?         @map("acknowledged_date")
+  dueDate          DateTime          @map("due_date") @db.Date
+  completedDate    DateTime?         @map("completed_date")
+  completedBy      String?           @map("completed_by")
+  status           DataRequestStatus @default(RECEIVED)
+  refusalReason    String?           @map("refusal_reason") @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -4688,11 +4755,14 @@ model ConsentRecord {
   id          String      @id @default(cuid())
   studentId   String      @map("student_id")
   student     Student     @relation(fields: [studentId], references: [id])
-  consentType ConsentType @map("consent_type")
-  granted     Boolean     @default(false)
-  grantedDate DateTime?   @map("granted_date")
-  revokedDate DateTime?   @map("revoked_date")
-  version     String?
+  consentType  ConsentType @map("consent_type")
+  granted      Boolean     @default(false)
+  grantedDate  DateTime?   @map("granted_date")
+  revokedDate  DateTime?   @map("revoked_date")
+  version      String?
+  purpose      String?     @db.Text
+  legalBasis   GdprBasis?  @map("legal_basis")
+  evidencePath String?     @map("evidence_path")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -4756,7 +4826,8 @@ model AcademicYear {
   enrolmentClose DateTime? @map("enrolment_close")
 
   termDates     TermDate[]
-  teachingWeeks TeachingWeek[]
+  teachingWeeks    TeachingWeek[]
+  studentInstances StudentInstance[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -4970,4 +5041,174 @@ model StudentGroupMember {
 
   @@map("student_group_members")
   @@unique([groupId, studentId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOMAIN 25 — PHASE 4 ENHANCEMENTS: HESA Data Futures, Financial Ledger, GDPR
+// ═══════════════════════════════════════════════════════════════════════════
+
+model StudentCourseSession {
+  id           String       @id @default(cuid())
+  studentId    String       @map("student_id")
+  student      Student      @relation(fields: [studentId], references: [id])
+  programmeId  String       @map("programme_id")
+  programme    Programme    @relation(fields: [programmeId], references: [id])
+  academicYear String       @map("academic_year")
+  husid        String?
+  ukprn        String?      @default("10099999")
+  courseId     String?      @map("course_id")
+  comDate      DateTime?    @map("com_date") @db.Date
+  endDate      DateTime?    @map("end_date") @db.Date
+  rsnEnd       String?      @map("rsn_end")
+  fundCode     String?      @map("fund_code")
+  feeElig      String?      @map("fee_elig")
+  mstuFee      String?      @map("mstu_fee")
+  loSession    String?      @map("lo_session")
+  typeYr       HESAYearType? @map("type_yr")
+  mode         String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("student_course_sessions")
+  @@index([studentId])
+  @@index([programmeId])
+  @@index([academicYear])
+}
+
+model HESACodeTable {
+  id          String    @id @default(cuid())
+  field       String
+  code        String
+  description String
+  validFrom   DateTime? @map("valid_from") @db.Date
+  validTo     DateTime? @map("valid_to") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("hesa_code_tables")
+  @@unique([field, code])
+  @@index([field])
+}
+
+model StudentInstance {
+  id             String       @id @default(cuid())
+  studentId      String       @map("student_id")
+  student        Student      @relation(fields: [studentId], references: [id])
+  programmeId    String       @map("programme_id")
+  programme      Programme    @relation(fields: [programmeId], references: [id])
+  academicYearId String       @map("academic_year_id")
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  yearOfStudy    Int          @map("year_of_study")
+  bridgeSession  Boolean      @default(false) @map("bridge_session")
+  hesaData       Json?        @map("hesa_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("student_instances")
+  @@index([studentId])
+  @@index([programmeId])
+  @@index([academicYearId])
+}
+
+model StatutoryReturnRun {
+  id               String           @id @default(cuid())
+  returnType       StatReturnType   @map("return_type")
+  academicYear     String           @map("academic_year")
+  runNumber        Int              @map("run_number")
+  status           HESAReturnStatus @default(PREPARATION)
+  validationErrors Json?            @map("validation_errors")
+  recordCount      Int              @default(0) @map("record_count")
+  errorCount       Int              @default(0) @map("error_count")
+  warningCount     Int              @default(0) @map("warning_count")
+  submittedBy      String?          @map("submitted_by")
+  submittedDate    DateTime?        @map("submitted_date")
+  acknowledgedDate DateTime?        @map("acknowledged_date")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("statutory_return_runs")
+  @@index([returnType, academicYear])
+}
+
+model FinancialTransaction {
+  id                      String           @id @default(cuid())
+  transactionRef          String           @unique @map("transaction_ref")
+  studentAccountId        String           @map("student_account_id")
+  studentAccount          StudentAccount   @relation(fields: [studentAccountId], references: [id])
+  transactionType         FinTxnType       @map("transaction_type")
+  debitAmount             Decimal          @default(0) @map("debit_amount") @db.Decimal(10, 2)
+  creditAmount            Decimal          @default(0) @map("credit_amount") @db.Decimal(10, 2)
+  runningBalance          Decimal          @map("running_balance") @db.Decimal(10, 2)
+  reference               String?
+  description             String
+  relatedEntityType       String?          @map("related_entity_type")
+  relatedEntityId         String?          @map("related_entity_id")
+  postedDate              DateTime         @map("posted_date")
+  effectiveDate           DateTime         @map("effective_date") @db.Date
+  financialPeriodId       String?          @map("financial_period_id")
+  financialPeriod         FinancialPeriod? @relation(fields: [financialPeriodId], references: [id])
+  reversedByTransactionId String?          @unique @map("reversed_by_transaction_id")
+  reversedByTransaction   FinancialTransaction? @relation("TxnReversal", fields: [reversedByTransactionId], references: [id])
+  reversesTransaction     FinancialTransaction? @relation("TxnReversal")
+  status                  FinTxnStatus     @default(POSTED)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("financial_transactions")
+  @@index([studentAccountId])
+  @@index([postedDate])
+  @@index([financialPeriodId])
+}
+
+model FinancialPeriod {
+  id         String          @id @default(cuid())
+  periodCode String          @unique @map("period_code")
+  startDate  DateTime        @map("start_date") @db.Date
+  endDate    DateTime        @map("end_date") @db.Date
+  status     FinPeriodStatus @default(OPEN)
+  closedBy   String?         @map("closed_by")
+  closedDate DateTime?       @map("closed_date")
+
+  transactions FinancialTransaction[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("financial_periods")
+}
+
+model DataClassification {
+  id                 String         @id @default(cuid())
+  modelName          String         @map("model_name")
+  fieldName          String         @map("field_name")
+  classification     DataClassLevel
+  gdprBasis          GdprBasis?     @map("gdpr_basis")
+  retentionPeriod    Int?           @map("retention_period")
+  encryptionRequired Boolean        @default(false) @map("encryption_required")
+  accessRoles        Json?          @map("access_roles")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("data_classifications")
+  @@unique([modelName, fieldName])
 }
