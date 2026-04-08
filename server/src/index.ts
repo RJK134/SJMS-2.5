@@ -43,20 +43,9 @@ app.get("/api/health", (_req, res) => {
 });
 
 // ── API v1 router mount ─────────────────────────────────────────────────
-// Routes will be mounted here as modules are built:
+// Routes will be mounted here in Phase 3:
 // import { router as v1Router } from "./routes";
 // app.use("/api/v1", v1Router);
-
-// Placeholder v1 router
-import { Router } from "express";
-const v1Router = Router();
-v1Router.get("/", (_req, res) => {
-  res.json({
-    message: "SJMS 2.5 API v1",
-    docs: "/api/v1/docs",
-  });
-});
-app.use("/api/v1", v1Router);
 
 // ── Global error handler (must be last) ─────────────────────────────────
 app.use(errorHandler);

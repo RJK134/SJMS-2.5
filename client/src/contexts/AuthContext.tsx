@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
-  getStoredToken,
+  getToken,
   getUserFromToken,
   getRolesFromToken,
   isTokenExpired,
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function init() {
-      const token = getStoredToken();
+      const token = getToken();
       if (token && !isTokenExpired(token)) {
         processToken(token);
       } else if (token) {

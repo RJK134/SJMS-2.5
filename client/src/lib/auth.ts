@@ -1,12 +1,43 @@
 // Keycloak OIDC adapter for SJMS 2.5
 // Handles login, logout, token refresh, and role extraction
+// Tokens stored in memory-only closure variables (XSS mitigation)
 
 const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || "http://localhost:8080";
-const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || "sjms";
+const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || "fhe";
 const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "sjms-client";
 
-const TOKEN_KEY = "sjms_access_token";
-const REFRESH_KEY = "sjms_refresh_token";
+// ── Memory-only token storage ───────────────────────────────────────────────
+// Never persisted to sessionStorage/localStorage — cleared on page refresh.
+// Keycloak SSO session cookie handles silent re-authentication.
+
+let accessToken: string | null = null;
+let refreshToken: string | null = null;
+let refreshTimerId: ReturnType<typeof setTimeout> | null = null;
+
+export function getToken(): string | null {
+  return accessToken;
+}
+
+export function getRefreshToken(): string | null {
+  return refreshToken;
+}
+
+export function setTokens(access: string, refresh: string): void {
+  accessToken = access;
+  refreshToken = refresh;
+  scheduleProactiveRefresh(access);
+}
+
+export function clearTokens(): void {
+  accessToken = null;
+  refreshToken = null;
+  if (refreshTimerId) {
+    clearTimeout(refreshTimerId);
+    refreshTimerId = null;
+  }
+}
+
+// ── Types ───────────────────────────────────────────────────────────────────
 
 interface TokenResponse {
   access_token: string;
@@ -26,6 +57,8 @@ interface DecodedToken {
   exp: number;
 }
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
 function getOpenIDEndpoints() {
   const base = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect`;
   return {
@@ -39,24 +72,6 @@ function getOpenIDEndpoints() {
 function decodeJWT(token: string): DecodedToken {
   const payload = token.split(".")[1];
   return JSON.parse(atob(payload));
-}
-
-export function getStoredToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY);
-}
-
-export function getStoredRefreshToken(): string | null {
-  return sessionStorage.getItem(REFRESH_KEY);
-}
-
-export function storeTokens(access: string, refresh: string): void {
-  sessionStorage.setItem(TOKEN_KEY, access);
-  sessionStorage.setItem(REFRESH_KEY, refresh);
-}
-
-export function clearTokens(): void {
-  sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(REFRESH_KEY);
 }
 
 export function isTokenExpired(token: string): boolean {
@@ -87,6 +102,37 @@ export function getRolesFromToken(token: string): string[] {
   }
 }
 
+// ── Proactive Token Refresh ─────────────────────────────────────────────────
+// Schedules a refresh 30 seconds before the access token expires.
+// If proactive refresh fails, the axios 401 interceptor is the safety net.
+
+function scheduleProactiveRefresh(token: string): void {
+  if (refreshTimerId) {
+    clearTimeout(refreshTimerId);
+    refreshTimerId = null;
+  }
+
+  try {
+    const decoded = decodeJWT(token);
+    const expiresAt = decoded.exp * 1000;
+    const msUntilRefresh = expiresAt - Date.now() - 30_000; // 30s before expiry
+
+    if (msUntilRefresh <= 0) return; // already near expiry, let interceptor handle it
+
+    refreshTimerId = setTimeout(async () => {
+      const newToken = await refreshAccessToken();
+      if (!newToken) {
+        // Proactive refresh failed — user will get a 401 on next request
+        // and the interceptor will redirect to login
+      }
+    }, msUntilRefresh);
+  } catch {
+    // Token decode failed — skip scheduling
+  }
+}
+
+// ── Auth Operations ─────────────────────────────────────────────────────────
+
 export function login(redirectUri?: string): void {
   const endpoints = getOpenIDEndpoints();
   const redirect = redirectUri || window.location.origin + window.location.pathname;
@@ -115,18 +161,20 @@ export async function exchangeCode(code: string): Promise<TokenResponse> {
   });
 
   if (!res.ok) throw new Error("Token exchange failed");
-  return res.json();
+  const data: TokenResponse = await res.json();
+  setTokens(data.access_token, data.refresh_token);
+  return data;
 }
 
 export async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = getStoredRefreshToken();
-  if (!refreshToken) return null;
+  const currentRefresh = refreshToken;
+  if (!currentRefresh) return null;
 
   const endpoints = getOpenIDEndpoints();
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     client_id: KEYCLOAK_CLIENT_ID,
-    refresh_token: refreshToken,
+    refresh_token: currentRefresh,
   });
 
   try {
@@ -142,7 +190,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
 
     const data: TokenResponse = await res.json();
-    storeTokens(data.access_token, data.refresh_token);
+    setTokens(data.access_token, data.refresh_token);
     return data.access_token;
   } catch {
     clearTokens();
@@ -152,7 +200,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
 export function logout(): void {
   const endpoints = getOpenIDEndpoints();
-  const token = getStoredToken();
+  const token = accessToken;
   clearTokens();
 
   const params = new URLSearchParams({
