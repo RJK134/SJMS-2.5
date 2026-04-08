@@ -6,6 +6,8 @@ import morgan from "morgan";
 import { errorHandler } from "./middleware/error-handler";
 import { apiLimiter, authLimiter } from "./middleware/rate-limit";
 import { apiV1Router } from "./api";
+import swaggerUi from "swagger-ui-express";
+import { openApiSpec } from "./utils/openapi";
 import logger from "./utils/logger";
 
 const app = express();
@@ -32,6 +34,12 @@ app.use(
 // ── Rate limiting ────────────────────────────────────────────────────────
 app.use('/api', apiLimiter);
 app.use('/api/v1/auth', authLimiter);
+
+// ── API Documentation (Swagger UI) ──────────────────────────────────────
+app.get("/api/docs/spec", (_req, res) => res.json(openApiSpec));
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, {
+  customSiteTitle: "SJMS 2.5 API Documentation",
+}));
 
 // ── Health check ─────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
