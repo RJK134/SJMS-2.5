@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { errorHandler } from "./middleware/error-handler";
+import { apiLimiter, authLimiter } from "./middleware/rate-limit";
 import logger from "./utils/logger";
 
 const app = express();
@@ -26,6 +27,10 @@ app.use(
     stream: { write: (msg: string) => logger.info(msg.trim()) },
   })
 );
+
+// ── Rate limiting ────────────────────────────────────────────────────────
+app.use('/api', apiLimiter);
+app.use('/api/v1/auth', authLimiter);
 
 // ── Health check ─────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

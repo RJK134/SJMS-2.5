@@ -10,8 +10,8 @@ const portals = [
     title: "Admin Portal",
     description: "Registry, Finance, Admissions, QA & Compliance",
     icon: Shield,
-    color: "bg-primary",
-    hoverColor: "hover:bg-primary-600",
+    colour: "bg-primary",
+    hoverColour: "hover:bg-primary-600",
     route: "/admin",
   },
   {
@@ -19,8 +19,8 @@ const portals = [
     title: "Academic Portal",
     description: "Programme Leaders, Module Leaders, Tutors & Examiners",
     icon: BookOpen,
-    color: "bg-secondary",
-    hoverColor: "hover:bg-secondary-600",
+    colour: "bg-secondary",
+    hoverColour: "hover:bg-secondary-600",
     route: "/academic",
   },
   {
@@ -28,8 +28,8 @@ const portals = [
     title: "Student Portal",
     description: "View programme, modules, assessments & timetable",
     icon: GraduationCap,
-    color: "bg-accent",
-    hoverColor: "hover:bg-accent-700",
+    colour: "bg-accent",
+    hoverColour: "hover:bg-accent-700",
     route: "/student",
   },
   {
@@ -37,8 +37,8 @@ const portals = [
     title: "Applicant Portal",
     description: "Track your application, upload documents & view offers",
     icon: FileEdit,
-    color: "bg-success",
-    hoverColor: "hover:bg-success/90",
+    colour: "bg-success",
+    hoverColour: "hover:bg-success/90",
     route: "/applicant",
   },
 ];
@@ -83,7 +83,7 @@ export default function Login() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${portal.color} text-white`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${portal.colour} text-white`}
                   >
                     <Icon className="h-5 w-5" />
                   </div>
@@ -97,7 +97,7 @@ export default function Login() {
                   {portal.description}
                 </CardDescription>
                 <Button
-                  className={`mt-4 w-full ${portal.color} ${portal.hoverColor} text-white border-0`}
+                  className={`mt-4 w-full ${portal.colour} ${portal.hoverColour} text-white border-0`}
                   onClick={(e) => {
                     e.stopPropagation();
                     login();

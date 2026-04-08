@@ -50,3 +50,4 @@ coverage/
 *.tgz
 .cache/
 .temp/
+.claude/
