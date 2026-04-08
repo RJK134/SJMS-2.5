@@ -1,0 +1,5 @@
+import PageHeader from '@/components/shared/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+export default function MyProgramme() {
+  return (<div className="space-y-6"><PageHeader title="My Programme" subtitle="BSc (Hons) Computer Science" /><Card><CardHeader><CardTitle>Programme Details</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-4 text-sm"><div><span className="text-muted-foreground">Programme Code:</span> <span className="ml-2">UG-CS-001</span></div><div><span className="text-muted-foreground">Level:</span> <span className="ml-2">6 (Honours)</span></div><div><span className="text-muted-foreground">Total Credits:</span> <span className="ml-2">360</span></div><div><span className="text-muted-foreground">Duration:</span> <span className="ml-2">3 years</span></div><div><span className="text-muted-foreground">Expected Graduation:</span> <span className="ml-2">July 2026</span></div><div><span className="text-muted-foreground">Mode:</span> <span className="ml-2">Full-time</span></div></CardContent></Card></div>);
+}

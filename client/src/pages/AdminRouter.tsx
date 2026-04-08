@@ -61,6 +61,47 @@ import StatutoryReturns from './reports/StatutoryReturns';
 import CustomReports from './reports/CustomReports';
 import ManagementDashboards from './reports/ManagementDashboards';
 
+// Phase 5C — Support
+import TicketList from './support/TicketList';
+import TicketDetail from './support/TicketDetail';
+import FlagManagement from './support/FlagManagement';
+import PersonalTutoring from './support/PersonalTutoring';
+import WellbeingRecords from './support/WellbeingRecords';
+import DisabilityRecords from './support/DisabilityRecords';
+
+// Phase 5C — Compliance
+import UKVIDashboard from './compliance/UKVIDashboard';
+import UKVIDetail from './compliance/UKVIDetail';
+import ContactPoints from './compliance/ContactPoints';
+import HomeOfficeReports from './compliance/HomeOfficeReports';
+
+// Phase 5C — EC/Appeals
+import ECClaims from './ec-appeals/ECClaims';
+import Appeals from './ec-appeals/Appeals';
+import AcademicMisconduct from './ec-appeals/AcademicMisconduct';
+
+// Phase 5C — Documents & Comms
+import DocumentList from './documents/DocumentList';
+import LetterGeneration from './documents/LetterGeneration';
+import CommunicationLog from './documents/CommunicationLog';
+import TemplateManagement from './documents/TemplateManagement';
+import BulkCommunication from './documents/BulkCommunication';
+
+// Phase 5C — Governance & Accommodation
+import Committees from './governance/Committees';
+import Meetings from './governance/Meetings';
+import AccomBlocks from './accommodation/Blocks';
+import AccomRooms from './accommodation/Rooms';
+import AccomBookings from './accommodation/Bookings';
+
+// Phase 5C — Settings
+import SystemSettings from './settings/SystemSettings';
+import UserManagement from './settings/UserManagement';
+import RoleManagement from './settings/RoleManagement';
+import AuditLogViewer from './settings/AuditLogViewer';
+import AcademicCalendar from './settings/AcademicCalendar';
+import AcademicYears from './settings/AcademicYears';
+
 function AdminContent() {
   return (
     <Switch>
@@ -127,6 +168,47 @@ function AdminContent() {
       <Route path="/admin/reports/statutory" component={StatutoryReturns} />
       <Route path="/admin/reports/custom" component={CustomReports} />
       <Route path="/admin/reports/dashboards" component={ManagementDashboards} />
+
+      {/* Support */}
+      <Route path="/admin/support/tickets/:id" component={TicketDetail} />
+      <Route path="/admin/support/tickets" component={TicketList} />
+      <Route path="/admin/support/flags" component={FlagManagement} />
+      <Route path="/admin/support/personal-tutoring" component={PersonalTutoring} />
+      <Route path="/admin/support/wellbeing" component={WellbeingRecords} />
+      <Route path="/admin/support/disability" component={DisabilityRecords} />
+
+      {/* Compliance */}
+      <Route path="/admin/compliance/ukvi/:studentId" component={UKVIDetail} />
+      <Route path="/admin/compliance/ukvi" component={UKVIDashboard} />
+      <Route path="/admin/compliance/contact-points" component={ContactPoints} />
+      <Route path="/admin/compliance/reports" component={HomeOfficeReports} />
+
+      {/* EC & Appeals */}
+      <Route path="/admin/ec-claims" component={ECClaims} />
+      <Route path="/admin/appeals" component={Appeals} />
+      <Route path="/admin/academic-misconduct" component={AcademicMisconduct} />
+
+      {/* Documents & Comms */}
+      <Route path="/admin/documents/letters" component={LetterGeneration} />
+      <Route path="/admin/documents" component={DocumentList} />
+      <Route path="/admin/communications/templates" component={TemplateManagement} />
+      <Route path="/admin/communications/bulk" component={BulkCommunication} />
+      <Route path="/admin/communications" component={CommunicationLog} />
+
+      {/* Governance & Accommodation */}
+      <Route path="/admin/governance/committees" component={Committees} />
+      <Route path="/admin/governance/meetings" component={Meetings} />
+      <Route path="/admin/accommodation/blocks" component={AccomBlocks} />
+      <Route path="/admin/accommodation/rooms" component={AccomRooms} />
+      <Route path="/admin/accommodation/bookings" component={AccomBookings} />
+
+      {/* Settings */}
+      <Route path="/admin/settings/system" component={SystemSettings} />
+      <Route path="/admin/settings/users" component={UserManagement} />
+      <Route path="/admin/settings/roles" component={RoleManagement} />
+      <Route path="/admin/settings/audit-log" component={AuditLogViewer} />
+      <Route path="/admin/settings/academic-calendar" component={AcademicCalendar} />
+      <Route path="/admin/settings/academic-years" component={AcademicYears} />
 
       {/* Default */}
       <Route>
