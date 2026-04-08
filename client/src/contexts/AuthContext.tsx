@@ -1,15 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
-  getToken,
-  getUserFromToken,
-  getRolesFromToken,
-  isTokenExpired,
-  refreshAccessToken,
-  handleCallback,
-  clearTokens,
+  initKeycloak,
+  isAuthenticated as kcIsAuth,
+  getUser,
+  getRoles,
   login as kcLogin,
   logout as kcLogout,
-} from "@/lib/auth";
+  keycloak,
+} from '@/lib/auth';
 
 interface User {
   id: string;
@@ -24,7 +22,7 @@ interface AuthContextType {
   roles: string[];
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (redirectUri?: string) => void;
+  login: (portal?: string) => void;
   logout: () => void;
   hasRole: (role: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
@@ -37,67 +35,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [roles, setRoles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const processToken = useCallback((token: string) => {
-    const decoded = getUserFromToken(token);
-    if (decoded) {
-      setUser({
-        id: decoded.sub,
-        email: decoded.email,
-        username: decoded.preferred_username,
-        firstName: decoded.given_name,
-        lastName: decoded.family_name,
-      });
-      setRoles(getRolesFromToken(token));
-    }
-  }, []);
-
   useEffect(() => {
-    async function init() {
-      // 1. Check if this is a Keycloak callback with ?code=...
-      const wasCallback = await handleCallback();
-      if (wasCallback) {
-        const token = getToken();
-        if (token) {
-          processToken(token);
-          setIsLoading(false);
-          return;
+    initKeycloak().then((authenticated) => {
+      if (authenticated) {
+        const u = getUser();
+        if (u) {
+          setUser({
+            id: u.sub,
+            email: u.email,
+            username: u.preferred_username,
+            firstName: u.given_name,
+            lastName: u.family_name,
+          });
         }
-      }
+        setRoles(getRoles());
 
-      // 2. Check for existing token in memory
-      const token = getToken();
-      if (token && !isTokenExpired(token)) {
-        processToken(token);
-      } else if (token) {
-        const newToken = await refreshAccessToken();
-        if (newToken) {
-          processToken(newToken);
+        // After login redirect, navigate to the portal the user selected
+        const params = new URLSearchParams(window.location.search);
+        const portal = params.get('portal');
+        if (portal) {
+          // Clean the ?portal= param from URL
+          window.history.replaceState({}, '', window.location.origin + window.location.pathname + window.location.hash);
+          // Navigate to the selected portal via hash
+          window.location.hash = '#' + portal;
         }
       }
       setIsLoading(false);
-    }
-    init();
-  }, [processToken]);
+    });
 
-  const login = useCallback((redirectUri?: string) => {
-    kcLogin(redirectUri);
+    // Set up automatic token refresh
+    keycloak.onTokenExpired = () => {
+      console.log('[auth] Token expired, refreshing...');
+      keycloak.updateToken(30).catch(() => {
+        console.error('[auth] Auto-refresh failed');
+      });
+    };
+  }, []);
+
+  const login = useCallback((portal?: string) => {
+    kcLogin(portal);
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
     setRoles([]);
-    clearTokens();
     kcLogout();
   }, []);
 
   const hasRole = useCallback(
     (role: string) => roles.includes(role),
-    [roles]
+    [roles],
   );
 
   const hasAnyRole = useCallback(
     (checkRoles: string[]) => checkRoles.some((r) => roles.includes(r)),
-    [roles]
+    [roles],
   );
 
   return (
@@ -105,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         roles,
-        isAuthenticated: !!user,
+        isAuthenticated: kcIsAuth(),
         isLoading,
         login,
         logout,
@@ -121,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

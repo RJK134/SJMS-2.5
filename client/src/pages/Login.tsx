@@ -1,6 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { login } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, BookOpen, GraduationCap, FileEdit } from "lucide-react";
@@ -45,7 +44,7 @@ const portals = [
 ];
 
 export default function Login() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [, navigate] = useLocation();
 
   if (isAuthenticated) {
