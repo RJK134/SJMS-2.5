@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { errorHandler } from "./middleware/error-handler";
 import { apiLimiter, authLimiter } from "./middleware/rate-limit";
+import { apiV1Router } from "./api";
 import logger from "./utils/logger";
 
 const app = express();
@@ -42,10 +43,8 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// ── API v1 router mount ─────────────────────────────────────────────────
-// Routes will be mounted here in Phase 3:
-// import { router as v1Router } from "./routes";
-// app.use("/api/v1", v1Router);
+// ── API v1 router mount (37 domain modules) ────────────────────────────
+app.use("/api/v1", apiV1Router);
 
 // ── Global error handler (must be last) ─────────────────────────────────
 app.use(errorHandler);
