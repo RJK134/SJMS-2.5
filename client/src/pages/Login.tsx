@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
+import { login } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, BookOpen, GraduationCap, FileEdit } from "lucide-react";
@@ -44,13 +45,18 @@ const portals = [
 ];
 
 export default function Login() {
-  const { login, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
 
   if (isAuthenticated) {
     navigate("/dashboard");
     return null;
   }
+
+  const handleSignIn = (portalRoute: string) => {
+    console.log('Sign In clicked for portal:', portalRoute);
+    login(portalRoute);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 flex flex-col items-center justify-center p-4">
@@ -78,9 +84,8 @@ export default function Login() {
             <Card
               key={portal.id}
               className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 border-0"
-              onClick={() => login()}
+              onClick={() => handleSignIn(portal.route)}
             >
-
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div
@@ -101,7 +106,7 @@ export default function Login() {
                   className={`mt-4 w-full ${portal.colour} ${portal.hoverColour} text-white border-0`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    login();
+                    handleSignIn(portal.route);
                   }}
                 >
                   Sign In

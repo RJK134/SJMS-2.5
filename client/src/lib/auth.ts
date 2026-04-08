@@ -1,26 +1,17 @@
 // Keycloak OIDC adapter for SJMS 2.5
-// Handles login, logout, token refresh, and role extraction
 // Tokens stored in memory-only closure variables (XSS mitigation)
 
-const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || "http://localhost:8080";
-const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || "fhe";
-const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "sjms-client";
+const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080';
+const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || 'fhe';
+const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'sjms-client';
 
 // ── Memory-only token storage ───────────────────────────────────────────────
-// Never persisted to sessionStorage/localStorage — cleared on page refresh.
-// Keycloak SSO session cookie handles silent re-authentication.
-
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let refreshTimerId: ReturnType<typeof setTimeout> | null = null;
 
-export function getToken(): string | null {
-  return accessToken;
-}
-
-export function getRefreshToken(): string | null {
-  return refreshToken;
-}
+export function getToken(): string | null { return accessToken; }
+export function getRefreshToken(): string | null { return refreshToken; }
 
 export function setTokens(access: string, refresh: string): void {
   accessToken = access;
@@ -31,14 +22,10 @@ export function setTokens(access: string, refresh: string): void {
 export function clearTokens(): void {
   accessToken = null;
   refreshToken = null;
-  if (refreshTimerId) {
-    clearTimeout(refreshTimerId);
-    refreshTimerId = null;
-  }
+  if (refreshTimerId) { clearTimeout(refreshTimerId); refreshTimerId = null; }
 }
 
 // ── Types ───────────────────────────────────────────────────────────────────
-
 interface TokenResponse {
   access_token: string;
   refresh_token: string;
@@ -58,27 +45,16 @@ interface DecodedToken {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
-function getOpenIDEndpoints() {
-  const base = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect`;
-  return {
-    auth: `${base}/auth`,
-    token: `${base}/token`,
-    logout: `${base}/logout`,
-    userinfo: `${base}/userinfo`,
-  };
-}
-
 function decodeJWT(token: string): DecodedToken {
-  const payload = token.split(".")[1];
+  const payload = token.split('.')[1];
   return JSON.parse(atob(payload));
 }
 
 export function isTokenExpired(token: string): boolean {
   try {
-    const decoded = decodeJWT(token);
-    return decoded.exp * 1000 < Date.now() - 30_000; // 30s buffer
-  } catch {
+    return decodeJWT(token).exp * 1000 < Date.now() - 30_000;
+  } catch (err) {
+    console.error('isTokenExpired error:', err);
     return true;
   }
 }
@@ -86,7 +62,8 @@ export function isTokenExpired(token: string): boolean {
 export function getUserFromToken(token: string): DecodedToken | null {
   try {
     return decodeJWT(token);
-  } catch {
+  } catch (err) {
+    console.error('getUserFromToken error:', err);
     return null;
   }
 }
@@ -97,157 +74,115 @@ export function getRolesFromToken(token: string): string[] {
     const realmRoles = decoded.realm_access?.roles || [];
     const clientRoles = decoded.resource_access?.[KEYCLOAK_CLIENT_ID]?.roles || [];
     return [...new Set([...realmRoles, ...clientRoles])];
-  } catch {
+  } catch (err) {
+    console.error('getRolesFromToken error:', err);
     return [];
   }
 }
 
-// ── Proactive Token Refresh ─────────────────────────────────────────────────
-// Schedules a refresh 30 seconds before the access token expires.
-// If proactive refresh fails, the axios 401 interceptor is the safety net.
-
+// ── Proactive Refresh ───────────────────────────────────────────────────────
 function scheduleProactiveRefresh(token: string): void {
-  if (refreshTimerId) {
-    clearTimeout(refreshTimerId);
-    refreshTimerId = null;
-  }
-
+  if (refreshTimerId) { clearTimeout(refreshTimerId); refreshTimerId = null; }
   try {
-    const decoded = decodeJWT(token);
-    const expiresAt = decoded.exp * 1000;
-    const msUntilRefresh = expiresAt - Date.now() - 30_000; // 30s before expiry
-
-    if (msUntilRefresh <= 0) return; // already near expiry, let interceptor handle it
-
+    const msUntilRefresh = decodeJWT(token).exp * 1000 - Date.now() - 30_000;
+    if (msUntilRefresh <= 0) return;
     refreshTimerId = setTimeout(async () => {
       const newToken = await refreshAccessToken();
-      if (!newToken) {
-        // Proactive refresh failed — user will get a 401 on next request
-        // and the interceptor will redirect to login
-      }
+      if (!newToken) console.warn('Proactive token refresh failed');
     }, msUntilRefresh);
-  } catch {
-    // Token decode failed — skip scheduling
+  } catch (err) {
+    console.error('scheduleProactiveRefresh error:', err);
   }
 }
 
-// ── Auth Operations ─────────────────────────────────────────────────────────
-
-export function login(redirectUri?: string): void {
-  const endpoints = getOpenIDEndpoints();
-  // Always redirect back to the base origin (no hash) — the callback handler picks up the code
-  const redirect = redirectUri || window.location.origin + '/';
-  const params = new URLSearchParams({
-    client_id: KEYCLOAK_CLIENT_ID,
-    redirect_uri: redirect,
-    response_type: "code",
-    scope: "openid profile email",
-  });
-  window.location.href = `${endpoints.auth}?${params}`;
+// ── Login — direct redirect to Keycloak ─────────────────────────────────────
+export function login(portal: string = '/admin'): void {
+  const redirectUri = encodeURIComponent(window.location.origin + '/#' + portal);
+  const authUrl = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/auth?client_id=${KEYCLOAK_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile%20email`;
+  console.log('Redirecting to Keycloak:', authUrl);
+  window.location.href = authUrl;
 }
 
-/**
- * Check if the current URL has an authorization code from Keycloak redirect.
- * If so, exchange it for tokens and return true.
- */
+// ── Callback — exchange code for tokens after Keycloak redirect ─────────────
 export async function handleCallback(): Promise<boolean> {
   const url = new URL(window.location.href);
   const code = url.searchParams.get('code');
   if (!code) return false;
 
+  console.log('Keycloak callback detected, exchanging code...');
   try {
-    // Exchange the code — redirect_uri must exactly match what was sent in login()
-    const endpoints = getOpenIDEndpoints();
+    // redirect_uri must EXACTLY match what was sent in login()
+    // Keycloak redirects to: http://localhost:5173/?code=xxx&session_state=yyy#/admin
+    // So the redirect_uri we sent was: http://localhost:5173/#/admin (or whichever portal)
+    const hash = url.hash || '#/admin';
+    const redirectUri = window.location.origin + '/' + hash;
+
     const body = new URLSearchParams({
-      grant_type: "authorization_code",
+      grant_type: 'authorization_code',
       client_id: KEYCLOAK_CLIENT_ID,
       code,
-      redirect_uri: window.location.origin + '/',
+      redirect_uri: redirectUri,
     });
 
-    const res = await fetch(endpoints.token, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-    });
+    const res = await fetch(
+      `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
+      { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body },
+    );
 
-    if (!res.ok) throw new Error("Token exchange failed");
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Token exchange failed:', res.status, errText);
+      // Clean URL and fall through
+      window.history.replaceState({}, '', window.location.origin + '/' + hash);
+      return false;
+    }
+
     const data: TokenResponse = await res.json();
+    console.log('Token exchange successful, roles:', getRolesFromToken(data.access_token).join(', '));
     setTokens(data.access_token, data.refresh_token);
 
-    // Clean the URL — remove ?code=...&session_state=... so it doesn't re-trigger
-    window.history.replaceState({}, '', window.location.origin + '/');
+    // Clean the URL — remove ?code=...&session_state=... but keep the hash
+    window.history.replaceState({}, '', window.location.origin + '/' + hash);
     return true;
-  } catch {
+  } catch (err) {
+    console.error('handleCallback error:', err);
     return false;
   }
 }
 
-export async function exchangeCode(code: string): Promise<TokenResponse> {
-  const endpoints = getOpenIDEndpoints();
-  const body = new URLSearchParams({
-    grant_type: "authorization_code",
-    client_id: KEYCLOAK_CLIENT_ID,
-    code,
-    redirect_uri: window.location.origin + window.location.pathname,
-  });
-
-  const res = await fetch(endpoints.token, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-
-  if (!res.ok) throw new Error("Token exchange failed");
-  const data: TokenResponse = await res.json();
-  setTokens(data.access_token, data.refresh_token);
-  return data;
-}
-
+// ── Refresh ─────────────────────────────────────────────────────────────────
 export async function refreshAccessToken(): Promise<string | null> {
   const currentRefresh = refreshToken;
   if (!currentRefresh) return null;
 
-  const endpoints = getOpenIDEndpoints();
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    client_id: KEYCLOAK_CLIENT_ID,
-    refresh_token: currentRefresh,
-  });
-
   try {
-    const res = await fetch(endpoints.token, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-    });
-
-    if (!res.ok) {
-      clearTokens();
-      return null;
-    }
-
+    const res = await fetch(
+      `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'refresh_token', client_id: KEYCLOAK_CLIENT_ID, refresh_token: currentRefresh }),
+      },
+    );
+    if (!res.ok) { console.error('Token refresh failed:', res.status); clearTokens(); return null; }
     const data: TokenResponse = await res.json();
     setTokens(data.access_token, data.refresh_token);
     return data.access_token;
-  } catch {
+  } catch (err) {
+    console.error('refreshAccessToken error:', err);
     clearTokens();
     return null;
   }
 }
 
+// ── Logout ──────────────────────────────────────────────────────────────────
 export function logout(): void {
-  const endpoints = getOpenIDEndpoints();
   const token = accessToken;
   clearTokens();
-
   const params = new URLSearchParams({
     client_id: KEYCLOAK_CLIENT_ID,
     post_logout_redirect_uri: window.location.origin,
   });
-  if (token) {
-    params.set("id_token_hint", token);
-  }
-
-  window.location.href = `${endpoints.logout}?${params}`;
+  if (token) params.set('id_token_hint', token);
+  window.location.href = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/logout?${params}`;
 }
