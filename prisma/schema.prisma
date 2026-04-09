@@ -2292,9 +2292,9 @@ model Assessment {
 model AssessmentAttempt {
   id                    String             @id @default(cuid())
   assessmentId          String             @map("assessment_id")
-  assessment            Assessment         @relation(fields: [assessmentId], references: [id])
+  assessment            Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   moduleRegistrationId  String             @map("module_registration_id")
-  moduleRegistration    ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id])
+  moduleRegistration    ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
   attemptNumber         Int                @map("attempt_number") @default(1)
   rawMark               Decimal?           @map("raw_mark") @db.Decimal(6, 2)
   moderatedMark         Decimal?           @map("moderated_mark") @db.Decimal(6, 2)
@@ -2342,7 +2342,7 @@ model AssessmentCriteria {
 model AssessmentExtension {
   id               String     @id @default(cuid())
   assessmentId     String     @map("assessment_id")
-  assessment       Assessment @relation(fields: [assessmentId], references: [id])
+  assessment       Assessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   studentId        String     @map("student_id")
   originalDueDate  DateTime   @map("original_due_date")
   extendedDueDate  DateTime   @map("extended_due_date")
@@ -2363,9 +2363,9 @@ model AssessmentExtension {
 model ModuleResult {
   id                   String             @id @default(cuid())
   moduleRegistrationId String             @map("module_registration_id")
-  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id])
+  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
   moduleId             String             @map("module_id")
-  module               Module             @relation(fields: [moduleId], references: [id])
+  module               Module             @relation(fields: [moduleId], references: [id], onDelete: Restrict)
   academicYear         String             @map("academic_year")
   aggregateMark        Decimal?           @map("aggregate_mark") @db.Decimal(6, 2)
   grade                String?
@@ -2473,9 +2473,9 @@ model ExternalExaminer {
 model Submission {
   id                   String             @id @default(cuid())
   assessmentId         String             @map("assessment_id")
-  assessment           Assessment         @relation(fields: [assessmentId], references: [id])
+  assessment           Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   moduleRegistrationId String             @map("module_registration_id")
-  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id])
+  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
   submittedDate        DateTime           @map("submitted_date")
   fileName             String?            @map("file_name")
   filePath             String?            @map("file_path")
@@ -2571,7 +2571,7 @@ model AnonymousMarking {
 model SecondMarkingRecord {
   id             String     @id @default(cuid())
   assessmentId   String     @map("assessment_id")
-  assessment     Assessment @relation(fields: [assessmentId], references: [id])
+  assessment     Assessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   studentId      String     @map("student_id")
   firstMarkerMark  Decimal  @map("first_marker_mark") @db.Decimal(6, 2)
   secondMarkerMark Decimal  @map("second_marker_mark") @db.Decimal(6, 2)
@@ -2615,9 +2615,9 @@ model AssessmentComponent {
 model MarkEntry {
   id                   String              @id @default(cuid())
   assessmentComponentId String             @map("assessment_component_id")
-  assessmentComponent  AssessmentComponent @relation(fields: [assessmentComponentId], references: [id])
+  assessmentComponent  AssessmentComponent @relation(fields: [assessmentComponentId], references: [id], onDelete: Restrict)
   moduleRegistrationId String             @map("module_registration_id")
-  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id])
+  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
   attemptNumber        Int                @map("attempt_number") @default(1)
   stage                MarkStage
   mark                 Decimal?           @db.Decimal(6, 2)
