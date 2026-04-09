@@ -191,6 +191,15 @@ const ROOM_TYPE_MAP: Record<string, string> = {
 async function cleanup() {
   console.log('  Cleaning existing seed data...');
   // Delete in reverse FK dependency order
+  // B-02: marks pipeline (child → parent)
+  await prisma.markEntry.deleteMany();
+  await prisma.assessmentComponent.deleteMany();
+  // B-04: HESA entities (child → parent)
+  await prisma.hESAStudentModule.deleteMany();
+  await prisma.hESAEntryQualification.deleteMany();
+  await prisma.hESAStudent.deleteMany();
+  await prisma.hESAModule.deleteMany();
+
   await prisma.attendanceRecord.deleteMany();
   await prisma.engagementIntervention.deleteMany();
   await prisma.engagementScore.deleteMany();
@@ -939,6 +948,123 @@ async function seedAttendance(modRegs: any[], students: any[]) {
   }
 }
 
+// ─── B-02: Assessment Components + Mark Entries ─────────────────────────────
+async function seedAssessmentComponents(assessments: any[], modRegs: any[]) {
+  console.log('  Assessment components + mark entries...');
+
+  const components: any[] = [];
+  for (let i = 0; i < assessments.length; i++) {
+    components.push({
+      id: `acomp-${pad(i + 1)}`,
+      assessmentId: assessments[i].id,
+      title: assessments[i].title,
+      componentType: assessments[i].assessmentType,
+      weighting: 100,
+      maxMark: 100,
+      passMark: 40,
+      sortOrder: 0,
+    });
+  }
+  await prisma.assessmentComponent.createMany({ data: components });
+
+  // Create mark entries for completed registrations (append-only pipeline demo)
+  const completedRegs = modRegs.filter((r: any) => r.status === 'COMPLETED');
+  const markEntries: any[] = [];
+  let idx = 0;
+  const stages: Array<'DRAFT' | 'FIRST_MARK' | 'SECOND_MARK' | 'MODERATED' | 'EXTERNAL_REVIEWED' | 'BOARD_APPROVED' | 'RELEASED'> = ['DRAFT', 'FIRST_MARK', 'SECOND_MARK', 'MODERATED', 'EXTERNAL_REVIEWED', 'BOARD_APPROVED', 'RELEASED'];
+
+  for (const reg of completedRegs.slice(0, 50)) {
+    const regComponents = components.filter((c: any) => {
+      const asmt = assessments.find((a: any) => a.id === c.assessmentId);
+      return asmt?.moduleId === reg.moduleId;
+    });
+    for (const comp of regComponents) {
+      const rawMk = mark();
+      for (const stage of stages) {
+        idx++;
+        markEntries.push({
+          id: `me-${pad(idx)}`,
+          assessmentComponentId: comp.id,
+          moduleRegistrationId: reg.id,
+          attemptNumber: 1,
+          stage,
+          mark: rawMk,
+          grade: rawMk >= 70 ? 'A' : rawMk >= 60 ? 'B' : rawMk >= 50 ? 'C' : rawMk >= 40 ? 'D' : 'F',
+          markerId: 'stf-0001',
+          markerName: 'Prof. Smith',
+          markedAt: d(2025, 2, 1 + stages.indexOf(stage) * 7),
+        });
+      }
+    }
+  }
+
+  const BATCH = 500;
+  for (let i = 0; i < markEntries.length; i += BATCH) {
+    await prisma.markEntry.createMany({ data: markEntries.slice(i, i + BATCH) });
+  }
+  console.log(`    Created ${components.length} components, ${markEntries.length} mark entries`);
+}
+
+// ─── B-04: HESA Data Futures Entities ───────────────────────────────────────
+async function seedHESAEntities(students: any[], modules: any[]) {
+  console.log('  HESA Data Futures entities...');
+
+  // HESAStudent — one per student
+  const hesaStudents: any[] = students.slice(0, 50).map((s: any, i: number) => ({
+    id: `hstu-${pad(i + 1)}`,
+    studentId: s.id,
+    husid: `130${String(i + 1).padStart(10, '0')}`,
+    nation: 'GB',
+    domicile: 'XF',
+    ethnic: i % 5 === 0 ? '21' : i % 3 === 0 ? '50' : '10',
+    disable: '00',
+  }));
+  await prisma.hESAStudent.createMany({ data: hesaStudents });
+
+  // HESAModule — one per module for current year
+  const hesaModules: any[] = modules.slice(0, 20).map((m: any, i: number) => ({
+    id: `hmod-${pad(i + 1)}`,
+    moduleId: m.id,
+    academicYear: '2025/26',
+    crdtPts: m.credits ?? 15,
+    crdtScm: 'CATS',
+    fte: 1.0,
+  }));
+  await prisma.hESAModule.createMany({ data: hesaModules });
+
+  // HESAStudentModule — link first 20 students to first 5 modules
+  const hesaStudentModules: any[] = [];
+  let smIdx = 0;
+  for (let si = 0; si < Math.min(20, hesaStudents.length); si++) {
+    for (let mi = 0; mi < Math.min(5, hesaModules.length); mi++) {
+      smIdx++;
+      hesaStudentModules.push({
+        id: `hsm-${pad(smIdx)}`,
+        hesaStudentId: hesaStudents[si].id,
+        hesaModuleId: hesaModules[mi].id,
+        modOut: '1',
+        modMark: mark(),
+      });
+    }
+  }
+  await prisma.hESAStudentModule.createMany({ data: hesaStudentModules });
+
+  // HESAEntryQualification — A-levels for first 30 students
+  const entryQuals: any[] = students.slice(0, 30).map((s: any, i: number) => ({
+    id: `heq-${pad(i + 1)}`,
+    studentId: s.id,
+    qualType: 'GCE A-level',
+    qualEnt3: 'P94',
+    qualGrade: i % 4 === 0 ? 'A*A*A' : i % 3 === 0 ? 'AAA' : 'AAB',
+    qualYear: 2024,
+    country: 'XF',
+    tariffPoints: i % 4 === 0 ? 168 : i % 3 === 0 ? 144 : 136,
+  }));
+  await prisma.hESAEntryQualification.createMany({ data: entryQuals });
+
+  console.log(`    Created ${hesaStudents.length} HESA students, ${hesaModules.length} HESA modules, ${hesaStudentModules.length} student-modules, ${entryQuals.length} entry qualifications`);
+}
+
 // ─── Main ───────────────────────────────────────────────────────────────────
 async function main() {
   console.log('🌱 Seeding SJMS 2.5 database...\n');
@@ -971,6 +1097,12 @@ async function main() {
   await seedSupportTickets(students);
   await seedAttendance(modRegs, students);
 
+  // B-02: Assessment components + mark entries (7-stage pipeline)
+  await seedAssessmentComponents(assessments, modRegs);
+
+  // B-04: HESA Data Futures entities
+  await seedHESAEntities(students, modules);
+
   // Summary
   const counts = await Promise.all([
     prisma.faculty.count(),
@@ -986,6 +1118,10 @@ async function main() {
     prisma.assessmentAttempt.count(),
     prisma.studentAccount.count(),
     prisma.uKVIRecord.count(),
+    prisma.assessmentComponent.count(),
+    prisma.markEntry.count(),
+    prisma.hESAStudent.count(),
+    prisma.hESAEntryQualification.count(),
   ]);
 
   console.log('\n✅ Seed complete! Summary:');
@@ -1002,6 +1138,10 @@ async function main() {
   console.log(`  Assessment attempts:   ${counts[10]}`);
   console.log(`  Student accounts:      ${counts[11]}`);
   console.log(`  UKVI records:          ${counts[12]}`);
+  console.log(`  Assessment components: ${counts[13]}`);
+  console.log(`  Mark entries:          ${counts[14]}`);
+  console.log(`  HESA students:         ${counts[15]}`);
+  console.log(`  HESA entry quals:      ${counts[16]}`);
 }
 
 main()

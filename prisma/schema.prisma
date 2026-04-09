@@ -297,6 +297,16 @@ enum AttemptStatus {
   DEFERRED
 }
 
+enum MarkStage {
+  DRAFT
+  FIRST_MARK
+  SECOND_MARK
+  MODERATED
+  EXTERNAL_REVIEWED
+  BOARD_APPROVED
+  RELEASED
+}
+
 enum ModuleResultStatus {
   PROVISIONAL
   CONFIRMED
@@ -1276,6 +1286,8 @@ model Student {
   examBoardDecisions          ExamBoardDecision[]
   courseSessions              StudentCourseSession[]
   studentInstances            StudentInstance[]
+  hesaRecords                 HESAStudent[]
+  hesaEntryQualifications     HESAEntryQualification[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -1612,6 +1624,7 @@ model Module {
   learningOutcomes   LearningOutcome[]
   assessmentPatterns AssessmentPattern[]
   teachingGroups     TeachingGroup[]
+  hesaModules        HESAModule[]
   prerequisites_rel  ModulePrerequisite[] @relation("ModuleWithPrereqs")
   prerequisiteOf     ModulePrerequisite[] @relation("ModuleAsPrereq")
 
@@ -1663,7 +1676,6 @@ model ProgrammeModule {
 
   @@map("programme_modules")
   @@unique([programmeId, moduleId])
-  @@index([programmeId])
   @@index([moduleId])
 }
 
@@ -2119,6 +2131,7 @@ model ModuleRegistration {
   withdrawalReason String?         @map("withdrawal_reason")
 
   attempts          AssessmentAttempt[]
+  markEntries       MarkEntry[]
   results           ModuleResult[]
   attendanceRecords AttendanceRecord[]
   submissions       Submission[]
@@ -2257,6 +2270,7 @@ model Assessment {
   latePolicy         Json?          @map("late_policy")
 
   attempts           AssessmentAttempt[]
+  components         AssessmentComponent[]
   criteria           AssessmentCriteria[]
   extensions         AssessmentExtension[]
   submissions        Submission[]
@@ -2278,9 +2292,9 @@ model Assessment {
 model AssessmentAttempt {
   id                    String             @id @default(cuid())
   assessmentId          String             @map("assessment_id")
-  assessment            Assessment         @relation(fields: [assessmentId], references: [id])
+  assessment            Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   moduleRegistrationId  String             @map("module_registration_id")
-  moduleRegistration    ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id])
+  moduleRegistration    ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
   attemptNumber         Int                @map("attempt_number") @default(1)
   rawMark               Decimal?           @map("raw_mark") @db.Decimal(6, 2)
   moderatedMark         Decimal?           @map("moderated_mark") @db.Decimal(6, 2)
@@ -2328,7 +2342,7 @@ model AssessmentCriteria {
 model AssessmentExtension {
   id               String     @id @default(cuid())
   assessmentId     String     @map("assessment_id")
-  assessment       Assessment @relation(fields: [assessmentId], references: [id])
+  assessment       Assessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   studentId        String     @map("student_id")
   originalDueDate  DateTime   @map("original_due_date")
   extendedDueDate  DateTime   @map("extended_due_date")
@@ -2349,9 +2363,9 @@ model AssessmentExtension {
 model ModuleResult {
   id                   String             @id @default(cuid())
   moduleRegistrationId String             @map("module_registration_id")
-  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id])
+  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
   moduleId             String             @map("module_id")
-  module               Module             @relation(fields: [moduleId], references: [id])
+  module               Module             @relation(fields: [moduleId], references: [id], onDelete: Restrict)
   academicYear         String             @map("academic_year")
   aggregateMark        Decimal?           @map("aggregate_mark") @db.Decimal(6, 2)
   grade                String?
@@ -2459,9 +2473,9 @@ model ExternalExaminer {
 model Submission {
   id                   String             @id @default(cuid())
   assessmentId         String             @map("assessment_id")
-  assessment           Assessment         @relation(fields: [assessmentId], references: [id])
+  assessment           Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   moduleRegistrationId String             @map("module_registration_id")
-  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id])
+  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
   submittedDate        DateTime           @map("submitted_date")
   fileName             String?            @map("file_name")
   filePath             String?            @map("file_path")
@@ -2557,7 +2571,7 @@ model AnonymousMarking {
 model SecondMarkingRecord {
   id             String     @id @default(cuid())
   assessmentId   String     @map("assessment_id")
-  assessment     Assessment @relation(fields: [assessmentId], references: [id])
+  assessment     Assessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   studentId      String     @map("student_id")
   firstMarkerMark  Decimal  @map("first_marker_mark") @db.Decimal(6, 2)
   secondMarkerMark Decimal  @map("second_marker_mark") @db.Decimal(6, 2)
@@ -2572,6 +2586,54 @@ model SecondMarkingRecord {
 
   @@map("second_marking_records")
   @@index([assessmentId])
+}
+
+model AssessmentComponent {
+  id             String         @id @default(cuid())
+  assessmentId   String         @map("assessment_id")
+  assessment     Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
+  title          String
+  componentType  AssessmentType @map("component_type")
+  weighting      Int
+  maxMark        Decimal        @map("max_mark") @db.Decimal(6, 2)
+  passMark       Decimal?       @map("pass_mark") @db.Decimal(6, 2)
+  sortOrder      Int            @default(0) @map("sort_order")
+
+  markEntries    MarkEntry[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("assessment_components")
+  @@index([assessmentId])
+}
+
+/// Append-only mark record: each stage transition creates a NEW row.
+/// This provides a full audit trail of the 7-stage marks pipeline.
+model MarkEntry {
+  id                   String              @id @default(cuid())
+  assessmentComponentId String             @map("assessment_component_id")
+  assessmentComponent  AssessmentComponent @relation(fields: [assessmentComponentId], references: [id], onDelete: Restrict)
+  moduleRegistrationId String             @map("module_registration_id")
+  moduleRegistration   ModuleRegistration @relation(fields: [moduleRegistrationId], references: [id], onDelete: Restrict)
+  attemptNumber        Int                @map("attempt_number") @default(1)
+  stage                MarkStage
+  mark                 Decimal?           @db.Decimal(6, 2)
+  grade                String?
+  markerId             String?            @map("marker_id")
+  markerName           String?            @map("marker_name")
+  feedback             String?            @db.Text
+  markedAt             DateTime           @map("marked_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+
+  @@map("mark_entries")
+  @@index([assessmentComponentId])
+  @@index([moduleRegistrationId])
+  @@index([stage])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -5047,6 +5109,113 @@ model StudentGroupMember {
 // DOMAIN 25 — PHASE 4 ENHANCEMENTS: HESA Data Futures, Financial Ledger, GDPR
 // ═══════════════════════════════════════════════════════════════════════════
 
+model HESAStudent {
+  id              String   @id @default(cuid())
+  studentId       String   @map("student_id")
+  student         Student  @relation(fields: [studentId], references: [id])
+  husid           String?  @unique
+  ownstu          String?
+  numhus          String?
+  ttaccom         String?
+  disable         String?
+  ethnic          String?
+  sexort          String?
+  relblf          String?
+  genderid        String?
+  nation          String?
+  domicile        String?
+  socClass        String?  @map("soc_class")
+  sec             String?
+  postcode        String?
+  comdate         DateTime? @db.Date
+  enddate         DateTime? @db.Date
+  hesaData        Json?    @map("hesa_data")
+
+  studentModules  HESAStudentModule[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("hesa_students")
+  @@unique([studentId])
+}
+
+model HESAModule {
+  id               String   @id @default(cuid())
+  moduleId         String   @map("module_id")
+  module           Module   @relation(fields: [moduleId], references: [id])
+  academicYear     String   @map("academic_year")
+  modId            String?  @map("mod_id")
+  crdtPts          Int?     @map("crdt_pts")
+  crdtScm          String?  @map("crdt_scm")
+  levlpts          String?
+  fte              Decimal? @db.Decimal(5, 2)
+  pcolab           Decimal? @db.Decimal(5, 2)
+  hesaData         Json?    @map("hesa_data")
+
+  studentModules   HESAStudentModule[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("hesa_modules")
+  @@unique([moduleId, academicYear])
+  @@index([academicYear])
+}
+
+model HESAStudentModule {
+  id               String       @id @default(cuid())
+  hesaStudentId    String       @map("hesa_student_id")
+  hesaStudent      HESAStudent  @relation(fields: [hesaStudentId], references: [id])
+  hesaModuleId     String       @map("hesa_module_id")
+  hesaModule       HESAModule   @relation(fields: [hesaModuleId], references: [id])
+  modOut           String?      @map("mod_out")
+  modGrade         String?      @map("mod_grade")
+  modMark          Decimal?     @map("mod_mark") @db.Decimal(6, 2)
+  crdtAtmp         Int?         @map("crdt_atmp")
+  crdtAchv         Int?         @map("crdt_achv")
+  hesaData         Json?        @map("hesa_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("hesa_student_modules")
+  @@unique([hesaStudentId, hesaModuleId])
+  @@index([hesaModuleId])
+}
+
+model HESAEntryQualification {
+  id               String   @id @default(cuid())
+  studentId        String   @map("student_id")
+  student          Student  @relation(fields: [studentId], references: [id])
+  qualType         String   @map("qual_type")
+  qualEnt3         String?  @map("qual_ent3")
+  qualCls2         String?  @map("qual_cls2")
+  qualSbj1         String?  @map("qual_sbj1")
+  qualSbj2         String?  @map("qual_sbj2")
+  qualSbj3         String?  @map("qual_sbj3")
+  qualGrade        String?  @map("qual_grade")
+  qualYear         Int?     @map("qual_year")
+  institution      String?
+  country          String?
+  tariffPoints     Int?     @map("tariff_points")
+  hesaData         Json?    @map("hesa_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  @@map("hesa_entry_qualifications")
+  @@index([studentId])
+}
+
 model StudentCourseSession {
   id           String       @id @default(cuid())
   studentId    String       @map("student_id")
@@ -5093,7 +5262,6 @@ model HESACodeTable {
 
   @@map("hesa_code_tables")
   @@unique([field, code])
-  @@index([field])
 }
 
 model StudentInstance {

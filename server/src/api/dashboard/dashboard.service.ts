@@ -171,21 +171,21 @@ export async function getEngagementScores(query: Record<string, any>) {
     return { studentId: g.studentId, score, rating, totalRecords: total, presentCount: present };
   });
 
-  // Filter by risk level
-  if (riskLevel) {
-    scores = scores.filter(s => s.rating === riskLevel);
-  }
-
-  // Sort: worst scores first (for intervention prioritisation)
-  scores.sort((a, b) => a.score - b.score);
-
-  // Summary stats (before pagination)
+  // Summary stats — always reflects full population (before riskLevel filter)
   const summary = {
     total: scores.length,
     green: scores.filter(s => s.rating === 'green').length,
     amber: scores.filter(s => s.rating === 'amber').length,
     red: scores.filter(s => s.rating === 'red').length,
   };
+
+  // Filter by risk level (only affects the paginated list, not summary)
+  if (riskLevel) {
+    scores = scores.filter(s => s.rating === riskLevel);
+  }
+
+  // Sort: worst scores first (for intervention prioritisation)
+  scores.sort((a, b) => a.score - b.score);
 
   // Paginate
   const skip = (page - 1) * limit;
