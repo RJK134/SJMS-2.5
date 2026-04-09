@@ -4,48 +4,49 @@
     {
       "parameters": {
         "rule": {
-          "interval": [
-            {
-              "field": "hours",
-              "hoursInterval": 24
-            }
-          ]
+          "interval": [{ "field": "hours", "hoursInterval": 24 }]
         }
       },
       "name": "Daily Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [
-        250,
-        300
-      ]
+      "position": [250, 300]
     },
     {
       "parameters": {
         "url": "http://api:3001/api/v1/assessments",
-        "qs": {
-          "limit": "50",
-          "sort": "dueDate",
-          "order": "asc"
-        },
+        "qs": { "limit": "50", "sort": "dueDate", "order": "asc" },
         "sendHeaders": true,
         "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Internal-Service-Key",
-              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
-            }
-          ]
+          "parameters": [{ "name": "X-Internal-Service-Key", "value": "={{$env.INTERNAL_SERVICE_KEY}}" }]
         },
         "options": {}
       },
       "name": "Get Upcoming Assessments",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [
-        450,
-        300
-      ]
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.data?.length ?? 0 }}", "operation": "larger", "value2": 0 }]
+        }
+      },
+      "name": "Has Assessments?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "name": "Split Into Items",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [850, 200]
     },
     {
       "parameters": {
@@ -53,61 +54,34 @@
         "method": "POST",
         "sendHeaders": true,
         "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Internal-Service-Key",
-              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
-            }
-          ]
+          "parameters": [{ "name": "X-Internal-Service-Key", "value": "={{$env.INTERNAL_SERVICE_KEY}}" }]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\"userId\":$json.data?.[0]?.createdBy ?? \"system\",\"title\":\"Assessment Deadline Approaching\",\"message\":\"You have assessments due within the next 7 days.\",\"category\":\"ASSESSMENT\",\"priority\":\"NORMAL\"}) }}",
+        "jsonBody": "={{ JSON.stringify({\"userId\": $json.createdBy ?? \"system\", \"title\": \"Assessment Deadline Approaching\", \"message\": \"\" + ($json.title ?? \"An assessment\") + \" is due soon. Check your student portal.\", \"category\": \"ASSESSMENT\", \"priority\": \"NORMAL\"}) }}",
         "options": {}
       },
-      "name": "Create Reminders",
+      "name": "Create Notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [
-        650,
-        300
-      ]
+      "position": [1050, 200]
     }
   ],
   "connections": {
     "Daily Schedule": {
-      "main": [
-        [
-          {
-            "node": "Get Upcoming Assessments",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Get Upcoming Assessments", "type": "main", "index": 0 }]]
     },
     "Get Upcoming Assessments": {
-      "main": [
-        [
-          {
-            "node": "Create Reminders",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Has Assessments?", "type": "main", "index": 0 }]]
+    },
+    "Has Assessments?": {
+      "main": [[{ "node": "Split Into Items", "type": "main", "index": 0 }], []]
+    },
+    "Split Into Items": {
+      "main": [[{ "node": "Create Notification", "type": "main", "index": 0 }]]
     }
   },
   "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "tags": [
-    {
-      "name": "sjms"
-    },
-    {
-      "name": "assessment"
-    }
-  ]
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "sjms" }, { "name": "assessment" }]
 }

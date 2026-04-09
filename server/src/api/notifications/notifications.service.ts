@@ -41,7 +41,7 @@ export async function markAsRead(id: string, userId: string, req: Request) {
 }
 
 export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.notification.create({ data });
+  const result = await prisma.notification.create({ data: { ...data, createdBy: userId } });
   await logAudit('Notification', result.id, 'CREATE', userId, null, result, req);
   return result;
 }
