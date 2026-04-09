@@ -12,16 +12,16 @@ Sources: Two Comet browser reviews (April 2026), 56 P-series findings, mock data
 
 **Detection:** `grep -rn "mockData\|fallback.*data\|placeholder.*data\|dummyData" server/ client/` → **0 results**
 
-## Category B: Data Model (HIGH)
+## Category B: Data Model (HIGH) — RESOLVED
 
-| ID | Issue | Fix | Phase |
+| ID | Issue | Fix | Status |
 |---|---|---|---|
-| B-01 | Flat Person model (overwrites history) | Effective-dated PersonName/Address/Contact | 4 |
-| B-02 | Flat Mark model | 7-stage AssessmentComponent → Submission → Mark | 4 |
-| B-03 | Incomplete finance | Full ledger: Account → Charge → Invoice → Payment → Allocation | 4 |
-| B-04 | Missing HESA entities | HESAStudent, HESAStudentCourseSession, HESAModule, HESASnapshot | 4 |
-| B-05 | No immutable snapshots | DB trigger preventing UPDATE/DELETE on hesa_snapshots | 4 |
-| B-06 | No GDPR field classification | DataClassification, ConsentRecord, DSAR models | 4 |
+| B-01 | Flat Person model (overwrites history) | PersonName, PersonAddress, PersonContact all have startDate/endDate with NameType/AddressType/ContactType enums | **RESOLVED** (baseline schema) |
+| B-02 | Flat Mark model | MarkStage enum (7 stages), AssessmentComponent model, append-only MarkEntry model with stage/mark/marker/feedback per transition | **RESOLVED** (migration 20260409120000) |
+| B-03 | Incomplete finance | Full double-entry ledger: StudentAccount, FeeAssessment, ChargeLine, Invoice, Payment, PaymentPlan, SponsorAgreement, BursaryFund, CreditNote, RefundApproval, DebtAction, FinancialTransaction (debit/credit/running balance), FinancialPeriod | **RESOLVED** (migration 20260408154920) |
+| B-04 | Missing HESA entities | Added HESAStudent, HESAModule, HESAStudentModule, HESAEntryQualification; existing: StudentCourseSession, HESACodeTable, HESASnapshot, HESAReturn, HESAFieldMapping, HESAValidationRule, DataFuturesEntity | **RESOLVED** (migration 20260409120000) |
+| B-05 | No immutable snapshots | PostgreSQL trigger `hesa_snapshot_immutable` on hesa_snapshots table: BEFORE UPDATE OR DELETE raises exception | **RESOLVED** (migration 20260408155000) |
+| B-06 | No GDPR field classification | DataClassification (model/field/classification/gdprBasis/retentionPeriod/encryptionRequired), ConsentRecord (consentType/granted/legalBasis), DataProtectionRequest (requestType/status/dueDate/completedBy) | **RESOLVED** (migration 20260408154920) |
 
 ## Category C: Auth & Security (HIGH) — RESOLVED
 
