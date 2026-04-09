@@ -1676,7 +1676,6 @@ model ProgrammeModule {
 
   @@map("programme_modules")
   @@unique([programmeId, moduleId])
-  @@index([programmeId])
   @@index([moduleId])
 }
 
@@ -2592,7 +2591,7 @@ model SecondMarkingRecord {
 model AssessmentComponent {
   id             String         @id @default(cuid())
   assessmentId   String         @map("assessment_id")
-  assessment     Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  assessment     Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   title          String
   componentType  AssessmentType @map("component_type")
   weighting      Int
@@ -5141,7 +5140,6 @@ model HESAStudent {
 
   @@map("hesa_students")
   @@unique([studentId])
-  @@index([studentId])
 }
 
 model HESAModule {
@@ -5166,7 +5164,6 @@ model HESAModule {
 
   @@map("hesa_modules")
   @@unique([moduleId, academicYear])
-  @@index([moduleId])
   @@index([academicYear])
 }
 
@@ -5190,7 +5187,6 @@ model HESAStudentModule {
 
   @@map("hesa_student_modules")
   @@unique([hesaStudentId, hesaModuleId])
-  @@index([hesaStudentId])
   @@index([hesaModuleId])
 }
 
@@ -5266,7 +5262,6 @@ model HESACodeTable {
 
   @@map("hesa_code_tables")
   @@unique([field, code])
-  @@index([field])
 }
 
 model StudentInstance {
