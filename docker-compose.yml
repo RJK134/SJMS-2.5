@@ -108,7 +108,7 @@ services:
       N8N_PORT: "5678"
       N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678}
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-CHANGE-ME}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-sjms-dev-internal-service-key-do-not-use-in-production-min64chars}
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
       DB_POSTGRESDB_PORT: "5432"
@@ -143,7 +143,7 @@ services:
       KEYCLOAK_INTERNAL_URL: http://keycloak:8080
       KEYCLOAK_ISSUER_URL: http://localhost:8080
       MINIO_ENDPOINT: minio
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-CHANGE-ME}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-sjms-dev-internal-service-key-do-not-use-in-production-min64chars}
     depends_on:
       postgres:
         condition: service_healthy

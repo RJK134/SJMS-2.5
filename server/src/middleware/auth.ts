@@ -113,7 +113,7 @@ export function authenticateJWT(req: Request, _res: Response, next: NextFunction
   const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
   if (serviceKey) {
     const expectedKey = process.env.INTERNAL_SERVICE_KEY;
-    if (!expectedKey || expectedKey === 'CHANGE-ME' || expectedKey.length < 32) {
+    if (!expectedKey || expectedKey.length < 32) {
       return next(new ForbiddenError('Internal service key is configured incorrectly — must be at least 32 characters and not the default placeholder'));
     }
     if (serviceKey !== expectedKey) {
@@ -196,12 +196,18 @@ export function requireOwnerOrRole(getUserId: (req: Request) => string | undefin
       return next(new UnauthorizedError('Authentication required'));
     }
 
+    const userRoles = getUserRoles(req.user);
+
+    // super_admin bypasses all ownership and role checks
+    if (userRoles.includes('super_admin')) {
+      return next();
+    }
+
     const resourceUserId = getUserId(req);
     if (resourceUserId && req.user.sub === resourceUserId) {
       return next();
     }
 
-    const userRoles = getUserRoles(req.user);
     const hasRole = roles.some(role => userRoles.includes(role));
 
     if (!hasRole) {
