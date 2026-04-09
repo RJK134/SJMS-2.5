@@ -19,3 +19,15 @@ export const createSchema = z.object({
 });
 
 export const updateSchema = createSchema.partial();
+
+export const contactPointsQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(25),
+  sort: z.string().default('contactDate'),
+  order: z.enum(['asc', 'desc']).default('desc'),
+  studentId: z.string().optional(),
+  contactType: z.string().optional(),
+  status: z.string().optional(),
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+});

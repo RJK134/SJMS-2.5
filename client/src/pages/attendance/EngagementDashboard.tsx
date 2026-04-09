@@ -1,59 +1,175 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/shared/StatCard';
-import { useList } from '@/hooks/useApi';
-import { Users, AlertTriangle, CheckCircle } from 'lucide-react';
+import DataTable, { type Column } from '@/components/shared/DataTable';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { Users, AlertTriangle, CheckCircle, AlertCircle, Loader2, Search, X } from 'lucide-react';
 
-interface Student { id: string; studentNumber: string; feeStatus: string; person?: { firstName: string; lastName: string } }
+interface EngagementScore {
+  studentId: string;
+  studentNumber: string;
+  firstName: string;
+  lastName: string;
+  programme: string;
+  programmeCode: string;
+  score: number;
+  rating: 'green' | 'amber' | 'red';
+  totalRecords: number;
+  presentCount: number;
+}
+
+interface EngagementResponse {
+  success: boolean;
+  summary: { total: number; green: number; amber: number; red: number };
+  data: EngagementScore[];
+  pagination: { page: number; limit: number; total: number; totalPages: number; hasNext: boolean; hasPrev: boolean };
+}
+
+const ratingColour = {
+  green: 'bg-green-100 text-green-800',
+  amber: 'bg-amber-100 text-amber-800',
+  red: 'bg-red-100 text-red-800',
+};
+
+const ratingDot = {
+  green: 'bg-green-500',
+  amber: 'bg-amber-500',
+  red: 'bg-red-500',
+};
+
+const columns: Column<EngagementScore>[] = [
+  {
+    key: 'rating',
+    label: '',
+    render: r => <span className={`inline-block w-3 h-3 rounded-full ${ratingDot[r.rating]}`} />,
+  },
+  { key: 'studentNumber', label: 'Student No.', render: r => <span className="font-mono">{r.studentNumber}</span> },
+  { key: 'name', label: 'Name', render: r => `${r.firstName} ${r.lastName}` },
+  { key: 'programme', label: 'Programme', render: r => r.programmeCode !== '—' ? `${r.programmeCode} — ${r.programme}` : '—' },
+  {
+    key: 'score',
+    label: 'Attendance',
+    render: r => (
+      <div className="flex items-center gap-2">
+        <div className="w-32 bg-muted rounded-full h-2">
+          <div className={`h-2 rounded-full ${ratingDot[r.rating]}`} style={{ width: `${r.score}%` }} />
+        </div>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded ${ratingColour[r.rating]}`}>{r.score}%</span>
+      </div>
+    ),
+  },
+  { key: 'totalRecords', label: 'Records', render: r => `${r.presentCount}/${r.totalRecords}` },
+];
 
 export default function EngagementDashboard() {
-  const { data } = useList<Student>('engagement-students', '/v1/students', { limit: 100 });
-  const students = data?.data ?? [];
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [riskLevel, setRiskLevel] = useState<string>('');
 
-  // Simulate RAG rating based on student index (real implementation would use engagement API)
-  const rag = students.map((s, i) => ({
-    ...s,
-    score: Math.max(0, Math.min(100, 85 - (i % 30) * 3 + Math.floor(Math.random() * 10))),
-    rating: i % 10 < 7 ? 'green' as const : i % 10 < 9 ? 'amber' as const : 'red' as const,
-  }));
+  const queryParams = new URLSearchParams({
+    page: String(page),
+    limit: '25',
+    ...(search ? { search } : {}),
+    ...(riskLevel ? { riskLevel } : {}),
+  });
 
-  const green = rag.filter(s => s.rating === 'green').length;
-  const amber = rag.filter(s => s.rating === 'amber').length;
-  const red = rag.filter(s => s.rating === 'red').length;
+  const { data, isLoading, isError } = useQuery<EngagementResponse>({
+    queryKey: ['engagement-scores', page, search, riskLevel],
+    queryFn: async () => {
+      const { data } = await api.get(`/v1/dashboard/engagement-scores?${queryParams}`);
+      return data;
+    },
+  });
 
-  const ratingColour = { green: 'bg-green-100 text-green-800', amber: 'bg-amber-100 text-amber-800', red: 'bg-red-100 text-red-800' };
+  const summary = data?.summary;
+  const scores = data?.data ?? [];
+
+  const handleSearch = () => {
+    setSearch(searchInput);
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setSearch('');
+    setSearchInput('');
+    setRiskLevel('');
+    setPage(1);
+  };
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Student Engagement" subtitle="RAG-rated engagement dashboard"
+      <PageHeader title="Student Engagement" subtitle="Attendance-based engagement dashboard"
         breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Attendance' }, { label: 'Engagement' }]} />
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Total Students" value={students.length} icon={Users} />
-        <StatCard label="Green (On Track)" value={green} icon={CheckCircle} changeType="positive" />
-        <StatCard label="Amber (At Risk)" value={amber} changeType="neutral" change="Monitor" />
-        <StatCard label="Red (Critical)" value={red} icon={AlertTriangle} changeType="negative" />
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}><CardContent className="p-6"><div className="h-16 animate-pulse bg-muted rounded" /></CardContent></Card>
+          ))
+        ) : isError ? (
+          <Card className="col-span-4">
+            <CardContent className="p-6 text-center text-destructive flex items-center justify-center gap-2">
+              <AlertCircle className="h-4 w-4" /> Unable to load engagement data
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <StatCard label="Total Students" value={summary?.total ?? 0} icon={Users} />
+            <StatCard label="Green (On Track)" value={summary?.green ?? 0} icon={CheckCircle} changeType="positive" />
+            <StatCard label="Amber (At Risk)" value={summary?.amber ?? 0} changeType="neutral" change="Monitor" />
+            <StatCard label="Red (Critical)" value={summary?.red ?? 0} icon={AlertTriangle} changeType="negative" />
+          </>
+        )}
       </div>
 
+      {/* Filters */}
       <Card>
-        <CardHeader><CardTitle>Student Engagement Scores</CardTitle></CardHeader>
-        <CardContent>
-          <div className="space-y-1">
-            {rag.slice(0, 30).map(s => (
-              <div key={s.id} className="flex items-center gap-3 py-2 border-b last:border-0">
-                <span className={`inline-block w-3 h-3 rounded-full ${s.rating === 'green' ? 'bg-green-500' : s.rating === 'amber' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                <span className="text-sm font-mono w-28">{s.studentNumber}</span>
-                <span className="text-sm flex-1">{s.person ? `${s.person.firstName} ${s.person.lastName}` : '—'}</span>
-                <div className="w-48 bg-muted rounded-full h-2">
-                  <div className={`h-2 rounded-full ${s.rating === 'green' ? 'bg-green-500' : s.rating === 'amber' ? 'bg-amber-500' : 'bg-red-500'}`}
-                    style={{ width: `${s.score}%` }} />
-                </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded ${ratingColour[s.rating]}`}>{s.score}%</span>
+        <CardContent className="p-4">
+          <div className="flex items-end gap-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium block mb-1">Search</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Student name or number..."
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                />
+                <Button variant="outline" size="icon" onClick={handleSearch}><Search className="h-4 w-4" /></Button>
               </div>
-            ))}
+            </div>
+            <div className="w-48">
+              <label className="text-sm font-medium block mb-1">Risk Level</label>
+              <Select value={riskLevel} onValueChange={v => { setRiskLevel(v); setPage(1); }}>
+                <SelectTrigger><SelectValue placeholder="All levels" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="green">Green (On Track)</SelectItem>
+                  <SelectItem value="amber">Amber (At Risk)</SelectItem>
+                  <SelectItem value="red">Red (Critical)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(search || riskLevel) && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}><X className="h-4 w-4 mr-1" /> Clear</Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      <DataTable<EngagementScore>
+        columns={columns}
+        data={scores}
+        pagination={data?.pagination}
+        isLoading={isLoading}
+        onPageChange={setPage}
+        emptyMessage="No attendance data available to calculate engagement scores"
+      />
     </div>
   );
 }

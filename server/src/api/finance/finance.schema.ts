@@ -16,3 +16,16 @@ export const createSchema = z.object({
 });
 
 export const updateSchema = createSchema.partial();
+
+export const transactionsParamsSchema = z.object({ studentAccountId: z.string().min(1) });
+
+export const transactionsQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(25),
+  sort: z.string().default('postedDate'),
+  order: z.enum(['asc', 'desc']).default('desc'),
+  transactionType: z.string().optional(),
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+  status: z.string().optional(),
+});
