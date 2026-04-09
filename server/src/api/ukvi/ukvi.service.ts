@@ -47,3 +47,42 @@ export async function remove(id: string, userId: string, req: Request) {
   await logAudit('UKVIRecord', id, 'DELETE', userId, previous, null, req);
   await emitEvent('ukvi.deleted', { id });
 }
+
+// ── UKVI Contact Points ─────────────────────────────────────────────────
+
+export async function listContactPoints(query: Record<string, any>) {
+  const { page, limit, sort, order, ...filters } = query;
+  const skip = (page - 1) * limit;
+  const where: Record<string, any> = {
+    ...(filters.contactType ? { contactType: filters.contactType } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.studentId ? { ukviRecord: { studentId: filters.studentId } } : {}),
+    ...(filters.fromDate || filters.toDate ? {
+      contactDate: {
+        ...(filters.fromDate ? { gte: new Date(filters.fromDate) } : {}),
+        ...(filters.toDate ? { lte: new Date(filters.toDate) } : {}),
+      },
+    } : {}),
+  };
+  const [data, total] = await Promise.all([
+    prisma.uKVIContactPoint.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sort]: order } as any,
+      include: {
+        ukviRecord: {
+          include: {
+            student: {
+              include: {
+                person: { select: { firstName: true, lastName: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.uKVIContactPoint.count({ where }),
+  ]);
+  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+}

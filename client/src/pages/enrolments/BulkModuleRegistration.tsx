@@ -8,6 +8,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/shared/StatCard';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { useList } from '@/hooks/useApi';
+import api from '@/lib/api';
 import { CheckSquare, Square, Loader2, CheckCircle, Users, BookOpen } from 'lucide-react';
 import type { Enrolment, ProgrammeModule } from '@/types/api';
 
@@ -32,10 +33,20 @@ export default function BulkModuleRegistration() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate bulk creation
-    await new Promise(r => setTimeout(r, 2000));
-    setIsSubmitting(false);
-    setStep(5); // success
+    try {
+      const selectedModuleIds = modules.filter(m => m.moduleType === 'CORE' || selectedModules.has(m.moduleId)).map(m => m.moduleId);
+      const registrations = Array.from(selectedStudents).flatMap(enrolmentId =>
+        selectedModuleIds.map(moduleId => ({ enrolmentId, moduleId, academicYear }))
+      );
+      for (const reg of registrations) {
+        await api.post('/v1/module-registrations', reg);
+      }
+      setStep(5); // success
+    } catch {
+      // Error handled by React Query / API interceptor
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

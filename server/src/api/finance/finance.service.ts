@@ -47,3 +47,44 @@ export async function remove(id: string, userId: string, req: Request) {
   await logAudit('StudentAccount', id, 'DELETE', userId, previous, null, req);
   await emitEvent('finance.deleted', { id });
 }
+
+// ── Financial Transactions ──────────────────────────────────────────────
+
+export async function listTransactions(studentAccountId: string, query: Record<string, any>) {
+  const { page, limit, sort, order, ...filters } = query;
+  const skip = (page - 1) * limit;
+  const where: Record<string, any> = {
+    studentAccountId,
+    ...(filters.transactionType ? { transactionType: filters.transactionType } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.fromDate || filters.toDate ? {
+      postedDate: {
+        ...(filters.fromDate ? { gte: new Date(filters.fromDate) } : {}),
+        ...(filters.toDate ? { lte: new Date(filters.toDate) } : {}),
+      },
+    } : {}),
+  };
+  const [data, total] = await Promise.all([
+    prisma.financialTransaction.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sort]: order } as any,
+      select: {
+        id: true,
+        transactionRef: true,
+        transactionType: true,
+        debitAmount: true,
+        creditAmount: true,
+        runningBalance: true,
+        description: true,
+        reference: true,
+        postedDate: true,
+        effectiveDate: true,
+        status: true,
+      },
+    }),
+    prisma.financialTransaction.count({ where }),
+  ]);
+  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+}

@@ -29,9 +29,9 @@ export default function ProgrammeDetail() {
   // Stats
   const yearCounts = enrData.reduce<Record<string, number>>((a, e) => { a[e.academicYear] = (a[e.academicYear] ?? 0) + 1; return a; }, {});
   const trendData = Object.entries(yearCounts).sort(([a], [b]) => a.localeCompare(b)).map(([year, count]) => ({ year, count }));
-  const completionData = [{ year: '2022/23', rate: 88 }, { year: '2023/24', rate: 91 }, { year: '2024/25', rate: 89 }, { year: '2025/26', rate: 93 }];
   const currentEnrolled = enrData.filter(e => e.status === 'ENROLLED').length;
   const completed = enrData.filter(e => e.status === 'COMPLETED').length;
+  const completionRate = enrData.length > 0 ? Math.round((completed / enrData.length) * 100) : 0;
 
   // Spec (from programme includes)
   const specs = (prog as any).specifications as Spec[] | undefined;
@@ -220,11 +220,17 @@ export default function ProgrammeDetail() {
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle>Completion Rate Trend</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Completion Rate</CardTitle></CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={completionData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="year" tick={{ fontSize: 11 }} /><YAxis domain={[80, 100]} /><Tooltip /><Line type="monotone" dataKey="rate" stroke="#16a34a" strokeWidth={2} dot /></LineChart>
-                  </ResponsiveContainer>
+                  {enrData.length > 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-4xl font-bold text-primary">{completionRate}%</p>
+                      <p className="text-sm text-muted-foreground mt-2">{completed} of {enrData.length} enrolments completed</p>
+                      <p className="text-xs text-muted-foreground mt-1">Historical trends will be available once data spans multiple academic years.</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-12">No enrolment data available for completion rate calculation.</p>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -38,3 +38,10 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     res.status(204).send();
   } catch (err) { next(err); }
 }
+
+export async function listContactPoints(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await service.listContactPoints(req.query);
+    res.json({ success: true, ...result });
+  } catch (err) { next(err); }
+}

@@ -164,7 +164,11 @@ export default function ModuleDetail() {
                 <ResponsiveContainer width="100%" height={250}><BarChart data={gradeData}><XAxis dataKey="grade" /><YAxis /><Tooltip /><Bar dataKey="count" fill="#1e3a5f" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
               </CardContent></Card>
               <Card><CardHeader><CardTitle>Pass Rate Trend</CardTitle></CardHeader><CardContent>
-                <ResponsiveContainer width="100%" height={250}><LineChart data={[{ year: '2023/24', rate: 85 }, { year: '2024/25', rate: 88 }, { year: '2025/26', rate: passRate }]}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="year" /><YAxis domain={[60, 100]} /><Tooltip /><Line type="monotone" dataKey="rate" stroke="#16a34a" strokeWidth={2} dot /></LineChart></ResponsiveContainer>
+                {passRate > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}><LineChart data={[{ year: 'Current', rate: passRate }]}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="year" /><YAxis domain={[60, 100]} /><Tooltip /><Line type="monotone" dataKey="rate" stroke="#16a34a" strokeWidth={2} dot /></LineChart></ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-12">Historical pass rate data will be available once marks are confirmed across multiple academic years.</p>
+                )}
               </CardContent></Card>
             </div>
           </div>

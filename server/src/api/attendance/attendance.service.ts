@@ -48,3 +48,38 @@ export async function remove(id: string, userId: string, req: Request) {
   await logAudit('AttendanceRecord', id, 'DELETE', userId, previous, null, req);
   await emitEvent('attendance.deleted', { id });
 }
+
+// ── Attendance Alerts ────────────────────────────────────────────────────
+
+export async function listAlerts(query: Record<string, any>) {
+  const { page, limit, sort, order, ...filters } = query;
+  const skip = (page - 1) * limit;
+  const where: Record<string, any> = {
+    ...(filters.studentId ? { studentId: filters.studentId } : {}),
+    ...(filters.alertType ? { alertType: filters.alertType } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
+  };
+  const [data, total] = await Promise.all([
+    prisma.attendanceAlert.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sort]: order } as any,
+      include: {
+        student: {
+          include: {
+            person: { select: { firstName: true, lastName: true } },
+            enrolments: {
+              where: { deletedAt: null, status: 'ENROLLED' },
+              take: 1,
+              orderBy: { createdAt: 'desc' },
+              include: { programme: { select: { title: true, programmeCode: true } } },
+            },
+          },
+        },
+      },
+    }),
+    prisma.attendanceAlert.count({ where }),
+  ]);
+  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+}

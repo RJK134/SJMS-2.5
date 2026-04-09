@@ -38,3 +38,10 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     res.status(204).send();
   } catch (err) { next(err); }
 }
+
+export async function listTransactions(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await service.listTransactions(req.params.studentAccountId, req.query);
+    res.json({ success: true, ...result });
+  } catch (err) { next(err); }
+}
