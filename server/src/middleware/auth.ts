@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { timingSafeEqual } from 'crypto';
 import jwt from 'jsonwebtoken';
 import jwksRsa from 'jwks-rsa';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
@@ -113,10 +114,16 @@ export function authenticateJWT(req: Request, _res: Response, next: NextFunction
   const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
   if (serviceKey) {
     const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+    const DEV_KEY = 'sjms-dev-internal-service-key-do-not-use-in-production-min64chars';
     if (!expectedKey || expectedKey.length < 32) {
-      return next(new ForbiddenError('Internal service key is configured incorrectly — must be at least 32 characters and not the default placeholder'));
+      return next(new ForbiddenError('Internal service key is configured incorrectly — must be at least 32 characters'));
     }
-    if (serviceKey !== expectedKey) {
+    if (process.env.NODE_ENV === 'production' && expectedKey === DEV_KEY) {
+      return next(new ForbiddenError('Default development service key cannot be used in production — set INTERNAL_SERVICE_KEY to a unique random value'));
+    }
+    const keyBuf = Buffer.from(serviceKey);
+    const expectedBuf = Buffer.from(expectedKey);
+    if (keyBuf.length !== expectedBuf.length || !timingSafeEqual(keyBuf, expectedBuf)) {
       return next(new ForbiddenError('Invalid internal service key'));
     }
     req.user = {
