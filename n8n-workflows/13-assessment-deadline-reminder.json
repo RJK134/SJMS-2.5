@@ -28,8 +28,6 @@
           "sort": "dueDate",
           "order": "asc"
         },
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -53,8 +51,6 @@
       "parameters": {
         "url": "http://api:3001/api/v1/notifications",
         "method": "POST",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -64,13 +60,9 @@
             }
           ]
         },
-        "body": {
-          "userId": "={{ $json.data?.[0]?.createdBy ?? \"system\" }}",
-          "title": "Assessment Deadline Approaching",
-          "message": "You have assessments due within the next 7 days.",
-          "category": "ASSESSMENT",
-          "priority": "NORMAL"
-        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"userId\":$json.data?.[0]?.createdBy ?? \"system\",\"title\":\"Assessment Deadline Approaching\",\"message\":\"You have assessments due within the next 7 days.\",\"category\":\"ASSESSMENT\",\"priority\":\"NORMAL\"}) }}",
         "options": {}
       },
       "name": "Create Reminders",

@@ -37,8 +37,6 @@
     {
       "parameters": {
         "url": "=http://api:3001/api/v1/offers/{{ $json.data.id }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -62,8 +60,6 @@
       "parameters": {
         "url": "http://api:3001/api/v1/notifications",
         "method": "POST",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -73,13 +69,9 @@
             }
           ]
         },
-        "body": {
-          "userId": "={{ $json.data.applicantId }}",
-          "title": "Offer Made to Applicant",
-          "message": "You have received an offer. Log in to view and respond.",
-          "category": "OFFERS",
-          "priority": "HIGH"
-        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"userId\":$json.data.applicantId,\"title\":\"Offer Made to Applicant\",\"message\":\"You have received an offer. Log in to view and respond.\",\"category\":\"ADMISSIONS\",\"priority\":\"HIGH\"}) }}",
         "options": {}
       },
       "name": "Create Notification",

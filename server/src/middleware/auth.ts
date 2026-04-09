@@ -109,6 +109,10 @@ export function authenticateJWT(req: Request, _res: Response, next: NextFunction
   // Internal service key bypass — trusted Docker-internal callers only
   const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
   const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+  const PLACEHOLDER_KEY = 'CHANGE-ME';
+  if (serviceKey && expectedKey && expectedKey === PLACEHOLDER_KEY) {
+    return next(new ForbiddenError('Default service key not allowed — set INTERNAL_SERVICE_KEY in .env'));
+  }
   if (serviceKey && expectedKey && expectedKey.length >= 32 && serviceKey === expectedKey) {
     req.user = {
       sub: 'n8n-service',
@@ -146,6 +150,12 @@ export function requireRole(...roles: readonly Role[]) {
     }
 
     const userRoles = getUserRoles(req.user);
+
+    // super_admin bypasses all role checks — system superuser
+    if (userRoles.includes('super_admin')) {
+      return next();
+    }
+
     const hasRole = roles.some(role => userRoles.includes(role));
 
     if (!hasRole) {

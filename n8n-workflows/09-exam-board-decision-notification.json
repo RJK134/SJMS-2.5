@@ -37,8 +37,6 @@
     {
       "parameters": {
         "url": "=http://api:3001/api/v1/exam-boards/{{ $json.data.id }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -62,8 +60,6 @@
       "parameters": {
         "url": "http://api:3001/api/v1/notifications",
         "method": "POST",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -73,13 +69,9 @@
             }
           ]
         },
-        "body": {
-          "userId": "={{ $json.data.studentId }}",
-          "title": "Exam Board Decision Notification",
-          "message": "The exam board has made decisions. Check your portal.",
-          "category": "EXAM_BOARDS",
-          "priority": "HIGH"
-        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"userId\":$json.data.createdBy,\"title\":\"Exam Board Decision Notification\",\"message\":\"The exam board has made decisions. Check your portal.\",\"category\":\"EXAM_BOARDS\",\"priority\":\"HIGH\"}) }}",
         "options": {}
       },
       "name": "Create Notification",
