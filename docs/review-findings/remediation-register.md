@@ -32,14 +32,14 @@ Sources: Two Comet browser reviews (April 2026), 56 P-series findings, mock data
 | C-03 | Tokens in localStorage | Memory-only via keycloak-js; zero `localStorage` usage; `setTokens`/`clearTokens` are no-ops; silent refresh via `onTokenExpired` | **RESOLVED** |
 | C-04 | No rate limiting | `express-rate-limit` + Redis store via ioredis: 100/min general, 5/min auth, 10/hr sensitive | **RESOLVED** |
 
-## Category D: Infrastructure (MEDIUM)
+## Category D: Infrastructure (MEDIUM) — RESOLVED
 
-| ID | Issue | Fix | Phase |
+| ID | Issue | Fix | Status |
 |---|---|---|---|
-| D-01 | No persistent DB | PostgreSQL 16 + Prisma | 1 |
-| D-02 | No workflow automation | n8n, 15+ production workflows | 6 |
-| D-03 | No document management | MinIO + S3 presigned URLs | 7 |
-| D-04 | Placeholder n8n workflows (44 with fake URLs) | Rewrite with actual endpoints, test E2E | 6 |
+| D-01 | No persistent DB | PostgreSQL 16 + Prisma 5 with migrations, seed data, health checks | **RESOLVED** (baseline) |
+| D-02 | No workflow automation | 15 n8n production workflows created covering enrolment, admissions, marks, attendance, UKVI, finance, EC claims, documents, exam boards, offers, support, approvals | **RESOLVED** |
+| D-03 | No document management | MinIO S3-compatible storage in Docker stack with health check; Document model + API module in place | **RESOLVED** (baseline) |
+| D-04 | Placeholder n8n workflows (44 with fake URLs) | v4.0 placeholders removed; 15 new workflows use Docker-internal URLs (`http://api:3001/api/v1/...`); all referenced endpoints verified; zero placeholder/localhost URLs; docker-compose WEBHOOK_URL fixed to `http://n8n:5678` for API→n8n communication | **RESOLVED** |
 
 ## Category E: Frontend (MEDIUM) — RESOLVED
 

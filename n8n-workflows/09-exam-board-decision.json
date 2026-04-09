@@ -1,0 +1,15 @@
+{
+  "name": "09 — Exam Board Decision Notification",
+  "nodes": [
+    { "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} }, "name": "SJMS Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [250, 300] },
+    { "parameters": { "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "exam_boards.updated" }] } }, "name": "Is Board Decision?", "type": "n8n-nodes-base.if", "typeVersion": 1, "position": [450, 300] },
+    { "parameters": { "url": "=http://api:3001/api/v1/exam-boards/{{ $json.data.id }}", "options": {} }, "name": "Get Board Details", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [650, 200] },
+    { "parameters": { "url": "http://api:3001/api/v1/notifications", "method": "POST", "body": { "title": "Exam Board Decision", "message": "The exam board has made progression decisions. Check your portal for details.", "category": "EXAM_BOARD", "priority": "HIGH" }, "options": {} }, "name": "Notify Students", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [850, 200] }
+  ],
+  "connections": {
+    "SJMS Webhook": { "main": [[{ "node": "Is Board Decision?", "type": "main", "index": 0 }]] },
+    "Is Board Decision?": { "main": [[{ "node": "Get Board Details", "type": "main", "index": 0 }], []] },
+    "Get Board Details": { "main": [[{ "node": "Notify Students", "type": "main", "index": 0 }]] }
+  },
+  "active": false, "settings": { "executionOrder": "v1" }, "tags": [{ "name": "sjms" }, { "name": "assessment" }]
+}

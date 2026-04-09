@@ -138,6 +138,9 @@ services:
       PORT: "3001"
       DATABASE_URL: postgresql://sjms:${DB_PASSWORD:-changeme}@postgres:5432/sjms?schema=public
       REDIS_URL: redis://redis:6379
+      WEBHOOK_URL: http://n8n:5678
+      KEYCLOAK_URL: http://keycloak:8080
+      MINIO_ENDPOINT: minio
     depends_on:
       postgres:
         condition: service_healthy

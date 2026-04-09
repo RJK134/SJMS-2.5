@@ -1,0 +1,57 @@
+{
+  "name": "02 — Application Status Change",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} },
+      "name": "SJMS Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "applications.updated" }] }
+      },
+      "name": "Is Application Updated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://api:3001/api/v1/applications/{{ $json.data.id }}",
+        "options": {}
+      },
+      "name": "Get Application",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://api:3001/api/v1/notifications",
+        "method": "POST",
+        "body": {
+          "userId": "={{ $json.data.applicantId }}",
+          "title": "Application Update",
+          "message": "=Your application status has changed to {{ $json.data.status }}.",
+          "category": "ADMISSIONS",
+          "priority": "HIGH"
+        },
+        "options": {}
+      },
+      "name": "Notify Applicant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 200]
+    }
+  ],
+  "connections": {
+    "SJMS Webhook": { "main": [[{ "node": "Is Application Updated?", "type": "main", "index": 0 }]] },
+    "Is Application Updated?": { "main": [[{ "node": "Get Application", "type": "main", "index": 0 }], []] },
+    "Get Application": { "main": [[{ "node": "Notify Applicant", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "sjms" }, { "name": "admissions" }]
+}

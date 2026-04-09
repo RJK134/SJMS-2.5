@@ -1,0 +1,15 @@
+{
+  "name": "14 — Support Ticket Assignment",
+  "nodes": [
+    { "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} }, "name": "SJMS Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [250, 300] },
+    { "parameters": { "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "support.created" }] } }, "name": "Is Support Ticket?", "type": "n8n-nodes-base.if", "typeVersion": 1, "position": [450, 300] },
+    { "parameters": { "url": "=http://api:3001/api/v1/support/{{ $json.data.id }}", "options": {} }, "name": "Get Ticket", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [650, 200] },
+    { "parameters": { "url": "http://api:3001/api/v1/notifications", "method": "POST", "body": { "title": "New Support Ticket", "message": "A new student support ticket has been raised and requires assignment.", "category": "SUPPORT", "priority": "NORMAL" }, "options": {} }, "name": "Notify Support Team", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [850, 200] }
+  ],
+  "connections": {
+    "SJMS Webhook": { "main": [[{ "node": "Is Support Ticket?", "type": "main", "index": 0 }]] },
+    "Is Support Ticket?": { "main": [[{ "node": "Get Ticket", "type": "main", "index": 0 }], []] },
+    "Get Ticket": { "main": [[{ "node": "Notify Support Team", "type": "main", "index": 0 }]] }
+  },
+  "active": false, "settings": { "executionOrder": "v1" }, "tags": [{ "name": "sjms" }, { "name": "support" }]
+}

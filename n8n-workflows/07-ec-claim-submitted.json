@@ -1,0 +1,15 @@
+{
+  "name": "07 — EC Claim Submitted",
+  "nodes": [
+    { "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} }, "name": "SJMS Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [250, 300] },
+    { "parameters": { "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "ec_claims.created" }] } }, "name": "Is EC Claim?", "type": "n8n-nodes-base.if", "typeVersion": 1, "position": [450, 300] },
+    { "parameters": { "url": "=http://api:3001/api/v1/ec-claims/{{ $json.data.id }}", "options": {} }, "name": "Get Claim Details", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [650, 200] },
+    { "parameters": { "url": "http://api:3001/api/v1/notifications", "method": "POST", "body": { "title": "EC Claim Received", "message": "A new extenuating circumstances claim has been submitted for review.", "category": "EC_CLAIMS", "priority": "HIGH" }, "options": {} }, "name": "Notify EC Panel", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [850, 200] }
+  ],
+  "connections": {
+    "SJMS Webhook": { "main": [[{ "node": "Is EC Claim?", "type": "main", "index": 0 }]] },
+    "Is EC Claim?": { "main": [[{ "node": "Get Claim Details", "type": "main", "index": 0 }], []] },
+    "Get Claim Details": { "main": [[{ "node": "Notify EC Panel", "type": "main", "index": 0 }]] }
+  },
+  "active": false, "settings": { "executionOrder": "v1" }, "tags": [{ "name": "sjms" }, { "name": "ec-claims" }]
+}

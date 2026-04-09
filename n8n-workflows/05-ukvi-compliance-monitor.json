@@ -1,0 +1,15 @@
+{
+  "name": "05 — UKVI Compliance Monitor",
+  "nodes": [
+    { "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} }, "name": "SJMS Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [250, 300] },
+    { "parameters": { "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "ukvi.updated" }] } }, "name": "Is UKVI Event?", "type": "n8n-nodes-base.if", "typeVersion": 1, "position": [450, 300] },
+    { "parameters": { "url": "http://api:3001/api/v1/ukvi/contact-points", "qs": { "status": "OVERDUE", "limit": "100" }, "options": {} }, "name": "Get Overdue Contacts", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [650, 200] },
+    { "parameters": { "url": "http://api:3001/api/v1/notifications", "method": "POST", "body": { "title": "UKVI Compliance Alert", "message": "Overdue UKVI contact points require immediate attention.", "category": "COMPLIANCE", "priority": "HIGH" }, "options": {} }, "name": "Alert Compliance Officer", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [850, 200] }
+  ],
+  "connections": {
+    "SJMS Webhook": { "main": [[{ "node": "Is UKVI Event?", "type": "main", "index": 0 }]] },
+    "Is UKVI Event?": { "main": [[{ "node": "Get Overdue Contacts", "type": "main", "index": 0 }], []] },
+    "Get Overdue Contacts": { "main": [[{ "node": "Alert Compliance Officer", "type": "main", "index": 0 }]] }
+  },
+  "active": false, "settings": { "executionOrder": "v1" }, "tags": [{ "name": "sjms" }, { "name": "ukvi" }]
+}
