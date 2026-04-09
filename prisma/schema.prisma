@@ -5140,6 +5140,7 @@ model HESAStudent {
   updatedBy String?  @map("updated_by")
 
   @@map("hesa_students")
+  @@unique([studentId])
   @@index([studentId])
 }
 
@@ -5164,6 +5165,7 @@ model HESAModule {
   updatedBy String?  @map("updated_by")
 
   @@map("hesa_modules")
+  @@unique([moduleId, academicYear])
   @@index([moduleId])
   @@index([academicYear])
 }
@@ -5187,6 +5189,7 @@ model HESAStudentModule {
   updatedBy String?  @map("updated_by")
 
   @@map("hesa_student_modules")
+  @@unique([hesaStudentId, hesaModuleId])
   @@index([hesaStudentId])
   @@index([hesaModuleId])
 }
