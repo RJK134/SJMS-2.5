@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { timingSafeEqual } from 'crypto';
 import jwt from 'jsonwebtoken';
 import jwksRsa from 'jwks-rsa';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
@@ -30,12 +31,15 @@ export interface JWTPayload {
 
 // ── JWKS Client (Keycloak public key verification) ──────────────────────────
 
-const kcUrl = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+// Internal URL for server→Keycloak calls (JWKS fetch, admin API) — Docker service name
+const kcInternalUrl = process.env.KEYCLOAK_INTERNAL_URL || process.env.KEYCLOAK_URL || 'http://localhost:8080';
+// Issuer URL for JWT validation — must match the `iss` claim in browser-issued tokens
+const kcIssuerUrl = process.env.KEYCLOAK_ISSUER_URL || 'http://localhost:8080';
 const kcRealm = process.env.KEYCLOAK_REALM || 'fhe';
 const kcClientId = process.env.KEYCLOAK_CLIENT_ID || 'sjms-client';
 
 const jwksClient = jwksRsa({
-  jwksUri: `${kcUrl}/realms/${kcRealm}/protocol/openid-connect/certs`,
+  jwksUri: `${kcInternalUrl}/realms/${kcRealm}/protocol/openid-connect/certs`,
   cache: true,
   cacheMaxAge: 600_000,
   rateLimit: true,
@@ -70,7 +74,7 @@ async function verifyKeycloakToken(tokenStr: string): Promise<JWTPayload> {
 
   return jwt.verify(tokenStr, publicKey, {
     algorithms: ['RS256'],
-    issuer: `${kcUrl}/realms/${kcRealm}`,
+    issuer: `${kcIssuerUrl}/realms/${kcRealm}`,
   }) as JWTPayload;
 }
 
@@ -101,8 +105,38 @@ function getUserRoles(payload: JWTPayload): string[] {
 /**
  * Requires a valid JWT (Keycloak or static secret).
  * Attaches decoded payload to req.user.
+ *
+ * Also accepts X-Internal-Service-Key header for trusted internal
+ * services (n8n, background jobs) running within the Docker network.
  */
 export function authenticateJWT(req: Request, _res: Response, next: NextFunction): void {
+  // Internal service key bypass — trusted Docker-internal callers only
+  const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
+  if (serviceKey) {
+    const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+    const DEV_KEY = 'sjms-dev-internal-service-key-do-not-use-in-production-min64chars';
+    if (!expectedKey || expectedKey.length < 32) {
+      return next(new ForbiddenError('Internal service key is configured incorrectly — must be at least 32 characters'));
+    }
+    if (process.env.NODE_ENV === 'production' && expectedKey === DEV_KEY) {
+      return next(new ForbiddenError('Default development service key cannot be used in production — set INTERNAL_SERVICE_KEY to a unique random value'));
+    }
+    const keyBuf = Buffer.from(serviceKey);
+    const expectedBuf = Buffer.from(expectedKey);
+    if (keyBuf.length !== expectedBuf.length || !timingSafeEqual(keyBuf, expectedBuf)) {
+      return next(new ForbiddenError('Invalid internal service key'));
+    }
+    req.user = {
+      sub: 'n8n-service',
+      email: 'n8n-service@fhe.ac.uk',
+      preferred_username: 'n8n-service',
+      given_name: 'n8n',
+      family_name: 'Service',
+      realm_access: { roles: ['super_admin', 'system_admin'] },
+    };
+    return next();
+  }
+
   const tokenStr = extractToken(req);
   if (!tokenStr) {
     return next(new UnauthorizedError('No authentication token provided'));
@@ -128,6 +162,12 @@ export function requireRole(...roles: readonly Role[]) {
     }
 
     const userRoles = getUserRoles(req.user);
+
+    // super_admin bypasses all role checks — system superuser
+    if (userRoles.includes('super_admin')) {
+      return next();
+    }
+
     const hasRole = roles.some(role => userRoles.includes(role));
 
     if (!hasRole) {
@@ -163,12 +203,18 @@ export function requireOwnerOrRole(getUserId: (req: Request) => string | undefin
       return next(new UnauthorizedError('Authentication required'));
     }
 
+    const userRoles = getUserRoles(req.user);
+
+    // super_admin bypasses all ownership and role checks
+    if (userRoles.includes('super_admin')) {
+      return next();
+    }
+
     const resourceUserId = getUserId(req);
     if (resourceUserId && req.user.sub === resourceUserId) {
       return next();
     }
 
-    const userRoles = getUserRoles(req.user);
     const hasRole = roles.some(role => userRoles.includes(role));
 
     if (!hasRole) {

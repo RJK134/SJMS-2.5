@@ -15,6 +15,13 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
   } catch (err) { next(err); }
 }
 
+export async function create(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await service.create(req.body, req.user?.sub ?? 'system', req);
+    res.status(201).json({ success: true, data });
+  } catch (err) { next(err); }
+}
+
 export async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await service.update(req.params.id, req.body, req.user?.sub ?? 'system', req);

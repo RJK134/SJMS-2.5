@@ -108,6 +108,7 @@ services:
       N8N_PORT: "5678"
       N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-sjms-dev-internal-service-key-do-not-use-in-production-min64chars}
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
       DB_POSTGRESDB_PORT: "5432"
@@ -138,6 +139,11 @@ services:
       PORT: "3001"
       DATABASE_URL: postgresql://sjms:${DB_PASSWORD:-changeme}@postgres:5432/sjms?schema=public
       REDIS_URL: redis://redis:6379
+      WEBHOOK_URL: http://n8n:5678
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      KEYCLOAK_ISSUER_URL: http://localhost:8080
+      MINIO_ENDPOINT: minio
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-sjms-dev-internal-service-key-do-not-use-in-production-min64chars}
     depends_on:
       postgres:
         condition: service_healthy
