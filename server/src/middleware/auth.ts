@@ -30,12 +30,15 @@ export interface JWTPayload {
 
 // ── JWKS Client (Keycloak public key verification) ──────────────────────────
 
-const kcUrl = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+// Internal URL for server→Keycloak calls (JWKS fetch, admin API) — Docker service name
+const kcInternalUrl = process.env.KEYCLOAK_INTERNAL_URL || process.env.KEYCLOAK_URL || 'http://localhost:8080';
+// Issuer URL for JWT validation — must match the `iss` claim in browser-issued tokens
+const kcIssuerUrl = process.env.KEYCLOAK_ISSUER_URL || 'http://localhost:8080';
 const kcRealm = process.env.KEYCLOAK_REALM || 'fhe';
 const kcClientId = process.env.KEYCLOAK_CLIENT_ID || 'sjms-client';
 
 const jwksClient = jwksRsa({
-  jwksUri: `${kcUrl}/realms/${kcRealm}/protocol/openid-connect/certs`,
+  jwksUri: `${kcInternalUrl}/realms/${kcRealm}/protocol/openid-connect/certs`,
   cache: true,
   cacheMaxAge: 600_000,
   rateLimit: true,
@@ -70,7 +73,7 @@ async function verifyKeycloakToken(tokenStr: string): Promise<JWTPayload> {
 
   return jwt.verify(tokenStr, publicKey, {
     algorithms: ['RS256'],
-    issuer: `${kcUrl}/realms/${kcRealm}`,
+    issuer: `${kcIssuerUrl}/realms/${kcRealm}`,
   }) as JWTPayload;
 }
 
@@ -108,12 +111,14 @@ function getUserRoles(payload: JWTPayload): string[] {
 export function authenticateJWT(req: Request, _res: Response, next: NextFunction): void {
   // Internal service key bypass — trusted Docker-internal callers only
   const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
-  const expectedKey = process.env.INTERNAL_SERVICE_KEY;
-  const PLACEHOLDER_KEY = 'CHANGE-ME';
-  if (serviceKey && expectedKey && expectedKey === PLACEHOLDER_KEY) {
-    return next(new ForbiddenError('Default service key not allowed — set INTERNAL_SERVICE_KEY in .env'));
-  }
-  if (serviceKey && expectedKey && expectedKey.length >= 32 && serviceKey === expectedKey) {
+  if (serviceKey) {
+    const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+    if (!expectedKey || expectedKey === 'CHANGE-ME' || expectedKey.length < 32) {
+      return next(new ForbiddenError('Internal service key is configured incorrectly — must be at least 32 characters and not the default placeholder'));
+    }
+    if (serviceKey !== expectedKey) {
+      return next(new ForbiddenError('Invalid internal service key'));
+    }
     req.user = {
       sub: 'n8n-service',
       email: 'n8n-service@fhe.ac.uk',
