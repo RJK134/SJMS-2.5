@@ -61,7 +61,7 @@ CREATE INDEX "mark_entries_stage_idx" ON "mark_entries"("stage");
 
 -- AddForeignKey
 ALTER TABLE "assessment_components" ADD CONSTRAINT "assessment_components_assessment_id_fkey"
-  FOREIGN KEY ("assessment_id") REFERENCES "assessments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  FOREIGN KEY ("assessment_id") REFERENCES "assessments"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "mark_entries" ADD CONSTRAINT "mark_entries_assessment_component_id_fkey"
   FOREIGN KEY ("assessment_component_id") REFERENCES "assessment_components"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -168,10 +168,10 @@ CREATE TABLE "hesa_entry_qualifications" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "hesa_students_husid_key" ON "hesa_students"("husid");
-CREATE INDEX "hesa_students_student_id_idx" ON "hesa_students"("student_id");
-CREATE INDEX "hesa_modules_module_id_idx" ON "hesa_modules"("module_id");
+-- hesa_students_student_id: covered by @@unique in migration 20260409130000
 CREATE INDEX "hesa_modules_academic_year_idx" ON "hesa_modules"("academic_year");
-CREATE INDEX "hesa_student_modules_hesa_student_id_idx" ON "hesa_student_modules"("hesa_student_id");
+-- hesa_modules_module_id: covered by @@unique([moduleId, academicYear]) in migration 20260409130000
+-- hesa_student_modules_hesa_student_id: covered by @@unique([hesaStudentId, hesaModuleId]) in migration 20260409130000
 CREATE INDEX "hesa_student_modules_hesa_module_id_idx" ON "hesa_student_modules"("hesa_module_id");
 CREATE INDEX "hesa_entry_qualifications_student_id_idx" ON "hesa_entry_qualifications"("student_id");
 

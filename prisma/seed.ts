@@ -971,7 +971,7 @@ async function seedAssessmentComponents(assessments: any[], modRegs: any[]) {
   const completedRegs = modRegs.filter((r: any) => r.status === 'COMPLETED');
   const markEntries: any[] = [];
   let idx = 0;
-  const stages: Array<'DRAFT' | 'FIRST_MARK' | 'SECOND_MARK' | 'MODERATED' | 'BOARD_APPROVED' | 'RELEASED'> = ['DRAFT', 'FIRST_MARK', 'MODERATED', 'BOARD_APPROVED', 'RELEASED'];
+  const stages: Array<'DRAFT' | 'FIRST_MARK' | 'SECOND_MARK' | 'MODERATED' | 'EXTERNAL_REVIEWED' | 'BOARD_APPROVED' | 'RELEASED'> = ['DRAFT', 'FIRST_MARK', 'SECOND_MARK', 'MODERATED', 'EXTERNAL_REVIEWED', 'BOARD_APPROVED', 'RELEASED'];
 
   for (const reg of completedRegs.slice(0, 50)) {
     const regComponents = components.filter((c: any) => {
