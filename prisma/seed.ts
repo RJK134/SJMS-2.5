@@ -132,6 +132,10 @@ const PROG_DEFS: [string,string,string|null,string,number,number,number,string][
   ['PGT-AI-001','MSc Artificial Intelligence',null,'LEVEL_7',180,1,33,'AI'],
   ['UG-DS-001','BSc (Hons) Data Science','G700','LEVEL_6',360,3,34,'DS'],
   ['PGT-DA-001','MSc Data Analytics',null,'LEVEL_7',180,1,35,'DA'],
+  // Postgraduate Research
+  ['PGR-CS-001','PhD Computer Science',null,'LEVEL_8',540,3,30,'RC'],
+  ['PGR-BM-001','PhD Business Management',null,'LEVEL_8',540,3,6,'RB'],
+  ['PGR-ED-001','EdD Education',null,'LEVEL_8',540,3,24,'RE'],
 ];
 
 // Module titles per programme (4 per programme)
@@ -166,6 +170,10 @@ const MOD_TITLES: string[][] = [
   ['Deep Learning','Natural Language Processing','Computer Vision','AI Dissertation'],
   ['Foundations of Data Science','Database Systems','Data Visualisation','Data Science Project'],
   ['Big Data Technologies','Predictive Modelling','Data Ethics & Governance','Analytics Dissertation'],
+  // PGR
+  ['Research Methods in Computing','Advanced Topics Seminar','Thesis Proposal','PhD Thesis'],
+  ['Advanced Research Methods','Organisational Theory','Strategic Management Research','PhD Thesis'],
+  ['Educational Research Design','Critical Pedagogy','Professional Practice','EdD Thesis'],
 ];
 
 // Room definitions
@@ -332,13 +340,15 @@ async function seedModules(departments: any[], programmes: any[]) {
   for (let pi = 0; pi < programmes.length; pi++) {
     const prog = PROG_DEFS[pi];
     const prefix = prog[7];
-    const isPGT = prog[3] === 'LEVEL_7';
+    const progLevel = prog[3] as string;
+    const isPG = progLevel === 'LEVEL_7' || progLevel === 'LEVEL_8';
     const titles = MOD_TITLES[pi];
+    if (!titles) continue; // skip if no module titles defined
 
     for (let mi = 0; mi < 4; mi++) {
       modIdx++;
-      const level = isPGT ? 7 : [4, 4, 5, 6][mi];
-      const yearOfStudy = isPGT ? 1 : [1, 1, 2, 3][mi];
+      const level = isPG ? (progLevel === 'LEVEL_8' ? 8 : 7) : [4, 4, 5, 6][mi];
+      const yearOfStudy = isPG ? 1 : [1, 1, 2, 3][mi];
       const moduleCode = `${prefix}${level}${pad(mi + 1, 3)}`;
       const moduleId = `mod-${pad(modIdx, 3)}`;
 
@@ -347,7 +357,7 @@ async function seedModules(departments: any[], programmes: any[]) {
         departmentId: programmes[pi].departmentId,
         moduleCode,
         title: titles[mi],
-        credits: isPGT ? 45 : [30, 30, 30, 30][mi],
+        credits: isPG ? 45 : [30, 30, 30, 30][mi],
         level,
         semester: mi % 2 === 0 ? 'Autumn' : 'Spring',
         status: 'APPROVED' as const,
@@ -532,12 +542,13 @@ async function seedEnrolments(students: any[], programmes: any[]) {
     const studentId = students[si].id;
     const progIdx = si % programmes.length;
     const programmeId = programmes[progIdx].id;
-    const isPGT = PROG_DEFS[progIdx][3] === 'LEVEL_7';
+    const progLevel = PROG_DEFS[progIdx]?.[3] ?? 'LEVEL_6';
+    const isPG = progLevel === 'LEVEL_7' || progLevel === 'LEVEL_8';
     const isIntl = si < 30;
 
     // Determine entry year index (0=2022/23, 1=2023/24, 2=2024/25, 3=2025/26)
     const entryYearIdx = si < 70 ? 0 : si < 120 ? 1 : si < 140 ? 2 : 3;
-    const maxYears = isPGT ? Math.min(2, 4 - entryYearIdx) : Math.min(3, 4 - entryYearIdx);
+    const maxYears = isPG ? Math.min(2, 4 - entryYearIdx) : Math.min(3, 4 - entryYearIdx);
 
     for (let y = 0; y < maxYears; y++) {
       const ayIdx = entryYearIdx + y;

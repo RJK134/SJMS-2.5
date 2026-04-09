@@ -33,8 +33,8 @@ export function initKeycloak(): Promise<boolean> {
       console.log('[auth] Token subject:', keycloak.subject);
       console.log('[auth] Roles:', keycloak.realmAccess?.roles?.join(', '));
     }
-    // Clean any leftover ?code=&session_state= from the URL (query response mode)
-    if (window.location.search.includes('code=') || window.location.search.includes('session_state=')) {
+    // Clean any leftover query params from the URL (code, session_state, error)
+    if (window.location.search) {
       const clean = window.location.origin + window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', clean);
     }

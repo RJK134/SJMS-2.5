@@ -7,7 +7,7 @@ import { Shield, BookOpen, GraduationCap, FileEdit } from "lucide-react";
 const portals = [
   {
     id: "admin",
-    title: "Admin Portal",
+    title: "Staff Portal",
     description: "Registry, Finance, Admissions, QA & Compliance",
     icon: Shield,
     colour: "bg-primary",
@@ -118,7 +118,7 @@ export default function Login() {
 
       {/* Footer */}
       <div className="mt-10 text-center text-primary-300 text-sm">
-        <p>&copy; 2025 Future Horizons Education. All rights reserved.</p>
+        <p>&copy; 2026 Future Horizons Education. All rights reserved.</p>
         <p className="mt-1">
           <a href="#" className="underline hover:text-white">
             Privacy Policy

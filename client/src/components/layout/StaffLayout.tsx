@@ -7,7 +7,7 @@ interface StaffLayoutProps {
 
 export default function StaffLayout({ children }: StaffLayoutProps) {
   return (
-    <PortalShell portalName="Admin Portal" navItems={adminNavItems}>
+    <PortalShell portalName="Staff Portal" navItems={adminNavItems}>
       {children}
     </PortalShell>
   );

@@ -13,10 +13,10 @@ export default function App() {
       <Switch>
         <Route path="/login" component={Login} />
         <Route path="/dashboard" component={Dashboard} />
-        <Route path="/admin/:rest*" component={AdminRouter} />
-        <Route path="/academic/:rest*" component={AcademicPortal} />
-        <Route path="/student/:rest*" component={StudentPortal} />
-        <Route path="/applicant/:rest*" component={ApplicantPortal} />
+        <Route path="/admin/:rest*">{() => <AdminRouter />}</Route>
+        <Route path="/academic/:rest*">{() => <AcademicPortal />}</Route>
+        <Route path="/student/:rest*">{() => <StudentPortal />}</Route>
+        <Route path="/applicant/:rest*">{() => <ApplicantPortal />}</Route>
         <Route>
           <Login />
         </Route>

@@ -17,6 +17,13 @@ import {
   Search,
   Bell,
   ChevronDown,
+  Wallet,
+  UserCheck,
+  Shield,
+  AlertTriangle,
+  FolderOpen,
+  Building,
+  Hotel,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -200,11 +207,20 @@ export const adminNavItems: NavItem[] = [
   { label: "Students", href: "/admin/students", icon: Users },
   { label: "Programmes", href: "/admin/programmes", icon: GraduationCap },
   { label: "Modules", href: "/admin/modules", icon: BookOpen },
-  { label: "Assessments", href: "/admin/assessments", icon: ClipboardCheck },
+  { label: "Enrolments", href: "/admin/enrolments", icon: UserCheck },
+  { label: "Admissions", href: "/admin/admissions/dashboard", icon: Building2 },
+  { label: "Assessment", href: "/admin/assessment/marks-entry", icon: ClipboardCheck },
+  { label: "Finance", href: "/admin/finance/accounts", icon: Wallet },
+  { label: "Attendance", href: "/admin/attendance/records", icon: Calendar },
   { label: "Timetable", href: "/admin/timetable", icon: Calendar },
-  { label: "Admissions", href: "/admin/admissions", icon: Building2 },
-  { label: "Reports", href: "/admin/reports", icon: FileText },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
+  { label: "Support", href: "/admin/support/tickets", icon: Users },
+  { label: "Compliance", href: "/admin/compliance/ukvi", icon: Shield },
+  { label: "EC & Appeals", href: "/admin/ec-claims", icon: AlertTriangle },
+  { label: "Documents", href: "/admin/documents", icon: FolderOpen },
+  { label: "Governance", href: "/admin/governance/committees", icon: Building },
+  { label: "Accommodation", href: "/admin/accommodation/blocks", icon: Hotel },
+  { label: "Reports", href: "/admin/reports/dashboards", icon: FileText },
+  { label: "Settings", href: "/admin/settings/system", icon: Settings },
 ];
 
 export const academicNavItems: NavItem[] = [

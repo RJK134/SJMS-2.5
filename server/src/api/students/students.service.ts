@@ -15,7 +15,25 @@ export async function list(query: Record<string, any>) {
       ...(filters.entryRoute ? { entryRoute: filters.entryRoute as any } : {}),
   };
   const [data, total] = await Promise.all([
-    prisma.student.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
+    prisma.student.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sort]: order } as any,
+      include: {
+        person: {
+          include: {
+            names: { where: { endDate: null }, orderBy: { startDate: 'desc' } },
+          },
+        },
+        enrolments: {
+          where: { deletedAt: null, status: 'ENROLLED' },
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          include: { programme: { select: { title: true, programmeCode: true } } },
+        },
+      },
+    }),
     prisma.student.count({ where }),
   ]);
   return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });

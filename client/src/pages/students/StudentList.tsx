@@ -7,11 +7,16 @@ import DataTable, { type Column } from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import FilterPanel, { type FilterConfig } from '@/components/shared/FilterPanel';
 import { useList, type QueryParams } from '@/hooks/useApi';
+import { getCurrentLegalName } from '@/utils/name-helpers';
 import type { Student } from '@/types/api';
 
 const columns: Column<Student>[] = [
   { key: 'studentNumber', label: 'Student No.', sortable: true },
-  { key: 'person', label: 'Name', sortable: true, render: (r) => r.person ? `${r.person.firstName} ${r.person.lastName}` : '—' },
+  { key: 'person', label: 'Name', sortable: true, render: (r) => getCurrentLegalName(r.person) },
+  { key: 'programme', label: 'Programme', render: (r) => {
+    const enrolment = (r as any).enrolments?.[0];
+    return enrolment?.programme?.title ?? '\u2014';
+  }},
   { key: 'feeStatus', label: 'Fee Status', render: (r) => <StatusBadge status={r.feeStatus} /> },
   { key: 'entryRoute', label: 'Entry Route', render: (r) => r.entryRoute.replace(/_/g, ' ') },
   { key: 'originalEntryDate', label: 'Entry Date', render: (r) => new Date(r.originalEntryDate).toLocaleDateString('en-GB') },
@@ -38,7 +43,7 @@ export default function StudentList() {
     <div className="space-y-6">
       <PageHeader
         title="Students"
-        subtitle={`${data?.pagination?.total ?? '—'} student records`}
+        subtitle={`${data?.pagination?.total ?? '\u2014'} student records`}
         breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Students' }]}
       >
         <Button onClick={() => navigate('/admin/students/new')}>

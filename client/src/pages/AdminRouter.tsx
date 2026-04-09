@@ -162,10 +162,10 @@ function AdminContent() {
       <Route path="/admin/attendance/alerts" component={AlertsList} />
       <Route path="/admin/attendance/interventions" component={Interventions} />
 
-      {/* Timetable */}
-      <Route path="/admin/timetable" component={TimetableView} />
+      {/* Timetable — sub-routes before parent */}
       <Route path="/admin/timetable/rooms" component={RoomManagement} />
       <Route path="/admin/timetable/clashes" component={ClashDetection} />
+      <Route path="/admin/timetable" component={TimetableView} />
 
       {/* Reports */}
       <Route path="/admin/reports/hesa" component={HESAReturn} />
