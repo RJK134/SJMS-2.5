@@ -101,8 +101,26 @@ function getUserRoles(payload: JWTPayload): string[] {
 /**
  * Requires a valid JWT (Keycloak or static secret).
  * Attaches decoded payload to req.user.
+ *
+ * Also accepts X-Internal-Service-Key header for trusted internal
+ * services (n8n, background jobs) running within the Docker network.
  */
 export function authenticateJWT(req: Request, _res: Response, next: NextFunction): void {
+  // Internal service key bypass — trusted Docker-internal callers only
+  const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
+  const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+  if (serviceKey && expectedKey && expectedKey.length >= 32 && serviceKey === expectedKey) {
+    req.user = {
+      sub: 'n8n-service',
+      email: 'n8n-service@fhe.ac.uk',
+      preferred_username: 'n8n-service',
+      given_name: 'n8n',
+      family_name: 'Service',
+      realm_access: { roles: ['super_admin', 'system_admin'] },
+    };
+    return next();
+  }
+
   const tokenStr = extractToken(req);
   if (!tokenStr) {
     return next(new UnauthorizedError('No authentication token provided'));

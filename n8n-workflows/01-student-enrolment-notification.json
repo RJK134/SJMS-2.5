@@ -2,40 +2,82 @@
   "name": "01 — Student Enrolment Notification",
   "nodes": [
     {
-      "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} },
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sjms/enrolments",
+        "options": {}
+      },
       "name": "SJMS Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [
+        250,
+        300
+      ]
     },
     {
       "parameters": {
-        "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "enrolments.created" }] }
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.event }}",
+              "value2": "enrolments.created"
+            }
+          ]
+        }
       },
-      "name": "Is Enrolment Created?",
+      "name": "Filter Event",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [450, 300]
+      "position": [
+        450,
+        300
+      ]
     },
     {
       "parameters": {
         "url": "=http://api:3001/api/v1/enrolments/{{ $json.data.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
         "options": {}
       },
-      "name": "Get Enrolment Details",
+      "name": "Get Details",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [650, 200]
+      "position": [
+        650,
+        200
+      ]
     },
     {
       "parameters": {
         "url": "http://api:3001/api/v1/notifications",
         "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
         "body": {
-          "userId": "={{ $json.data.student?.person?.id }}",
-          "title": "Enrolment Confirmed",
-          "message": "=You have been enrolled on {{ $json.data.programme?.title }} for {{ $json.data.academicYear }}.",
-          "category": "ENROLMENT",
+          "userId": "={{ $json.data.studentId }}",
+          "title": "Student Enrolment Notification",
+          "message": "You have been enrolled. Check your student portal for details.",
+          "category": "ENROLMENTS",
           "priority": "NORMAL"
         },
         "options": {}
@@ -43,15 +85,55 @@
       "name": "Create Notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [850, 200]
+      "position": [
+        850,
+        200
+      ]
     }
   ],
   "connections": {
-    "SJMS Webhook": { "main": [[{ "node": "Is Enrolment Created?", "type": "main", "index": 0 }]] },
-    "Is Enrolment Created?": { "main": [[{ "node": "Get Enrolment Details", "type": "main", "index": 0 }], []] },
-    "Get Enrolment Details": { "main": [[{ "node": "Create Notification", "type": "main", "index": 0 }]] }
+    "SJMS Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Event": {
+      "main": [
+        [
+          {
+            "node": "Get Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Details": {
+      "main": [
+        [
+          {
+            "node": "Create Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" },
-  "tags": [{ "name": "sjms" }, { "name": "enrolment" }]
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "sjms"
+    }
+  ]
 }

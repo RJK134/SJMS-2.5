@@ -1,10 +1,10 @@
 {
-  "name": "07 — EC Claim Submitted",
+  "name": "06 — Payment Received Confirmation",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "sjms/ec-claims",
+        "path": "sjms/finance",
         "options": {}
       },
       "name": "SJMS Webhook",
@@ -21,7 +21,7 @@
           "string": [
             {
               "value1": "={{ $json.event }}",
-              "value2": "ec_claims.created"
+              "value2": "finance.updated"
             }
           ]
         }
@@ -36,7 +36,7 @@
     },
     {
       "parameters": {
-        "url": "=http://api:3001/api/v1/ec-claims/{{ $json.data.id }}",
+        "url": "=http://api:3001/api/v1/finance/{{ $json.data.id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -75,10 +75,10 @@
         },
         "body": {
           "userId": "={{ $json.data.studentId }}",
-          "title": "EC Claim Submitted",
-          "message": "A new EC claim has been submitted for review.",
-          "category": "EC_CLAIMS",
-          "priority": "HIGH"
+          "title": "Payment Received Confirmation",
+          "message": "Your payment has been recorded.",
+          "category": "FINANCE",
+          "priority": "NORMAL"
         },
         "options": {}
       },

@@ -1,13 +1,121 @@
 {
   "name": "13 — Assessment Deadline Reminder",
   "nodes": [
-    { "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 24 }] } }, "name": "Daily Schedule", "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1, "position": [250, 300] },
-    { "parameters": { "url": "http://api:3001/api/v1/assessments", "qs": { "limit": "50", "sort": "dueDate", "order": "asc" }, "options": {} }, "name": "Get Upcoming Assessments", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [450, 300] },
-    { "parameters": { "url": "http://api:3001/api/v1/notifications", "method": "POST", "body": { "title": "Assessment Deadline Approaching", "message": "You have assessments due within the next 7 days. Check your student portal.", "category": "ASSESSMENT", "priority": "NORMAL" }, "options": {} }, "name": "Create Reminders", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [650, 300] }
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "name": "Daily Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://api:3001/api/v1/assessments",
+        "qs": {
+          "limit": "50",
+          "sort": "dueDate",
+          "order": "asc"
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Get Upcoming Assessments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://api:3001/api/v1/notifications",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "body": {
+          "userId": "={{ $json.data?.[0]?.createdBy ?? \"system\" }}",
+          "title": "Assessment Deadline Approaching",
+          "message": "You have assessments due within the next 7 days.",
+          "category": "ASSESSMENT",
+          "priority": "NORMAL"
+        },
+        "options": {}
+      },
+      "name": "Create Reminders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        650,
+        300
+      ]
+    }
   ],
   "connections": {
-    "Daily Schedule": { "main": [[{ "node": "Get Upcoming Assessments", "type": "main", "index": 0 }]] },
-    "Get Upcoming Assessments": { "main": [[{ "node": "Create Reminders", "type": "main", "index": 0 }]] }
+    "Daily Schedule": {
+      "main": [
+        [
+          {
+            "node": "Get Upcoming Assessments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Upcoming Assessments": {
+      "main": [
+        [
+          {
+            "node": "Create Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "active": false, "settings": { "executionOrder": "v1" }, "tags": [{ "name": "sjms" }, { "name": "assessment" }]
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "sjms"
+    },
+    {
+      "name": "assessment"
+    }
+  ]
 }

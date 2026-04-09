@@ -1,15 +1,139 @@
 {
   "name": "12 — Module Registration Confirmed",
   "nodes": [
-    { "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} }, "name": "SJMS Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [250, 300] },
-    { "parameters": { "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "module_registrations.created" }] } }, "name": "Is Module Reg?", "type": "n8n-nodes-base.if", "typeVersion": 1, "position": [450, 300] },
-    { "parameters": { "url": "=http://api:3001/api/v1/module-registrations/{{ $json.data.id }}", "options": {} }, "name": "Get Registration", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [650, 200] },
-    { "parameters": { "url": "http://api:3001/api/v1/notifications", "method": "POST", "body": { "title": "Module Registration Confirmed", "message": "Your module registration has been confirmed.", "category": "ENROLMENT", "priority": "NORMAL" }, "options": {} }, "name": "Notify Student", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [850, 200] }
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sjms/module-registrations",
+        "options": {}
+      },
+      "name": "SJMS Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.event }}",
+              "value2": "module_registrations.created"
+            }
+          ]
+        }
+      },
+      "name": "Filter Event",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://api:3001/api/v1/module-registrations/{{ $json.data.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Get Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://api:3001/api/v1/notifications",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "body": {
+          "userId": "={{ $json.data.studentId }}",
+          "title": "Module Registration Confirmed",
+          "message": "Your module registration has been confirmed.",
+          "category": "MODULE_REGISTRATIONS",
+          "priority": "NORMAL"
+        },
+        "options": {}
+      },
+      "name": "Create Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        850,
+        200
+      ]
+    }
   ],
   "connections": {
-    "SJMS Webhook": { "main": [[{ "node": "Is Module Reg?", "type": "main", "index": 0 }]] },
-    "Is Module Reg?": { "main": [[{ "node": "Get Registration", "type": "main", "index": 0 }], []] },
-    "Get Registration": { "main": [[{ "node": "Notify Student", "type": "main", "index": 0 }]] }
+    "SJMS Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Event": {
+      "main": [
+        [
+          {
+            "node": "Get Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Details": {
+      "main": [
+        [
+          {
+            "node": "Create Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "active": false, "settings": { "executionOrder": "v1" }, "tags": [{ "name": "sjms" }, { "name": "enrolment" }]
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "sjms"
+    }
+  ]
 }

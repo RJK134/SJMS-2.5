@@ -1,15 +1,139 @@
 {
   "name": "15 — Programme Approval Routing",
   "nodes": [
-    { "parameters": { "httpMethod": "POST", "path": "sjms", "options": {} }, "name": "SJMS Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [250, 300] },
-    { "parameters": { "conditions": { "string": [{ "value1": "={{ $json.event }}", "value2": "programme_approvals.created" }] } }, "name": "Is Approval?", "type": "n8n-nodes-base.if", "typeVersion": 1, "position": [450, 300] },
-    { "parameters": { "url": "=http://api:3001/api/v1/programme-approvals/{{ $json.data.id }}", "options": {} }, "name": "Get Approval", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [650, 200] },
-    { "parameters": { "url": "http://api:3001/api/v1/notifications", "method": "POST", "body": { "title": "Programme Approval Required", "message": "A programme approval request requires your review.", "category": "GOVERNANCE", "priority": "HIGH" }, "options": {} }, "name": "Notify Approver", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [850, 200] }
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sjms/programme-approvals",
+        "options": {}
+      },
+      "name": "SJMS Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.event }}",
+              "value2": "programme_approvals.created"
+            }
+          ]
+        }
+      },
+      "name": "Filter Event",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://api:3001/api/v1/programme-approvals/{{ $json.data.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Get Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://api:3001/api/v1/notifications",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Service-Key",
+              "value": "={{$env.INTERNAL_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "body": {
+          "userId": "={{ $json.data.createdBy }}",
+          "title": "Programme Approval Routing",
+          "message": "A programme approval request requires your review.",
+          "category": "PROGRAMME_APPROVALS",
+          "priority": "HIGH"
+        },
+        "options": {}
+      },
+      "name": "Create Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        850,
+        200
+      ]
+    }
   ],
   "connections": {
-    "SJMS Webhook": { "main": [[{ "node": "Is Approval?", "type": "main", "index": 0 }]] },
-    "Is Approval?": { "main": [[{ "node": "Get Approval", "type": "main", "index": 0 }], []] },
-    "Get Approval": { "main": [[{ "node": "Notify Approver", "type": "main", "index": 0 }]] }
+    "SJMS Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Event": {
+      "main": [
+        [
+          {
+            "node": "Get Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Details": {
+      "main": [
+        [
+          {
+            "node": "Create Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "active": false, "settings": { "executionOrder": "v1" }, "tags": [{ "name": "sjms" }, { "name": "governance" }]
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "sjms"
+    }
+  ]
 }

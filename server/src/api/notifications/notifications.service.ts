@@ -40,6 +40,12 @@ export async function markAsRead(id: string, userId: string, req: Request) {
   return result;
 }
 
+export async function create(data: any, userId: string, req: Request) {
+  const result = await prisma.notification.create({ data });
+  await logAudit('Notification', result.id, 'CREATE', userId, null, result, req);
+  return result;
+}
+
 export async function update(id: string, data: any, userId: string, req: Request) {
   const previous = await getById(id);
   const result = await prisma.notification.update({ where: { id }, data });

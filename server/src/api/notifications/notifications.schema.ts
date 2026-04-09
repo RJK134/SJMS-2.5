@@ -13,6 +13,16 @@ export const querySchema = z.object({
   priority: z.string().optional(),
 });
 
+export const createSchema = z.object({
+  userId: z.string().min(1),
+  title: z.string().min(1).max(255),
+  message: z.string().min(1),
+  category: z.string().min(1),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
+  actionUrl: z.string().optional(),
+  expiresAt: z.coerce.date().optional(),
+});
+
 export const updateSchema = z.object({
   isRead: z.boolean().optional(),
 });
