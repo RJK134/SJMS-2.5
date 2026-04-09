@@ -191,6 +191,15 @@ const ROOM_TYPE_MAP: Record<string, string> = {
 async function cleanup() {
   console.log('  Cleaning existing seed data...');
   // Delete in reverse FK dependency order
+  // B-02: marks pipeline (child → parent)
+  await prisma.markEntry.deleteMany();
+  await prisma.assessmentComponent.deleteMany();
+  // B-04: HESA entities (child → parent)
+  await prisma.hESAStudentModule.deleteMany();
+  await prisma.hESAEntryQualification.deleteMany();
+  await prisma.hESAStudent.deleteMany();
+  await prisma.hESAModule.deleteMany();
+
   await prisma.attendanceRecord.deleteMany();
   await prisma.engagementIntervention.deleteMany();
   await prisma.engagementScore.deleteMany();
