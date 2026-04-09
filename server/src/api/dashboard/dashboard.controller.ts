@@ -32,6 +32,13 @@ export async function academicDashboard(req: Request, res: Response, next: NextF
   } catch (err) { next(err); }
 }
 
+export async function engagementScores(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await service.getEngagementScores(req.query);
+    res.json({ success: true, ...result });
+  } catch (err) { next(err); }
+}
+
 export async function staffTutees(req: Request, res: Response, next: NextFunction) {
   try {
     const staffId = req.params.staffId;

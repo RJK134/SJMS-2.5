@@ -112,6 +112,134 @@ export async function getAcademicDashboard(userId: string) {
   };
 }
 
+export async function getEngagementScores(query: Record<string, any>) {
+  const { page = 1, limit = 25, search, riskLevel, programmeId } = query;
+
+  // Build attendance filter — supports programme scoping
+  const attendanceWhere: Record<string, any> = {};
+  if (programmeId) {
+    attendanceWhere.moduleRegistration = { enrolment: { programmeId } };
+  }
+
+  // If searching by name/number, resolve matching studentIds first
+  let searchStudentIds: string[] | undefined;
+  if (search) {
+    const matches = await prisma.student.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { studentNumber: { contains: search, mode: 'insensitive' } },
+          { person: { firstName: { contains: search, mode: 'insensitive' } } },
+          { person: { lastName: { contains: search, mode: 'insensitive' } } },
+        ],
+      },
+      select: { id: true },
+      take: 500,
+    });
+    searchStudentIds = matches.map(m => m.id);
+    if (searchStudentIds.length === 0) {
+      return {
+        summary: { total: 0, green: 0, amber: 0, red: 0 },
+        data: [],
+        pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false },
+      };
+    }
+    attendanceWhere.studentId = { in: searchStudentIds };
+  }
+
+  // Aggregate attendance grouped by studentId — two queries for total vs present
+  const [totalGroups, presentGroups] = await Promise.all([
+    prisma.attendanceRecord.groupBy({
+      by: ['studentId'],
+      _count: { _all: true },
+      where: attendanceWhere,
+    }),
+    prisma.attendanceRecord.groupBy({
+      by: ['studentId'],
+      _count: { _all: true },
+      where: { ...attendanceWhere, status: { in: ['PRESENT', 'LATE'] } },
+    }),
+  ]);
+
+  // Compute scores per student
+  const presentMap = new Map(presentGroups.map(g => [g.studentId, g._count._all]));
+  let scores = totalGroups.map(g => {
+    const total = g._count._all;
+    const present = presentMap.get(g.studentId) ?? 0;
+    const score = total > 0 ? Math.round((present / total) * 100) : 0;
+    const rating: 'green' | 'amber' | 'red' = score >= 80 ? 'green' : score >= 60 ? 'amber' : 'red';
+    return { studentId: g.studentId, score, rating, totalRecords: total, presentCount: present };
+  });
+
+  // Filter by risk level
+  if (riskLevel) {
+    scores = scores.filter(s => s.rating === riskLevel);
+  }
+
+  // Sort: worst scores first (for intervention prioritisation)
+  scores.sort((a, b) => a.score - b.score);
+
+  // Summary stats (before pagination)
+  const summary = {
+    total: scores.length,
+    green: scores.filter(s => s.rating === 'green').length,
+    amber: scores.filter(s => s.rating === 'amber').length,
+    red: scores.filter(s => s.rating === 'red').length,
+  };
+
+  // Paginate
+  const skip = (page - 1) * limit;
+  const pageScores = scores.slice(skip, skip + limit);
+
+  // Fetch student details only for this page
+  const studentIds = pageScores.map(s => s.studentId);
+  const students = studentIds.length > 0
+    ? await prisma.student.findMany({
+        where: { id: { in: studentIds } },
+        include: {
+          person: { select: { firstName: true, lastName: true } },
+          enrolments: {
+            where: { deletedAt: null, status: 'ENROLLED' },
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            include: { programme: { select: { title: true, programmeCode: true } } },
+          },
+        },
+      })
+    : [];
+
+  // Merge scores with student details
+  const studentMap = new Map(students.map(s => [s.id, s]));
+  const data = pageScores.map(s => {
+    const stu = studentMap.get(s.studentId);
+    return {
+      studentId: s.studentId,
+      studentNumber: stu?.studentNumber ?? '',
+      firstName: stu?.person?.firstName ?? '',
+      lastName: stu?.person?.lastName ?? '',
+      programme: stu?.enrolments?.[0]?.programme?.title ?? '—',
+      programmeCode: stu?.enrolments?.[0]?.programme?.programmeCode ?? '—',
+      score: s.score,
+      rating: s.rating,
+      totalRecords: s.totalRecords,
+      presentCount: s.presentCount,
+    };
+  });
+
+  return {
+    summary,
+    data,
+    pagination: {
+      page,
+      limit,
+      total: scores.length,
+      totalPages: Math.ceil(scores.length / limit),
+      hasNext: page * limit < scores.length,
+      hasPrev: page > 1,
+    },
+  };
+}
+
 export async function getStaffTutees(staffId: string, query: Record<string, any>) {
   const { page = 1, limit = 25 } = query;
   const skip = (page - 1) * limit;
