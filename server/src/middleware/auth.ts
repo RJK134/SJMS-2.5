@@ -29,6 +29,67 @@ export interface JWTPayload {
   exp?: number;
 }
 
+// ── Dev auth bypass (local development only) ───────────────────────────────
+// When AUTH_BYPASS=true and NODE_ENV !== 'production', skip JWT verification
+// and inject a mock admin user on every request. NEVER active in production
+// even if the env var is set.
+const AUTH_BYPASS =
+  process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV !== 'production';
+
+const MOCK_USER_PAYLOAD: JWTPayload = {
+  sub: 'dev-user-richard-knapp',
+  email: 'richard.knapp@fhe.ac.uk',
+  preferred_username: 'richard.knapp',
+  given_name: 'Richard',
+  family_name: 'Knapp',
+  realm_access: {
+    roles: [
+      'super_admin',
+      'system_admin',
+      'dean',
+      'registrar',
+      'registry_manager',
+      'senior_registry_officer',
+      'registry_officer',
+      'admissions_manager',
+      'admissions_officer',
+      'admissions_tutor',
+      'assessment_officer',
+      'progression_officer',
+      'graduation_officer',
+      'finance_director',
+      'finance_manager',
+      'finance_officer',
+      'quality_director',
+      'quality_officer',
+      'compliance_officer',
+      'associate_dean',
+      'head_of_department',
+      'programme_leader',
+      'module_leader',
+      'academic_staff',
+      'lecturer',
+      'senior_lecturer',
+      'professor',
+      'student_support_manager',
+      'student_support_officer',
+      'personal_tutor',
+      'disability_advisor',
+      'wellbeing_officer',
+      'international_officer',
+      'accommodation_officer',
+    ],
+  },
+};
+
+if (AUTH_BYPASS) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[auth] AUTH_BYPASS is enabled — all API requests will be authenticated ' +
+      'as the mock dev user (richard.knapp@fhe.ac.uk). NEVER enable in production.',
+  );
+}
+
 // ── JWKS Client (Keycloak public key verification) ──────────────────────────
 
 // Internal URL for server→Keycloak calls (JWKS fetch, admin API) — Docker service name
@@ -110,6 +171,12 @@ function getUserRoles(payload: JWTPayload): string[] {
  * services (n8n, background jobs) running within the Docker network.
  */
 export function authenticateJWT(req: Request, _res: Response, next: NextFunction): void {
+  // Dev auth bypass — local development only, gated on NODE_ENV !== 'production'
+  if (AUTH_BYPASS) {
+    req.user = MOCK_USER_PAYLOAD;
+    return next();
+  }
+
   // Internal service key bypass — trusted Docker-internal callers only
   const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
   if (serviceKey) {
@@ -183,6 +250,11 @@ export function requireRole(...roles: readonly Role[]) {
  * Does not reject unauthenticated requests.
  */
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+  if (AUTH_BYPASS) {
+    req.user = MOCK_USER_PAYLOAD;
+    return next();
+  }
+
   const tokenStr = extractToken(req);
   if (!tokenStr) return next();
 
