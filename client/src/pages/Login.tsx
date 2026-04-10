@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, BookOpen, GraduationCap, FileEdit } from "lucide-react";
+import AuthLoadingOrError from "@/components/shared/AuthLoadingOrError";
 
 const portals = [
   {
@@ -45,7 +46,7 @@ const portals = [
 ];
 
 export default function Login() {
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading, login, authError } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -54,12 +55,8 @@ export default function Login() {
     }
   }, [isLoading, isAuthenticated, navigate]);
 
-  if (isLoading || isAuthenticated) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+  if (isLoading || isAuthenticated || authError) {
+    return <AuthLoadingOrError />;
   }
 
   const handleSignIn = (portalRoute: string) => {

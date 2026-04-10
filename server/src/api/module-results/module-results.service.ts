@@ -9,6 +9,7 @@ export async function list(query: Record<string, any>) {
   const { page, limit, sort, order, search, ...filters } = query;
   const skip = (page - 1) * limit;
   const where: Record<string, any> = {
+    deletedAt: null,
     
     
     ...(filters.moduleId ? { moduleId: filters.moduleId as any } : {}),
@@ -21,7 +22,7 @@ export async function list(query: Record<string, any>) {
 }
 
 export async function getById(id: string) {
-  const result = await prisma.moduleResult.findUnique({ where: { id }, include: { moduleRegistration: { include: { enrolment: { include: { student: { include: { person: true } } } } } }, module: true } });
+  const result = await prisma.moduleResult.findFirst({ where: { id, deletedAt: null }, include: { moduleRegistration: { include: { enrolment: { include: { student: { include: { person: true } } } } } }, module: true } });
   if (!result) throw new NotFoundError('ModuleResult', id);
   return result;
 }
@@ -43,7 +44,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.moduleResult.delete({ where: { id } });
+  await prisma.moduleResult.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit('ModuleResult', id, 'DELETE', userId, previous, null, req);
   await emitEvent('module_results.deleted', { id });
 }

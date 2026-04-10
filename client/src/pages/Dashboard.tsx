@@ -8,6 +8,7 @@ import ApplicantLayout from "@/components/layout/ApplicantLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/shared/StatCard";
+import AuthLoadingOrError from "@/components/shared/AuthLoadingOrError";
 import {
   Users,
   GraduationCap,
@@ -193,7 +194,7 @@ export function DashboardContent() {
 }
 
 export default function Dashboard() {
-  const { roles, isAuthenticated, isLoading } = useAuth();
+  const { roles, isAuthenticated, isLoading, authError } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -202,15 +203,8 @@ export default function Dashboard() {
     }
   }, [isLoading, isAuthenticated, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+  if (isLoading || authError) {
+    return <AuthLoadingOrError />;
   }
 
   // Route to appropriate layout based on roles

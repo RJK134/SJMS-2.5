@@ -9,8 +9,7 @@ export async function list(query: Record<string, any>) {
   const { page, limit, sort, order, search, ...filters } = query;
   const skip = (page - 1) * limit;
   const where: Record<string, any> = {
-    
-    
+    deletedAt: null,
     ...(filters.studentId ? { studentId: filters.studentId as any } : {}),
   };
   const [data, total] = await Promise.all([
@@ -21,7 +20,7 @@ export async function list(query: Record<string, any>) {
 }
 
 export async function getById(id: string) {
-  const result = await prisma.studentAccount.findUnique({ where: { id }, include: { student: { include: { person: true } }, chargeLines: { orderBy: { createdAt: 'desc' } }, invoices: { include: { payments: true } }, paymentPlans: true } });
+  const result = await prisma.studentAccount.findFirst({ where: { id, deletedAt: null }, include: { student: { include: { person: true } }, chargeLines: { orderBy: { createdAt: 'desc' } }, invoices: { include: { payments: true } }, paymentPlans: true } });
   if (!result) throw new NotFoundError('StudentAccount', id);
   return result;
 }
@@ -43,7 +42,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.studentAccount.delete({ where: { id } });
+  await prisma.studentAccount.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit('StudentAccount', id, 'DELETE', userId, previous, null, req);
   await emitEvent('finance.deleted', { id });
 }

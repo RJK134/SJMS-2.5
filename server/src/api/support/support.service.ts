@@ -9,6 +9,7 @@ export async function list(query: Record<string, any>) {
   const { page, limit, sort, order, search, ...filters } = query;
   const skip = (page - 1) * limit;
   const where: Record<string, any> = {
+    deletedAt: null,
     
     ...(search ? { OR: [{ subject: { contains: search, mode: 'insensitive' as const } }] } : {}),
     ...(filters.studentId ? { studentId: filters.studentId as any } : {}),
@@ -22,7 +23,7 @@ export async function list(query: Record<string, any>) {
 }
 
 export async function getById(id: string) {
-  const result = await prisma.supportTicket.findUnique({ where: { id }, include: { student: { include: { person: true } }, interactions: { orderBy: { createdAt: 'asc' } } } });
+  const result = await prisma.supportTicket.findFirst({ where: { id, deletedAt: null }, include: { student: { include: { person: true } }, interactions: { orderBy: { createdAt: 'asc' } } } });
   if (!result) throw new NotFoundError('SupportTicket', id);
   return result;
 }
@@ -44,7 +45,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.supportTicket.delete({ where: { id } });
+  await prisma.supportTicket.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit('SupportTicket', id, 'DELETE', userId, previous, null, req);
   await emitEvent('support.deleted', { id });
 }

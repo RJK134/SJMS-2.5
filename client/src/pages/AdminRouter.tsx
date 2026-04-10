@@ -3,6 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 import StaffLayout from '@/components/layout/StaffLayout';
 import { DashboardContent } from './Dashboard';
+import { ADMIN_STAFF_ROLES } from '@/constants/roles';
+import AuthLoadingOrError from '@/components/shared/AuthLoadingOrError';
 
 // Phase 5A — Core entity pages
 import StudentList from './students/StudentList';
@@ -228,19 +230,26 @@ function AdminContent() {
 }
 
 export default function AdminRouter() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, hasAnyRole, authError } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) navigate('/login');
-  }, [isLoading, isAuthenticated, navigate]);
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    // Gate admin portal entry on staff role membership.
+    // Non-staff authenticated users are redirected to /dashboard, where the
+    // role-aware Dashboard wrapper picks the correct portal layout for them.
+    if (!hasAnyRole([...ADMIN_STAFF_ROLES])) {
+      navigate('/dashboard');
+      return;
+    }
+  }, [isLoading, isAuthenticated, hasAnyRole, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-      </div>
-    );
+  if (isLoading || authError) {
+    return <AuthLoadingOrError />;
   }
 
   return (

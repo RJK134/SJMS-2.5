@@ -9,6 +9,7 @@ export async function list(query: Record<string, any>) {
   const { page, limit, sort, order, search, ...filters } = query;
   const skip = (page - 1) * limit;
   const where: Record<string, any> = {
+    deletedAt: null,
     
     ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' as const } }, { programmeCode: { contains: search, mode: 'insensitive' as const } }, { ucasCode: { contains: search, mode: 'insensitive' as const } }] } : {}),
     ...(filters.status ? { status: filters.status as any } : {}),
@@ -21,7 +22,7 @@ export async function list(query: Record<string, any>) {
 }
 
 export async function getById(id: string) {
-  const result = await prisma.programme.findUnique({ where: { id }, include: { department: { include: { school: { include: { faculty: true } } } }, programmeModules: { include: { module: true } }, specifications: true } });
+  const result = await prisma.programme.findFirst({ where: { id, deletedAt: null }, include: { department: { include: { school: { include: { faculty: true } } } }, programmeModules: { include: { module: true } }, specifications: true } });
   if (!result) throw new NotFoundError('Programme', id);
   return result;
 }
@@ -43,7 +44,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.programme.delete({ where: { id } });
+  await prisma.programme.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit('Programme', id, 'DELETE', userId, previous, null, req);
   await emitEvent('programmes.deleted', { id });
 }
