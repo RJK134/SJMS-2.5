@@ -71,19 +71,34 @@ export async function getStudentDashboard(studentId: string) {
       status: mr.status,
     })),
     attendance: { rate: attendanceRate, present, total: totalAttendance },
+    // NOTE: Schema rename — totalCharges → totalDebits, totalPayments → totalCredits.
+    // Consumer in client/src/pages may need updating — flagged for Phase 5 frontend wiring.
     finance: finance ? {
       balance: Number(finance.balance ?? 0),
-      totalCharges: Number(finance.totalCharges ?? 0),
-      totalPayments: Number(finance.totalPayments ?? 0),
-    } : { balance: 0, totalCharges: 0, totalPayments: 0 },
+      totalDebits: Number(finance.totalDebits ?? 0),
+      totalCredits: Number(finance.totalCredits ?? 0),
+    } : { balance: 0, totalDebits: 0, totalCredits: 0 },
   };
 }
 
 export async function getApplicantDashboard(personId: string) {
+  // NOTE: Schema migration in Phase 1:
+  //   - Application no longer has direct personId — navigate via Applicant relation
+  //   - Application.offers renamed to Application.conditions (OfferCondition[])
+  //   - Application.entryRoute → Application.applicationRoute
+  //   - Application.submittedDate removed — using decisionDate as placeholder;
+  //     needs business logic review for true submission tracking
+  //   - OfferCondition.offerType → conditionType
+  // Response shape updated to match new schema. Frontend consumers are not
+  // currently wired to this endpoint (ApplicantDashboard.tsx reads from
+  // /v1/applications directly); rewire in Phase 5 portal build.
   const application = await prisma.application.findFirst({
-    where: { personId, deletedAt: null },
+    where: { applicant: { personId }, deletedAt: null },
     orderBy: { createdAt: 'desc' },
-    include: { programme: true, offers: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' }, take: 5 } },
+    include: {
+      programme: true,
+      conditions: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' }, take: 5 },
+    },
   });
 
   return {
@@ -92,14 +107,14 @@ export async function getApplicantDashboard(personId: string) {
       programmeTitle: application.programme?.title,
       programmeCode: application.programme?.programmeCode,
       academicYear: application.academicYear,
-      entryRoute: application.entryRoute,
+      applicationRoute: application.applicationRoute,
       status: application.status,
-      submittedDate: application.submittedDate,
+      decisionDate: application.decisionDate,
     } : null,
-    offers: application?.offers?.map(o => ({
-      id: o.id,
-      type: o.offerType,
-      status: o.status,
+    conditions: application?.conditions?.map((c) => ({
+      id: c.id,
+      type: c.conditionType,
+      status: c.status,
     })) ?? [],
   };
 }

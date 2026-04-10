@@ -10,7 +10,7 @@ export async function staffStats(req: Request, res: Response, next: NextFunction
 
 export async function studentDashboard(req: Request, res: Response, next: NextFunction) {
   try {
-    const studentId = req.params.studentId;
+    const studentId = typeof req.params.studentId === 'string' ? req.params.studentId : '';
     const data = await service.getStudentDashboard(studentId);
     res.json({ success: true, data });
   } catch (err) { next(err); }
@@ -18,7 +18,7 @@ export async function studentDashboard(req: Request, res: Response, next: NextFu
 
 export async function applicantDashboard(req: Request, res: Response, next: NextFunction) {
   try {
-    const personId = req.params.personId;
+    const personId = typeof req.params.personId === 'string' ? req.params.personId : '';
     const data = await service.getApplicantDashboard(personId);
     res.json({ success: true, data });
   } catch (err) { next(err); }
@@ -41,7 +41,7 @@ export async function engagementScores(req: Request, res: Response, next: NextFu
 
 export async function staffTutees(req: Request, res: Response, next: NextFunction) {
   try {
-    const staffId = req.params.staffId;
+    const staffId = typeof req.params.staffId === 'string' ? req.params.staffId : '';
     const result = await service.getStaffTutees(staffId, req.query);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }

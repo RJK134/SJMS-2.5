@@ -41,7 +41,8 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
 
 export async function listTransactions(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.listTransactions(req.params.studentAccountId, req.query);
+    const studentAccountId = typeof req.params.studentAccountId === 'string' ? req.params.studentAccountId : '';
+    const result = await service.listTransactions(studentAccountId, req.query);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }
