@@ -1131,6 +1131,7 @@ model PersonIdentifier {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("person_identifiers")
   @@unique([identifierType, value])
@@ -1154,6 +1155,7 @@ model PersonDemographic {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("person_demographics")
 }
@@ -1452,6 +1454,7 @@ model Faculty {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("faculties")
 }
@@ -1471,6 +1474,7 @@ model School {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("schools")
   @@index([facultyId])
@@ -1491,6 +1495,7 @@ model Department {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("departments")
   @@index([schoolId])
@@ -1534,6 +1539,7 @@ model Programme {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("programmes")
   @@index([departmentId])
@@ -1632,6 +1638,7 @@ model Module {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("modules")
   @@index([departmentId])
@@ -1673,6 +1680,7 @@ model ProgrammeModule {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("programme_modules")
   @@unique([programmeId, moduleId])
@@ -1694,6 +1702,7 @@ model ProgrammeApproval {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("programme_approvals")
   @@index([programmeId])
@@ -1880,6 +1889,7 @@ model ApplicationQualification {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("application_qualifications")
   @@index([applicationId])
@@ -1899,6 +1909,7 @@ model ApplicationReference {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("application_references")
   @@index([applicationId])
@@ -1918,6 +1929,7 @@ model OfferCondition {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("offer_conditions")
   @@index([applicationId])
@@ -1938,6 +1950,7 @@ model Interview {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("interviews")
   @@index([applicationId])
@@ -1957,6 +1970,7 @@ model ClearanceCheck {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("clearance_checks")
   @@index([applicationId])
@@ -1977,6 +1991,7 @@ model AdmissionsEvent {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("admissions_events")
 }
@@ -2166,6 +2181,7 @@ model StudentProgrammeRoute {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("student_programme_routes")
   @@index([studentId])
@@ -2283,6 +2299,7 @@ model Assessment {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("assessments")
   @@index([moduleId])
@@ -2313,6 +2330,7 @@ model AssessmentAttempt {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("assessment_attempts")
   @@index([assessmentId])
@@ -2379,6 +2397,7 @@ model ModuleResult {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("module_results")
   @@index([moduleRegistrationId])
@@ -2405,6 +2424,7 @@ model ExamBoard {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("exam_boards")
   @@index([programmeId])
@@ -2491,6 +2511,7 @@ model Submission {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("submissions")
   @@index([assessmentId])
@@ -2657,6 +2678,7 @@ model ProgressionRecord {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("progression_records")
   @@index([enrolmentId])
@@ -2705,6 +2727,7 @@ model AwardRecord {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("award_records")
   @@index([studentId])
@@ -2763,6 +2786,7 @@ model Transcript {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("transcripts")
   @@index([studentId])
@@ -2845,6 +2869,7 @@ model StudentAccount {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("student_accounts")
   @@index([studentId])
@@ -3125,6 +3150,7 @@ model AttendanceRecord {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("attendance_records")
   @@index([moduleRegistrationId])
@@ -3436,6 +3462,7 @@ model SupportTicket {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("support_tickets")
   @@index([studentId])
@@ -3671,6 +3698,7 @@ model ECClaim {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("ec_claims")
   @@index([studentId])
@@ -3696,6 +3724,7 @@ model Appeal {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("appeals")
   @@index([studentId])
@@ -4117,6 +4146,7 @@ model Document {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("documents")
   @@index([studentId])
@@ -4222,6 +4252,7 @@ model CommunicationTemplate {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("communication_templates")
 }
