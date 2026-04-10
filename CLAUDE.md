@@ -82,3 +82,20 @@ SJMS-2.5/
 ├── n8n-workflows/
 └── scripts/
 ```
+
+## PR and Review Process
+Every code change follows this pipeline:
+1. Work on a feature branch (never commit directly to main)
+2. Open a PR against main when the work is complete
+3. Wait for Cursor BugBot and GitGuardian automated reviews
+4. Fix any HIGH severity BugBot findings before requesting merge
+5. LOW/MEDIUM findings should be noted and fixed in the same PR if quick, or logged for the next commit
+6. Human reviews and merges — Claude never merges its own PRs
+### Phase Gate Reviews
+At the end of each build phase (per the Build Plan), a full BugBot review
+is conducted across ALL changed files in that phase. No phase is considered
+complete until BugBot HIGH findings are resolved.
+### BugBot Severity Response
+- HIGH: Must fix before merge. No exceptions.
+- MEDIUM: Fix in same PR if under 10 minutes. Otherwise create an issue.
+- LOW: Note in PR comments. Fix in next cleanup pass.

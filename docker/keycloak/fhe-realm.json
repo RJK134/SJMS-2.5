@@ -1,0 +1,406 @@
+{
+  "realm": "fhe",
+  "enabled": true,
+  "displayName": "Future Horizons Education",
+  "displayNameHtml": "<b>Future Horizons Education</b>",
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "registrationAllowed": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "sslRequired": "none",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "bruteForceProtected": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "en"
+  ],
+  "defaultLocale": "en",
+  "roles": {
+    "realm": [
+      {
+        "name": "super_admin",
+        "description": "Super Admin",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "system_admin",
+            "registrar",
+            "finance_director",
+            "quality_director",
+            "dean",
+            "student_support_manager",
+            "international_officer",
+            "accommodation_officer"
+          ]
+        }
+      },
+      {
+        "name": "system_admin",
+        "description": "System Admin",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "registrar",
+        "description": "Registrar",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "senior_registry_officer",
+            "registry_officer",
+            "admissions_manager",
+            "assessment_officer",
+            "progression_officer",
+            "graduation_officer"
+          ]
+        }
+      },
+      {
+        "name": "senior_registry_officer",
+        "description": "Senior Registry Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "registry_officer",
+        "description": "Registry Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "admissions_manager",
+        "description": "Admissions Manager",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "admissions_officer",
+            "admissions_tutor"
+          ]
+        }
+      },
+      {
+        "name": "admissions_officer",
+        "description": "Admissions Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "admissions_tutor",
+        "description": "Admissions Tutor",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "assessment_officer",
+        "description": "Assessment Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "progression_officer",
+        "description": "Progression Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "graduation_officer",
+        "description": "Graduation Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "finance_director",
+        "description": "Finance Director",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "finance_manager"
+          ]
+        }
+      },
+      {
+        "name": "finance_manager",
+        "description": "Finance Manager",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "finance_officer"
+          ]
+        }
+      },
+      {
+        "name": "finance_officer",
+        "description": "Finance Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "quality_director",
+        "description": "Quality Director",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "quality_officer",
+            "compliance_officer"
+          ]
+        }
+      },
+      {
+        "name": "quality_officer",
+        "description": "Quality Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "compliance_officer",
+        "description": "Compliance Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "dean",
+        "description": "Dean",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "associate_dean"
+          ]
+        }
+      },
+      {
+        "name": "associate_dean",
+        "description": "Associate Dean",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "head_of_department"
+          ]
+        }
+      },
+      {
+        "name": "head_of_department",
+        "description": "Head Of Department",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "programme_leader",
+            "module_leader",
+            "academic_staff"
+          ]
+        }
+      },
+      {
+        "name": "programme_leader",
+        "description": "Programme Leader",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "module_leader",
+        "description": "Module Leader",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "academic_staff",
+        "description": "Academic Staff",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "lecturer",
+            "senior_lecturer",
+            "professor"
+          ]
+        }
+      },
+      {
+        "name": "lecturer",
+        "description": "Lecturer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "senior_lecturer",
+        "description": "Senior Lecturer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "professor",
+        "description": "Professor",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "student_support_manager",
+        "description": "Student Support Manager",
+        "composite": true,
+        "clientRole": false,
+        "containerId": "fhe",
+        "composites": {
+          "realm": [
+            "student_support_officer",
+            "personal_tutor",
+            "disability_advisor",
+            "wellbeing_officer"
+          ]
+        }
+      },
+      {
+        "name": "student_support_officer",
+        "description": "Student Support Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "personal_tutor",
+        "description": "Personal Tutor",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "disability_advisor",
+        "description": "Disability Advisor",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "wellbeing_officer",
+        "description": "Wellbeing Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "international_officer",
+        "description": "International Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "accommodation_officer",
+        "description": "Accommodation Officer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "student",
+        "description": "Student",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "applicant",
+        "description": "Applicant",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      },
+      {
+        "name": "public",
+        "description": "Public",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "fhe"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "sjms-client",
+      "name": "SJMS 2.5 Client",
+      "description": "Student Journey Management System frontend application",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:5173",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3001/*",
+        "http://localhost/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:3001",
+        "http://localhost"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      },
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles"
+      ],
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

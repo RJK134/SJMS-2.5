@@ -76,7 +76,13 @@ services:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-changeme}
       KC_HEALTH_ENABLED: "true"
-    command: start-dev
+    # On first boot, imports the 'fhe' realm from docker/keycloak/fhe-realm.json
+    # (36 roles with composite hierarchy + sjms-client public client with PKCE).
+    # Subsequent boots skip unchanged realms; re-run scripts/keycloak-setup.ts to
+    # refresh test users (the realm JSON deliberately excludes credentials).
+    command: start-dev --import-realm
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
     depends_on:
       postgres:
         condition: service_healthy
