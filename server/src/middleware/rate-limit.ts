@@ -7,7 +7,7 @@ import logger from '../utils/logger';
 // Falls back to in-memory counting if Redis is unavailable.
 
 class RedisStore implements Store {
-  private prefix: string;
+  prefix: string;
   private windowMs: number;
 
   constructor(prefix: string, windowMs: number) {
