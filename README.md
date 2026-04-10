@@ -66,7 +66,7 @@ cd SJMS-2.5
 cp .env.example .env
 # Edit .env with your values
 
-# 3. Start infrastructure services
+# 3. Start infrastructure services (Docker)
 docker-compose up -d postgres redis minio keycloak n8n
 
 # 4. Install dependencies
@@ -78,18 +78,39 @@ npm run prisma:generate
 # 6. Run database migrations
 npm run prisma:migrate
 
-# 7. Start development servers
+# 7. Start development servers (locally, NOT via Docker)
 npm run dev:server   # API on http://localhost:3001
 npm run dev:client   # Client on http://localhost:5173
 ```
 
-### Full Docker Stack
+### Development Workflow
+
+The supported dev workflow is **infra in Docker, app locally**:
+
+- **Infra services** run in Docker: `postgres`, `redis`, `minio`, `keycloak`, `n8n`.
+  Bring them up with `npm run docker:up` (or `docker-compose up -d`).
+- **API server** runs locally via `cd server && npm run dev` on port 3001.
+- **React client** runs locally via `cd client && npm run dev` on port 5173.
+
+**The `api`, `client`, and `nginx` Docker services have been retired from the
+dev compose** (see the `RETIRED 2026-04-10` banner in `docker-compose.yml`).
+Their Dockerfiles are currently broken — `server/Dockerfile` has no build step,
+`client/Dockerfile` built from a stale commit, and `nginx` depends on the other
+two. Fixing them is a future session; for now, run the app locally.
+
+**Working from a git worktree?** Copy the repo root `.env` into the worktree
+root. It is not tracked by git, so worktrees start without it, and
+`client/vite.config.ts` uses `envDir: ".."` which reads from worktree root.
+Without it, `VITE_AUTH_BYPASS` is undefined and Keycloak init hangs.
 
 ```bash
-docker-compose up -d          # Start all 8 services
-docker-compose logs -f api    # Tail API logs
-docker-compose down           # Stop everything
+# Useful scripts
+npm run docker:up          # Start infra services
+npm run docker:down        # Stop infra services
+npm run docker:logs        # Tail all infra logs
 ```
+
+See `docs/SESSION-HANDOFF-2026-04-10.md` for the most recent context.
 
 ## Project Structure
 

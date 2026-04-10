@@ -123,76 +123,91 @@ services:
     networks:
       - sjms-network
 
-  # ── API Server ─────────────────────────────────────────────────
-  api:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
-    container_name: sjms-api
-    restart: unless-stopped
-    ports:
-      - "3001:3001"
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      PORT: "3001"
-      DATABASE_URL: postgresql://sjms:${DB_PASSWORD:-changeme}@postgres:5432/sjms?schema=public
-      REDIS_URL: redis://redis:6379
-      WEBHOOK_URL: http://n8n:5678
-      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
-      KEYCLOAK_ISSUER_URL: http://localhost:8080
-      MINIO_ENDPOINT: minio
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-sjms-dev-internal-service-key-do-not-use-in-production-min64chars}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    networks:
-      - sjms-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # ── Client (React Frontend) ───────────────────────────────────
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    container_name: sjms-client
-    restart: unless-stopped
-    ports:
-      - "5173:80"
-    depends_on:
-      - api
-    networks:
-      - sjms-network
-
-  # ── Nginx (Reverse Proxy) ─────────────────────────────────────
-  nginx:
-    image: nginx:alpine
-    container_name: sjms-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      keycloak:
-        condition: service_healthy
-      api:
-        condition: service_healthy
-      client:
-        condition: service_started
-    networks:
-      - sjms-network
+  # ── RETIRED 2026-04-10 ─────────────────────────────────────────
+  # The api, client, and nginx services have been commented out of the
+  # dev compose because they are currently broken:
+  #   - server/Dockerfile has no `npm run build` step, so `node dist/index.js`
+  #     fails on boot and sjms-api crash-loops.
+  #   - The sjms-client image was built from an old commit and serves a
+  #     stale bundle.
+  #   - sjms-nginx depends on api:service_healthy, so it crash-loops too.
+  #
+  # Dev workflow: run `cd server && npm run dev` and `cd client && npm run dev`
+  # locally against the infra services (postgres/redis/minio/n8n) above.
+  # See docs/SESSION-HANDOFF-2026-04-10.md and README.md for full context.
+  # Re-enable once Dockerfiles are fixed in a dedicated session.
+  # ───────────────────────────────────────────────────────────────
+  #
+  # # ── API Server ─────────────────────────────────────────────────
+  # api:
+  #   build:
+  #     context: ./server
+  #     dockerfile: Dockerfile
+  #   container_name: sjms-api
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3001:3001"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     NODE_ENV: production
+  #     PORT: "3001"
+  #     DATABASE_URL: postgresql://sjms:${DB_PASSWORD:-changeme}@postgres:5432/sjms?schema=public
+  #     REDIS_URL: redis://redis:6379
+  #     WEBHOOK_URL: http://n8n:5678
+  #     KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+  #     KEYCLOAK_ISSUER_URL: http://localhost:8080
+  #     MINIO_ENDPOINT: minio
+  #     INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-sjms-dev-internal-service-key-do-not-use-in-production-min64chars}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_healthy
+  #   networks:
+  #     - sjms-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 30s
+  #
+  # # ── Client (React Frontend) ───────────────────────────────────
+  # client:
+  #   build:
+  #     context: ./client
+  #     dockerfile: Dockerfile
+  #   container_name: sjms-client
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5173:80"
+  #   depends_on:
+  #     - api
+  #   networks:
+  #     - sjms-network
+  #
+  # # ── Nginx (Reverse Proxy) ─────────────────────────────────────
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: sjms-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     keycloak:
+  #       condition: service_healthy
+  #     api:
+  #       condition: service_healthy
+  #     client:
+  #       condition: service_started
+  #   networks:
+  #     - sjms-network
 
 networks:
   sjms-network:
