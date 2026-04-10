@@ -14,7 +14,7 @@ export default function HESAReturn() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="HESA Return Preparation" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Reports' }, { label: 'HESA' }]}>
+      <PageHeader title="HESA Return Preparation" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Reports' }, { label: 'HESA' }]}>
         <div className="flex gap-2">
           <Button variant="outline"><FileCheck className="h-4 w-4 mr-2" /> Run Validation</Button>
           <Button><Upload className="h-4 w-4 mr-2" /> Submit Return</Button>

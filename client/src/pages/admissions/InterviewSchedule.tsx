@@ -17,7 +17,7 @@ export default function InterviewSchedule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Interview Schedule" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Admissions' }, { label: 'Interviews' }]} />
+      <PageHeader title="Interview Schedule" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Interviews' }]} />
       {isLoading ? <p className="text-muted-foreground">Loading...</p> : Object.keys(grouped).length === 0 ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground"><Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />No interviews scheduled</CardContent></Card>
       ) : (

@@ -27,9 +27,13 @@ export async function list(query: Record<string, any>) {
           },
         },
         enrolments: {
-          where: { deletedAt: null, status: 'ENROLLED' },
+          // Show the most-recent non-deleted enrolment regardless of status —
+          // this ensures the Programme column is populated for alumni
+          // (COMPLETED) as well as currently-enrolled students. Bulk-seeded
+          // rows share a createdAt, so academicYear is the reliable ordering.
+          where: { deletedAt: null },
           take: 1,
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ academicYear: 'desc' }, { createdAt: 'desc' }],
           include: { programme: { select: { title: true, programmeCode: true } } },
         },
       },

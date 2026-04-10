@@ -23,7 +23,7 @@ export default function AccountList() {
   return (
     <div className="space-y-6">
       <PageHeader title="Student Accounts" subtitle={`${data?.pagination?.total ?? '—'} accounts`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Finance' }, { label: 'Accounts' }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Accounts' }]} />
       <DataTable<Account> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
         searchPlaceholder="Search by student name..." onSearch={s => setParams(p => ({ ...p, search: s, page: 1 }))}
         onPageChange={page => setParams(p => ({ ...p, page }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}

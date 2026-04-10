@@ -30,7 +30,7 @@ export default function ApplicationDetail() {
   return (
     <div className="space-y-6">
       <PageHeader title={name} subtitle={`${app.programme?.programmeCode} · ${app.academicYear}`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Applications', href: '/admin/admissions/applications' }, { label: name }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Applications', href: '/admin/admissions/applications' }, { label: name }]}>
         <StatusBadge status={app.status} />
       </PageHeader>
 

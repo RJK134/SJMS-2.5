@@ -60,7 +60,7 @@ export default function MarksEntry() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Marks Entry" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Assessment' }, { label: 'Marks Entry' }]} />
+      <PageHeader title="Marks Entry" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Assessment' }, { label: 'Marks Entry' }]} />
 
       {/* Module + Assessment selector */}
       <Card>

@@ -20,7 +20,7 @@ export default function StatutoryReturns() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Statutory Returns" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Reports' }, { label: 'Statutory' }]} />
+      <PageHeader title="Statutory Returns" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Reports' }, { label: 'Statutory' }]} />
       <Card>
         <CardHeader><CardTitle>Return Schedule</CardTitle></CardHeader>
         <CardContent>

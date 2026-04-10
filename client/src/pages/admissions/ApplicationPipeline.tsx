@@ -43,7 +43,7 @@ export default function ApplicationPipeline() {
   return (
     <div className="space-y-6">
       <PageHeader title="Applications Pipeline" subtitle={`${data?.pagination?.total ?? '—'} applications`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Admissions' }, { label: 'Applications' }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Applications' }]}>
         <div className="flex gap-2">
           <Button variant={view === 'kanban' ? 'default' : 'outline'} size="sm" onClick={() => setView('kanban')}><LayoutGrid className="h-4 w-4 mr-1" /> Kanban</Button>
           <Button variant={view === 'table' ? 'default' : 'outline'} size="sm" onClick={() => setView('table')}><List className="h-4 w-4 mr-1" /> Table</Button>

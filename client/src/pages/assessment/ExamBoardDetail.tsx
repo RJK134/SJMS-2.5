@@ -23,7 +23,7 @@ export default function ExamBoardDetail() {
   return (
     <div className="space-y-6">
       <PageHeader title={board.title} subtitle={`${board.programme?.programmeCode ?? ''} · ${board.academicYear}`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Exam Boards', href: '/admin/assessment/exam-boards' }, { label: board.title }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Exam Boards', href: '/admin/assessment/exam-boards' }, { label: board.title }]}>
         <StatusBadge status={board.status} />
       </PageHeader>
 

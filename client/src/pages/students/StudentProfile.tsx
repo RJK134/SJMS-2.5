@@ -44,7 +44,7 @@ export default function StudentProfile() {
         title={fullName}
         subtitle={student.studentNumber}
         breadcrumbs={[
-          { label: 'Admin', href: '/admin' },
+          { label: 'Staff', href: '/admin' },
           { label: 'Students', href: '/admin/students' },
           { label: fullName },
         ]}

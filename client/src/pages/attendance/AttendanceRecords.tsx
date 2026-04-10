@@ -21,7 +21,7 @@ export default function AttendanceRecords() {
   return (
     <div className="space-y-6">
       <PageHeader title="Attendance Records" subtitle={`${data?.pagination?.total ?? '—'} records`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Attendance' }, { label: 'Records' }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Attendance' }, { label: 'Records' }]} />
       <DataTable<Record> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
         onPageChange={page => setParams(p => ({ ...p, page }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         currentSort={params.sort} currentOrder={params.order} searchPlaceholder="Search by student..."

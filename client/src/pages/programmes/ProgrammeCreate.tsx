@@ -37,7 +37,7 @@ export default function ProgrammeCreate() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <PageHeader title="New Programme" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Programmes', href: '/admin/programmes' }, { label: 'New' }]} />
+      <PageHeader title="New Programme" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Programmes', href: '/admin/programmes' }, { label: 'New' }]} />
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Programme Details</CardTitle></CardHeader>

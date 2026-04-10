@@ -45,7 +45,7 @@ export default function TimetableView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Timetable" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Timetable' }]}>
+      <PageHeader title="Timetable" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Timetable' }]}>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setWeekOffset(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
           <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)}>This Week</Button>

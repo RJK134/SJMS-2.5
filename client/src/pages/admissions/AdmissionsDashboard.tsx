@@ -27,7 +27,7 @@ export default function AdmissionsDashboard() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Admissions Dashboard" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Admissions' }, { label: 'Dashboard' }]} />
+      <PageHeader title="Admissions Dashboard" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Dashboard' }]} />
 
       <div className="grid grid-cols-4 gap-4">
         <StatCard label="Total Applications" value={apps.length} icon={Users} />

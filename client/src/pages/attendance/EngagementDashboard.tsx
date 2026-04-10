@@ -105,7 +105,7 @@ export default function EngagementDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader title="Student Engagement" subtitle="Attendance-based engagement dashboard"
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Attendance' }, { label: 'Engagement' }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Attendance' }, { label: 'Engagement' }]} />
 
       <div className="grid grid-cols-4 gap-4">
         {isLoading ? (

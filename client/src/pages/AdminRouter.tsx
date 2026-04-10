@@ -217,8 +217,8 @@ function AdminContent() {
       {/* Default */}
       <Route>
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to the SJMS 2.5 administration portal.</p>
+          <h1 className="text-2xl font-bold">Staff Dashboard</h1>
+          <p className="text-muted-foreground">Welcome to the SJMS 2.5 staff portal.</p>
         </div>
       </Route>
     </Switch>

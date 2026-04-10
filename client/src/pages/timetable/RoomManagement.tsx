@@ -22,7 +22,7 @@ export default function RoomManagement() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Room Management" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Timetable' }, { label: 'Rooms' }]} />
+      <PageHeader title="Room Management" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Timetable' }, { label: 'Rooms' }]} />
       <DataTable<Room> columns={columns} data={data?.data ?? []} isLoading={isLoading} emptyMessage="No rooms configured" />
     </div>
   );

@@ -23,7 +23,7 @@ export default function ModerationQueue() {
   return (
     <div className="space-y-6">
       <PageHeader title="Moderation Queue" subtitle="Marks awaiting moderation"
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Assessment' }, { label: 'Moderation' }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Assessment' }, { label: 'Moderation' }]} />
       <DataTable<Mark> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
         onPageChange={page => setParams(p => ({ ...p, page }))} emptyMessage="No marks awaiting moderation" />
     </div>

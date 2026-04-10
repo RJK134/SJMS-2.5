@@ -50,7 +50,7 @@ export default function StatusChanges() {
   return (
     <div className="space-y-6">
       <PageHeader title="Status Change Requests" subtitle="Manage interruptions, withdrawals, transfers, and mode changes"
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: 'Status Changes' }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: 'Status Changes' }]} />
 
       <FilterPanel filters={filterConfig} values={filters}
         onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />

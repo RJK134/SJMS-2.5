@@ -41,7 +41,7 @@ export default function GradeDistribution() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Grade Distribution" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Assessment' }, { label: 'Grade Distribution' }]} />
+      <PageHeader title="Grade Distribution" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Assessment' }, { label: 'Grade Distribution' }]} />
 
       <div className="grid grid-cols-2 gap-6">
         <Card>

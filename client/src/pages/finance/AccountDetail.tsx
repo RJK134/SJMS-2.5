@@ -21,7 +21,7 @@ export default function AccountDetail() {
   return (
     <div className="space-y-6">
       <PageHeader title={`Account — ${name}`} subtitle={account.student?.studentNumber}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Finance', href: '/admin/finance/accounts' }, { label: name }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance', href: '/admin/finance/accounts' }, { label: name }]} />
 
       <div className="grid grid-cols-4 gap-4">
         <StatCard label="Balance" value={`£${Number(account.balance).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`} icon={PoundSterling}

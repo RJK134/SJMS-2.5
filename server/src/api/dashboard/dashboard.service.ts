@@ -1,12 +1,17 @@
 import prisma from '../../utils/prisma';
 
 export async function getStaffStats() {
-  const [students, programmes, modules, enrolments, pendingAssessments, applications] = await Promise.all([
+  // NOTE: Programme, Module and Assessment models do NOT have a deletedAt column
+  // in the current schema, so we must not filter on it. Programme status values
+  // are DRAFT | APPROVED | SUSPENDED | WITHDRAWN | CLOSED — "APPROVED" is the
+  // live/active state. Module status values are DRAFT | APPROVED | RUNNING |
+  // SUSPENDED | WITHDRAWN — we count RUNNING + APPROVED as the deliverable set.
+  const [students, programmes, modules, enrolments, assessments, applications] = await Promise.all([
     prisma.student.count({ where: { deletedAt: null } }),
-    prisma.programme.count({ where: { deletedAt: null, status: 'ACTIVE' } }),
-    prisma.module.count({ where: { deletedAt: null } }),
+    prisma.programme.count({ where: { status: 'APPROVED' } }),
+    prisma.module.count({ where: { status: { in: ['APPROVED', 'RUNNING'] } } }),
     prisma.enrolment.count({ where: { deletedAt: null, status: 'ENROLLED' } }),
-    prisma.assessment.count({ where: { deletedAt: null } }),
+    prisma.assessment.count(),
     prisma.application.count({ where: { deletedAt: null } }),
   ]);
 
@@ -15,7 +20,7 @@ export async function getStaffStats() {
     programmes: { total: programmes },
     modules: { total: modules },
     enrolments: { active: enrolments },
-    assessments: { pending: pendingAssessments },
+    assessments: { pending: assessments },
     applications: { total: applications },
   };
 }

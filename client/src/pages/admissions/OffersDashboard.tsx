@@ -17,7 +17,7 @@ export default function OffersDashboard() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Offer Management" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Admissions' }, { label: 'Offers' }]} />
+      <PageHeader title="Offer Management" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Offers' }]} />
       <div className="grid grid-cols-4 gap-4">
         <StatCard label="Conditional Offers" value={conditional} icon={Clock} />
         <StatCard label="Unconditional Offers" value={unconditional} icon={Gift} />

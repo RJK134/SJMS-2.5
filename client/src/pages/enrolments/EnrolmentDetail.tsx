@@ -22,7 +22,7 @@ export default function EnrolmentDetail() {
   return (
     <div className="space-y-6">
       <PageHeader title={`Enrolment — ${studentName}`} subtitle={`${enr.programme?.title ?? enr.programmeId} · ${enr.academicYear}`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: studentName }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: studentName }]}>
         <StatusBadge status={enr.status} />
       </PageHeader>
 

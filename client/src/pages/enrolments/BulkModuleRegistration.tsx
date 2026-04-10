@@ -52,7 +52,7 @@ export default function BulkModuleRegistration() {
   return (
     <div className="space-y-6">
       <PageHeader title="Bulk Module Registration" subtitle={`Step ${Math.min(step, 4)} of 4`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: 'Bulk Registration' }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: 'Bulk Registration' }]} />
 
       {/* Step indicators */}
       <div className="flex gap-2">
