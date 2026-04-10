@@ -125,7 +125,7 @@ interface DashboardStats {
   applications: { total: number };
 }
 
-function DashboardContent() {
+export function DashboardContent() {
   const { user, roles } = useAuth();
   const { data, isLoading, isError } = useQuery<{ success: boolean; data: DashboardStats }>({
     queryKey: ['dashboard-stats'],
