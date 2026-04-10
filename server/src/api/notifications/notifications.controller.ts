@@ -10,7 +10,8 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 
 export async function getById(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await service.getById(req.params.id);
+    const id = typeof req.params.id === 'string' ? req.params.id : '';
+    const data = await service.getById(id);
     res.json({ success: true, data });
   } catch (err) { next(err); }
 }
@@ -24,7 +25,8 @@ export async function create(req: Request, res: Response, next: NextFunction) {
 
 export async function update(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await service.update(req.params.id, req.body, req.user?.sub ?? 'system', req);
+    const id = typeof req.params.id === 'string' ? req.params.id : '';
+    const data = await service.update(id, req.body, req.user?.sub ?? 'system', req);
     res.json({ success: true, data });
   } catch (err) { next(err); }
 }

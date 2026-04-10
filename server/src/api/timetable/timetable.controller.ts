@@ -10,7 +10,8 @@ export async function listSessions(req: Request, res: Response, next: NextFuncti
 
 export async function getSessionById(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await service.getSessionById(req.params.id);
+    const id = typeof req.params.id === 'string' ? req.params.id : '';
+    const data = await service.getSessionById(id);
     res.json({ success: true, data });
   } catch (err) { next(err); }
 }
