@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import StaffLayout from '@/components/layout/StaffLayout';
 import { DashboardContent } from './Dashboard';
 import { ADMIN_STAFF_ROLES } from '@/constants/roles';
+import AuthLoadingOrError from '@/components/shared/AuthLoadingOrError';
 
 // Phase 5A — Core entity pages
 import StudentList from './students/StudentList';
@@ -229,7 +230,7 @@ function AdminContent() {
 }
 
 export default function AdminRouter() {
-  const { isAuthenticated, isLoading, hasAnyRole } = useAuth();
+  const { isAuthenticated, isLoading, hasAnyRole, authError } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -247,12 +248,8 @@ export default function AdminRouter() {
     }
   }, [isLoading, isAuthenticated, hasAnyRole, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-      </div>
-    );
+  if (isLoading || authError) {
+    return <AuthLoadingOrError />;
   }
 
   return (

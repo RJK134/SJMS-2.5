@@ -22,6 +22,7 @@ interface AuthContextType {
   roles: string[];
   isAuthenticated: boolean;
   isLoading: boolean;
+  authError: string | null;
   login: (portal?: string) => void;
   logout: () => void;
   hasRole: (role: string) => boolean;
@@ -34,34 +35,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    initKeycloak().then((authenticated) => {
-      if (authenticated) {
-        const u = getUser();
-        if (u) {
-          setUser({
-            id: u.sub,
-            email: u.email,
-            username: u.preferred_username,
-            firstName: u.given_name,
-            lastName: u.family_name,
-          });
-        }
-        setRoles(getRoles());
+    // Keycloak init is racey against a 10-second timeout. If Keycloak does
+    // not respond within the window, we set `authError` and stop `isLoading`
+    // so the UI can surface a retry card instead of an indefinite spinner.
+    // Downstream components render <AuthLoadingOrError /> which shows the
+    // spinner (isLoading) or the retry card (authError) based on state.
+    const AUTH_INIT_TIMEOUT_MS = 10_000;
+    let timedOut = false;
+    let cancelled = false;
 
-        // After login redirect, navigate to the portal the user selected
-        const params = new URLSearchParams(window.location.search);
-        const portal = params.get('portal');
-        if (portal) {
-          // Clean the ?portal= param from URL
-          window.history.replaceState({}, '', window.location.origin + window.location.pathname + window.location.hash);
-          // Navigate to the selected portal via hash
-          window.location.hash = '#' + portal;
-        }
-      }
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      timedOut = true;
+      setAuthError(
+        `Keycloak did not respond within ${AUTH_INIT_TIMEOUT_MS / 1000} seconds. ` +
+          `The identity provider may be offline or starting up.`,
+      );
       setIsLoading(false);
-    });
+    }, AUTH_INIT_TIMEOUT_MS);
+
+    initKeycloak()
+      .then((authenticated) => {
+        if (timedOut || cancelled) return;
+        clearTimeout(timer);
+        if (authenticated) {
+          const u = getUser();
+          if (u) {
+            setUser({
+              id: u.sub,
+              email: u.email,
+              username: u.preferred_username,
+              firstName: u.given_name,
+              lastName: u.family_name,
+            });
+          }
+          setRoles(getRoles());
+
+          // After login redirect, navigate to the portal the user selected
+          const params = new URLSearchParams(window.location.search);
+          const portal = params.get('portal');
+          if (portal) {
+            // Clean the ?portal= param from URL
+            window.history.replaceState({}, '', window.location.origin + window.location.pathname + window.location.hash);
+            // Navigate to the selected portal via hash
+            window.location.hash = '#' + portal;
+          }
+        }
+        setIsLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (timedOut || cancelled) return;
+        clearTimeout(timer);
+        const message =
+          err instanceof Error ? err.message : 'Keycloak initialisation failed';
+        setAuthError(message);
+        setIsLoading(false);
+      });
 
     // Set up automatic token refresh
     keycloak.onTokenExpired = () => {
@@ -69,6 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       keycloak.updateToken(30).catch(() => {
         console.error('[auth] Auto-refresh failed');
       });
+    };
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
     };
   }, []);
 
@@ -99,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         roles,
         isAuthenticated: kcIsAuth(),
         isLoading,
+        authError,
         login,
         logout,
         hasRole,
