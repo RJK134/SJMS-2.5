@@ -50,4 +50,7 @@ coverage/
 *.tgz
 .cache/
 .temp/
-.claude/
+
+
+# Office temp files
+~$*
