@@ -41,13 +41,13 @@ async function resolveIdentity(user: JWTPayload): Promise<ResolvedIdentity> {
       contacts: { some: { value: user.email, contactType: 'EMAIL' } },
     },
     include: {
-      students: { select: { id: true }, take: 1 },
+      student: { select: { id: true } },
     },
   });
 
   const identity: ResolvedIdentity = {
     personId: person?.id,
-    studentId: person?.students?.[0]?.id,
+    studentId: person?.student?.id,
   };
 
   setCachedIdentity(user.sub, identity);
