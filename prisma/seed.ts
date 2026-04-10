@@ -449,12 +449,34 @@ async function seedStudents(programmes: any[]) {
     'BLACK_CARIBBEAN','MIXED_WHITE_ASIAN','ARAB','WHITE_OTHER',
   ] as const;
 
+  // Fee-status distribution — realistic UK HE mix: ~70% Home, ~20% EU, ~10% Overseas.
+  // Spread across the cohort using index modulo so all entry years contain a mix.
+  // i % 10 === 0       → OVERSEAS      (15 students, 10%)
+  // i % 10 in {1, 2}   → EU_TRANSITIONAL (30 students, 20%)
+  // otherwise          → HOME          (105 students, 70%)
+  const feeStatusFor = (i: number): 'OVERSEAS' | 'EU_TRANSITIONAL' | 'HOME' => {
+    const m = i % 10;
+    if (m === 0) return 'OVERSEAS';
+    if (m === 1 || m === 2) return 'EU_TRANSITIONAL';
+    return 'HOME';
+  };
+  const entryRouteFor = (fs: 'OVERSEAS' | 'EU_TRANSITIONAL' | 'HOME'): 'UCAS' | 'DIRECT' | 'CLEARING' | 'INTERNATIONAL' => {
+    if (fs === 'OVERSEAS') return 'INTERNATIONAL';
+    // EU transitional and Home students apply through UK routes — UCAS is
+    // the dominant channel with smaller Direct and Clearing minorities.
+    return pick(['UCAS', 'UCAS', 'UCAS', 'UCAS', 'DIRECT', 'DIRECT', 'CLEARING'] as const);
+  };
+  const EU_COUNTRIES = ['FR', 'DE', 'IT', 'ES', 'PL', 'NL', 'IE', 'BE', 'SE', 'PT'] as const;
+
   for (let i = 1; i <= 150; i++) {
     const personId = `per-stu-${pad(i)}`;
     const isFemale = i % 2 === 0;
     const firstName = pick(isFemale ? FEMALE_NAMES : MALE_NAMES);
     const lastName = pick(SURNAMES);
-    const isIntl = i <= 30; // first 30 international
+    const feeStatus = feeStatusFor(i);
+    const entryRoute = entryRouteFor(feeStatus);
+    const isOverseas = feeStatus === 'OVERSEAS';
+    const isEU = feeStatus === 'EU_TRANSITIONAL';
     const entryYear = i <= 70 ? 2022 : i <= 120 ? 2023 : i <= 140 ? 2024 : 2025;
 
     persons.push({
@@ -471,8 +493,8 @@ async function seedStudents(programmes: any[]) {
       id: `stu-${pad(i)}`,
       personId,
       studentNumber: `STU-2025-${pad(i)}`,
-      feeStatus: isIntl ? 'OVERSEAS' : 'HOME',
-      entryRoute: isIntl ? 'INTERNATIONAL' : pick(['UCAS', 'UCAS', 'UCAS', 'DIRECT', 'CLEARING'] as const),
+      feeStatus,
+      entryRoute,
       originalEntryDate: d(entryYear, 9, 15),
     });
 
@@ -493,7 +515,7 @@ async function seedStudents(programmes: any[]) {
       addressLine1: `${10 + rng(200)} ${pick(STREETS)}`,
       city: pick(UK_CITIES),
       postcode: pick(POSTCODES),
-      countryCode: isIntl ? pick(INTL_COUNTRIES) : 'GB',
+      countryCode: isOverseas ? pick(INTL_COUNTRIES) : isEU ? pick(EU_COUNTRIES) : 'GB',
       startDate: d(entryYear, 9, 1),
       isPrimary: true,
     });
@@ -539,12 +561,15 @@ async function seedEnrolments(students: any[], programmes: any[]) {
   let idx = 0;
 
   for (let si = 0; si < 150; si++) {
-    const studentId = students[si].id;
+    const student = students[si];
+    const studentId = student.id;
+    // Inherit fee status from the already-seeded Student row so enrolments
+    // remain consistent with the student record.
+    const studentFeeStatus = student.feeStatus as 'HOME' | 'OVERSEAS' | 'EU_TRANSITIONAL';
     const progIdx = si % programmes.length;
     const programmeId = programmes[progIdx].id;
     const progLevel = PROG_DEFS[progIdx]?.[3] ?? 'LEVEL_6';
     const isPG = progLevel === 'LEVEL_7' || progLevel === 'LEVEL_8';
-    const isIntl = si < 30;
 
     // Determine entry year index (0=2022/23, 1=2023/24, 2=2024/25, 3=2025/26)
     const entryYearIdx = si < 70 ? 0 : si < 120 ? 1 : si < 140 ? 2 : 3;
@@ -568,7 +593,7 @@ async function seedEnrolments(students: any[], programmes: any[]) {
         expectedEndDate: d(2023 + ayIdx, 6, 30),
         actualEndDate: isCurrent ? null : d(2023 + ayIdx, 6, 30),
         status: isCurrent ? 'ENROLLED' : 'COMPLETED',
-        feeStatus: isIntl ? 'OVERSEAS' : 'HOME',
+        feeStatus: studentFeeStatus,
       });
 
       statusHistory.push({
@@ -602,7 +627,7 @@ async function seedEnrolments(students: any[], programmes: any[]) {
           startDate: d(2022 + ayIdx, 9, 15),
           expectedEndDate: d(2023 + ayIdx, 6, 30),
           status: isCurr ? 'ENROLLED' : 'COMPLETED',
-          feeStatus: isIntl ? 'OVERSEAS' : 'HOME',
+          feeStatus: studentFeeStatus,
         });
       }
     }
@@ -739,8 +764,13 @@ async function seedFinance(students: any[], enrolments: any[]) {
   // One account per student for current year
   for (let i = 0; i < students.length; i++) {
     const stu = students[i];
-    const isIntl = i < 30;
-    const tuitionFee = isIntl ? 18500 : 9250;
+    // Fee level now follows the student's actual fee status (set during
+    // student seeding). Overseas pays international rate; EU Transitional
+    // and Home pay the UK rate.
+    const feeStatus = stu.feeStatus as 'HOME' | 'OVERSEAS' | 'EU_TRANSITIONAL';
+    const isOverseas = feeStatus === 'OVERSEAS';
+    const tuitionFee = isOverseas ? 18500 : 9250;
+    const feeLabel = isOverseas ? '(Overseas)' : feeStatus === 'EU_TRANSITIONAL' ? '(EU Transitional)' : '(Home)';
     const accountId = `acc-${pad(i + 1)}`;
     const invoiceId = `inv-${pad(i + 1)}`;
     const paid = i % 4 === 0 ? 0 : i % 3 === 0 ? tuitionFee / 3 : tuitionFee;
@@ -769,7 +799,7 @@ async function seedFinance(students: any[], enrolments: any[]) {
       id: `chg-${pad(i + 1)}`,
       studentAccountId: accountId,
       chargeType: 'TUITION' as const,
-      description: `Tuition fee ${isIntl ? '(Overseas)' : '(Home)'} 2025/26`,
+      description: `Tuition fee ${feeLabel} 2025/26`,
       amount: tuitionFee,
       currency: 'GBP',
       invoiceId,
@@ -783,7 +813,7 @@ async function seedFinance(students: any[], enrolments: any[]) {
         studentAccountId: accountId,
         invoiceId,
         amount: paid,
-        paymentMethod: isIntl ? 'BANK_TRANSFER' : (i % 5 === 0 ? 'CARD' : 'SLC'),
+        paymentMethod: isOverseas ? 'BANK_TRANSFER' : (i % 5 === 0 ? 'CARD' : 'SLC'),
         reference: `TXN-${pad(10000 + i + 1)}`,
         transactionDate: d(2025, 10, 1 + rng(28)),
         status: 'COMPLETED' as const,

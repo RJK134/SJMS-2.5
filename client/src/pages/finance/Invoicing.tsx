@@ -6,7 +6,7 @@ import { FileText, Send } from 'lucide-react';
 export default function Invoicing() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Invoice Generation" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Finance' }, { label: 'Invoicing' }]}>
+      <PageHeader title="Invoice Generation" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Invoicing' }]}>
         <div className="flex gap-2">
           <Button variant="outline"><FileText className="h-4 w-4 mr-2" /> Generate Individual</Button>
           <Button><Send className="h-4 w-4 mr-2" /> Bulk Generate</Button>

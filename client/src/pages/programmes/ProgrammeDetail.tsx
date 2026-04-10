@@ -49,7 +49,7 @@ export default function ProgrammeDetail() {
   return (
     <div className="space-y-6">
       <PageHeader title={prog.title} subtitle={prog.programmeCode}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Programmes', href: '/admin/programmes' }, { label: prog.programmeCode }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Programmes', href: '/admin/programmes' }, { label: prog.programmeCode }]}>
         <StatusBadge status={prog.status} />
       </PageHeader>
 

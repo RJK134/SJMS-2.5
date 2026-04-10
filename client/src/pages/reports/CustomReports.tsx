@@ -7,7 +7,7 @@ import { Download, FileSpreadsheet } from 'lucide-react';
 export default function CustomReports() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Custom Report Builder" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Reports' }, { label: 'Custom' }]}>
+      <PageHeader title="Custom Report Builder" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Reports' }, { label: 'Custom' }]}>
         <div className="flex gap-2">
           <Button variant="outline"><FileSpreadsheet className="h-4 w-4 mr-2" /> Export CSV</Button>
           <Button><Download className="h-4 w-4 mr-2" /> Export PDF</Button>

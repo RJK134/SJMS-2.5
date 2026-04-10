@@ -21,7 +21,7 @@ export default function EventsManagement() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Admissions Events" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Admissions' }, { label: 'Events' }]}>
+      <PageHeader title="Admissions Events" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Events' }]}>
         <Button><Plus className="h-4 w-4 mr-2" /> New Event</Button>
       </PageHeader>
       <DataTable<AdmEvent> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}

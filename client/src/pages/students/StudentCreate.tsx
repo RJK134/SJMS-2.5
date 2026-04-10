@@ -48,7 +48,7 @@ export default function StudentCreate() {
     <div className="space-y-6 max-w-3xl">
       <PageHeader
         title="New Student"
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Students', href: '/admin/students' }, { label: 'New Student' }]}
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Students', href: '/admin/students' }, { label: 'New Student' }]}
       />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

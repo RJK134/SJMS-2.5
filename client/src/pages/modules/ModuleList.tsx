@@ -35,7 +35,7 @@ export default function ModuleList() {
   return (
     <div className="space-y-6">
       <PageHeader title="Modules" subtitle={`${data?.pagination?.total ?? '—'} modules`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Modules' }]} />
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Modules' }]} />
       <FilterPanel filters={filterConfig} values={filters} onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />
       <DataTable<Module> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
         searchPlaceholder="Search by title or code..." onSearch={s => setParams(p => ({ ...p, search: s, page: 1 }))}

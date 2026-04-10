@@ -81,7 +81,7 @@ export default function ModuleDetail() {
   return (
     <div className="space-y-6">
       <PageHeader title={mod.title} subtitle={mod.moduleCode}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Modules', href: '/admin/modules' }, { label: mod.moduleCode }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Modules', href: '/admin/modules' }, { label: mod.moduleCode }]}>
         <StatusBadge status={mod.status} />
       </PageHeader>
 

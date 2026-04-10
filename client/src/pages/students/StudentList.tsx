@@ -44,7 +44,7 @@ export default function StudentList() {
       <PageHeader
         title="Students"
         subtitle={`${data?.pagination?.total ?? '\u2014'} student records`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Students' }]}
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Students' }]}
       >
         <Button onClick={() => navigate('/admin/students/new')}>
           <UserPlus className="h-4 w-4 mr-2" /> New Student

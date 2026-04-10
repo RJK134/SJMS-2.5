@@ -46,7 +46,7 @@ export default function AuditLogViewer() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Audit Log" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Settings' }, { label: 'Audit Log' }]} />
+      <PageHeader title="Audit Log" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Settings' }, { label: 'Audit Log' }]} />
 
       <Card>
         <CardHeader><CardTitle>Filters</CardTitle></CardHeader>

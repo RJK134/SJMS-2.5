@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export default function UKVIDashboard() {
   return (
     <div className="space-y-6">
-      <PageHeader title="UKVI Compliance" breadcrumbs={[{label:'Admin',href:'/admin'},{label:'Compliance'},{label:'UKVI'}]} />
+      <PageHeader title="UKVI Compliance" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Compliance'},{label:'UKVI'}]} />
       {(() => {
         const { data } = useList<any>('ukvi', '/v1/ukvi', { limit: 100 });
         const recs = data?.data ?? [];

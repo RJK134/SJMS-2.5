@@ -40,7 +40,7 @@ export default function ProgrammeList() {
   return (
     <div className="space-y-6">
       <PageHeader title="Programmes" subtitle={`${data?.pagination?.total ?? '—'} programmes`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Programmes' }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Programmes' }]}>
         <Button onClick={() => navigate('/admin/programmes/new')}><Plus className="h-4 w-4 mr-2" /> New Programme</Button>
       </PageHeader>
       <FilterPanel filters={filterConfig} values={filters} onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />

@@ -36,7 +36,7 @@ export default function EnrolmentCreate() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <PageHeader title="New Enrolment" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: 'New' }]} />
+      <PageHeader title="New Enrolment" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: 'New' }]} />
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Enrolment Details</CardTitle></CardHeader>

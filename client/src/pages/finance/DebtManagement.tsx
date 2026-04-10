@@ -14,7 +14,7 @@ export default function DebtManagement() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Debt Management" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Finance' }, { label: 'Debt Management' }]} />
+      <PageHeader title="Debt Management" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Debt Management' }]} />
       <div className="grid grid-cols-3 gap-4">
         <StatCard label="Accounts with Balance" value={overdue.length} icon={AlertTriangle} changeType="negative" />
         <StatCard label="Total Outstanding" value={`£${totalDebt.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`} icon={PoundSterling} />

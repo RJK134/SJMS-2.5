@@ -34,7 +34,7 @@ export default function ManagementDashboards() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Management Dashboards" breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Reports' }, { label: 'Dashboards' }]} />
+      <PageHeader title="Management Dashboards" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Reports' }, { label: 'Dashboards' }]} />
 
       <div className="grid grid-cols-4 gap-4">
         {isLoading ? (

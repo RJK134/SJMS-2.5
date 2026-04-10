@@ -40,7 +40,7 @@ export default function EnrolmentList() {
   return (
     <div className="space-y-6">
       <PageHeader title="Enrolments" subtitle={`${data?.pagination?.total ?? '—'} enrolment records`}
-        breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Enrolments' }]}>
+        breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Enrolments' }]}>
         <Button onClick={() => navigate('/admin/enrolments/new')}><Plus className="h-4 w-4 mr-2" /> New Enrolment</Button>
       </PageHeader>
       <FilterPanel filters={filterConfig} values={filters} onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />

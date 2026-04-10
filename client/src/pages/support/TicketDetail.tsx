@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export default function TicketDetail() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Ticket Detail" breadcrumbs={[{label:'Admin',href:'/admin'},{label:'Support',href:'/admin/support/tickets'},{label:'Ticket'}]} />
+      <PageHeader title="Ticket Detail" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Support',href:'/admin/support/tickets'},{label:'Ticket'}]} />
       {(() => {
         const [, params] = useRoute('/admin/support/tickets/:id');
         const { data, isLoading } = useDetail<any>('tickets', '/v1/support', params?.id);

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export default function TicketList() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Support Tickets" breadcrumbs={[{label:'Admin',href:'/admin'},{label:'Support'},{label:'Tickets'}]} />
+      <PageHeader title="Support Tickets" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Support'},{label:'Tickets'}]} />
       {(() => {
         const [, navigate] = useLocation();
         const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'createdAt', order: 'desc' });
