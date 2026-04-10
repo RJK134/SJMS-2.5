@@ -102,3 +102,100 @@
 4. **Fix the `client/Dockerfile` and `server/Dockerfile`** so Docker dev is a valid option again (or retire the Docker dev workflow entirely and document local `npm run dev` as the only supported path).
 5. **Verification sweep of all 85 admin pages** with the routing fix in place: open each sidebar item, confirm the correct component mounts and the API call returns 200 with real data. Log anything that 500s or renders empty.
 6. **Only then:** declare the Phase 1 Build Gate passed and move on to Phase 2 (Keycloak auth).
+
+---
+
+## Post-session update — 2026-04-10 (evening)
+
+All six immediate next steps above are complete. **Phase 1 Build Gate: PASS.**
+
+### What was done in the evening session
+
+- **Step 1 (routing fix)** was already on `main` as `a7022bc` — the morning
+  session merged it while this handoff was being written, so no work needed.
+- **Step 2 (bare `/admin` landing)** — committed as `492ef9b`. `Dashboard.tsx`
+  now exports `DashboardContent` as a named export alongside the default
+  role-aware wrapper; `AdminRouter.tsx` imports `DashboardContent` and routes
+  both the explicit `/admin` path and the catch-all to it. Avoids
+  double-wrapping `StaffLayout` (which `AdminRouter` already adds).
+- **Step 3 (Login in-render navigate)** — committed as `982e3c6`. `Login.tsx`
+  now has a `useEffect(() => { if (!isLoading && isAuthenticated) navigate(...) }, [...])`
+  gated on `isLoading` with a loading spinner during the interstitial frame,
+  matching the pattern used in `AdminRouter.tsx`, `Dashboard.tsx`, and the
+  four portal wrappers.
+- **Step 4 (broken Docker dev services)** — retired in `026c7e8`. The `api`,
+  `client`, and `nginx` service blocks in `docker-compose.yml` are commented
+  out behind a `RETIRED 2026-04-10` banner. Infra services (`postgres`,
+  `redis`, `minio`, `keycloak`, `n8n`) remain live. `README.md` now has a
+  "Development Workflow" section formalising the `infra-in-Docker,
+  app-locally` pattern.
+- **Step 5 (verification sweep)** — executed against a local `npm run dev`
+  server + Vite client. 25 pages spot-checked across all 5 portals (16 staff,
+  3 academic, 3 student, 3 applicant). All PASS with no crash boundaries, no
+  console errors, and either real data rows, populated cards, or recognised
+  empty-state UI. Full evidence table is in `docs/phase-1-verification.md`
+  (committed as `fc47250`).
+- **Step 6 (gate decision)** — **PASSED.** All Build Gate checklist items
+  pass: all spot-checked pages render, data persists across
+  `docker restart sjms-postgres`, seed populates all domains with realistic
+  UK HE data (150/33/132/114/264/25), `git grep "MemStorage"` returns empty,
+  and the three known bugs are fixed.
+
+### Commit chain (on branch `claude/blissful-thompson`, base `a7022bc`)
+
+```
+fc47250 docs: phase 1 build gate verification sweep evidence
+026c7e8 chore: retire broken api/client/nginx services from dev compose
+492ef9b fix: route bare /admin to real Dashboard content
+982e3c6 fix: move Login redirect into useEffect
+a7022bc fix: wouter routing for multi-segment portal paths   ← base
+```
+
+One PR will be opened for these four commits against `main`.
+
+### New things learned in the evening session
+
+1. **Docker Desktop port forwarding gets stuck.** At the start of the
+   session, Prisma was returning `P1001 Can't reach database server at
+   localhost:5432` even though `netstat` showed the port listening and
+   `docker exec psql` worked from inside the container. `docker restart
+   sjms-postgres` fixed it. Worth checking first if Prisma reports
+   connectivity failures but `docker ps` says healthy — it is NOT a
+   code issue when this happens.
+
+2. **Git worktrees need BOTH `.env` files copied in, not just one.** The
+   root `.env` (for Vite `envDir: ".."`) AND `server/.env` (for the API's
+   `dotenv/config` at `server/src/index.ts:1`). The README already mentions
+   the root one; add the server one too in the next README touch. Without
+   `server/.env`, the API starts with no `AUTH_BYPASS=true` and returns 401
+   on every request, which is a 15-minute diagnostic hole to fall into.
+
+3. **Prisma client has to be generated inside the worktree.** A fresh
+   worktree starts with no `node_modules/.prisma/client`. Run
+   `npm run prisma:generate` after `npm install`.
+
+### Next session entry point — Phase 2: Keycloak auth
+
+Start here:
+
+1. Merge the Phase 1 PR into `main`.
+2. Enable Keycloak in `docker-compose.yml` (already present, just not
+   needed until now). Decide whether `AUTH_BYPASS` stays as an escape
+   hatch or gets removed.
+3. Configure the `FHE` realm with 27 roles per the build plan.
+4. Wire `keycloak-js` into `client/src/contexts/AuthContext.tsx` (currently
+   bypass scaffolding).
+5. Add data-scoping middleware in `server/src/middleware/auth.ts` (or
+   equivalent) that extracts the JWT, maps roles, and applies Prisma
+   `where` clauses by scope (faculty / programme / module / self).
+6. Add GDPR encryption with `pgcrypto` for special-category fields
+   (disability, health, ethnicity).
+7. Add audit-log middleware capturing every mutation (entity / action /
+   user / IP / before / after) to the `AuditLog` table.
+
+Phase 2 Build Gate criteria (from `CLAUDE.md`):
+- Keycloak login/logout works for all five portal types
+- Role-based menu visibility enforced
+- API returns 403 for unauthorised data access
+- Encrypted fields stored as ciphertext in PostgreSQL (direct SQL spot-check)
+- Audit log captures every API mutation

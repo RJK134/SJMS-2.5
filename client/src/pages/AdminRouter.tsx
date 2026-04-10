@@ -2,6 +2,7 @@ import { Route, Switch, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 import StaffLayout from '@/components/layout/StaffLayout';
+import { DashboardContent } from './Dashboard';
 
 // Phase 5A — Core entity pages
 import StudentList from './students/StudentList';
@@ -214,12 +215,13 @@ function AdminContent() {
       <Route path="/admin/settings/academic-calendar" component={AcademicCalendar} />
       <Route path="/admin/settings/academic-years" component={AcademicYears} />
 
-      {/* Default */}
+      {/* Admin landing — bare /admin renders the real dashboard content.
+          Must appear BEFORE the catch-all to match first. */}
+      <Route path="/admin" component={DashboardContent} />
+
+      {/* Default — any unknown /admin/* path also falls back to the dashboard. */}
       <Route>
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold">Staff Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to the SJMS 2.5 staff portal.</p>
-        </div>
+        <DashboardContent />
       </Route>
     </Switch>
   );
