@@ -9,6 +9,7 @@ export async function list(query: Record<string, any>) {
   const { page, limit, sort, order, search, ...filters } = query;
   const skip = (page - 1) * limit;
   const where: Record<string, any> = {
+    deletedAt: null,
     
     
     ...(filters.enrolmentId ? { enrolmentId: filters.enrolmentId as any } : {}),
@@ -21,7 +22,7 @@ export async function list(query: Record<string, any>) {
 }
 
 export async function getById(id: string) {
-  const result = await prisma.progressionRecord.findUnique({ where: { id }, include: { enrolment: { include: { student: { include: { person: true } }, programme: true } } } });
+  const result = await prisma.progressionRecord.findFirst({ where: { id, deletedAt: null }, include: { enrolment: { include: { student: { include: { person: true } }, programme: true } } } });
   if (!result) throw new NotFoundError('ProgressionRecord', id);
   return result;
 }
@@ -43,7 +44,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.progressionRecord.delete({ where: { id } });
+  await prisma.progressionRecord.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit('ProgressionRecord', id, 'DELETE', userId, previous, null, req);
   await emitEvent('progressions.deleted', { id });
 }

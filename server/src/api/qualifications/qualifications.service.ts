@@ -9,6 +9,7 @@ export async function list(query: Record<string, any>) {
   const { page, limit, sort, order, search, ...filters } = query;
   const skip = (page - 1) * limit;
   const where: Record<string, any> = {
+    deletedAt: null,
     
     ...(search ? { OR: [{ subject: { contains: search, mode: 'insensitive' as const } }] } : {}),
     ...(filters.applicationId ? { applicationId: filters.applicationId as any } : {}),
@@ -21,7 +22,7 @@ export async function list(query: Record<string, any>) {
 }
 
 export async function getById(id: string) {
-  const result = await prisma.applicationQualification.findUnique({ where: { id }, include: { application: true } });
+  const result = await prisma.applicationQualification.findFirst({ where: { id, deletedAt: null }, include: { application: true } });
   if (!result) throw new NotFoundError('ApplicationQualification', id);
   return result;
 }
@@ -43,7 +44,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.applicationQualification.delete({ where: { id } });
+  await prisma.applicationQualification.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit('ApplicationQualification', id, 'DELETE', userId, previous, null, req);
   await emitEvent('qualifications.deleted', { id });
 }

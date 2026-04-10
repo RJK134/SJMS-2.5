@@ -9,8 +9,7 @@ export async function list(query: Record<string, any>) {
   const { page, limit, sort, order, search, ...filters } = query;
   const skip = (page - 1) * limit;
   const where: Record<string, any> = {
-    
-    
+    deletedAt: null,
     ...(filters.studentId ? { studentId: filters.studentId as any } : {}),
       ...(filters.status ? { status: filters.status as any } : {}),
   };
@@ -22,7 +21,7 @@ export async function list(query: Record<string, any>) {
 }
 
 export async function getById(id: string) {
-  const result = await prisma.attendanceRecord.findUnique({ where: { id }, include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } } });
+  const result = await prisma.attendanceRecord.findFirst({ where: { id, deletedAt: null }, include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } } });
   if (!result) throw new NotFoundError('AttendanceRecord', id);
   return result;
 }
@@ -44,7 +43,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.attendanceRecord.delete({ where: { id } });
+  await prisma.attendanceRecord.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit('AttendanceRecord', id, 'DELETE', userId, previous, null, req);
   await emitEvent('attendance.deleted', { id });
 }
