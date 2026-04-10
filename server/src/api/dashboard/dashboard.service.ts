@@ -105,10 +105,17 @@ export async function getApplicantDashboard(personId: string) {
 }
 
 export async function getAcademicDashboard(userId: string) {
-  // Return aggregate stats; user-scoped filtering requires staff→module mapping
+  // Return aggregate stats; user-scoped filtering requires staff→module mapping.
+  // NOTE: Module has no deletedAt column (not a soft-delete entity) — filter by
+  // status instead, matching getStaffStats above (APPROVED + RUNNING = deliverable).
+  // NOTE: Marks live in the MarkEntry model (not "Mark") and have no deletedAt by
+  // design — academic mark history must never be destructively removed. "Pending"
+  // here means marks still at DRAFT stage, i.e. not yet submitted for first
+  // marking. MarkStage values: DRAFT | FIRST_MARK | SECOND_MARK | MODERATED |
+  // EXTERNAL_REVIEWED | BOARD_APPROVED | RELEASED.
   const [modules, pendingMarks] = await Promise.all([
-    prisma.module.count({ where: { deletedAt: null } }),
-    prisma.mark.count({ where: { deletedAt: null, status: 'DRAFT' } }),
+    prisma.module.count({ where: { status: { in: ['APPROVED', 'RUNNING'] } } }),
+    prisma.markEntry.count({ where: { stage: 'DRAFT' } }),
   ]);
 
   return {
