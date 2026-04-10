@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -44,12 +45,21 @@ const portals = [
 ];
 
 export default function Login() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
   const [, navigate] = useLocation();
 
-  if (isAuthenticated) {
-    navigate("/dashboard");
-    return null;
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, navigate]);
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   const handleSignIn = (portalRoute: string) => {
