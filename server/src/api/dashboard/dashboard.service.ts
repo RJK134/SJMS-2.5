@@ -71,11 +71,13 @@ export async function getStudentDashboard(studentId: string) {
       status: mr.status,
     })),
     attendance: { rate: attendanceRate, present, total: totalAttendance },
+    // NOTE: Schema rename — totalCharges → totalDebits, totalPayments → totalCredits.
+    // Consumer in client/src/pages may need updating — flagged for Phase 5 frontend wiring.
     finance: finance ? {
       balance: Number(finance.balance ?? 0),
-      totalCharges: Number(finance.totalCharges ?? 0),
-      totalPayments: Number(finance.totalPayments ?? 0),
-    } : { balance: 0, totalCharges: 0, totalPayments: 0 },
+      totalDebits: Number(finance.totalDebits ?? 0),
+      totalCredits: Number(finance.totalCredits ?? 0),
+    } : { balance: 0, totalDebits: 0, totalCredits: 0 },
   };
 }
 
