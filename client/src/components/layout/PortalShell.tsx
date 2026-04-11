@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import {
@@ -50,6 +50,29 @@ export default function PortalShell({ children, portalName, navItems }: PortalSh
   const filteredNav = navItems.filter(
     (item) => !item.roles || hasAnyRole(item.roles)
   );
+
+  // Dismiss the mobile sidebar when the user navigates to a new route. Without
+  // this, tapping a nav link on mobile would change the route but leave the
+  // sidebar covering the content — making the destination page unreachable.
+  useEffect(() => {
+    setSidebarOpen(false);
+    setProfileOpen(false);
+  }, [location]);
+
+  // Escape key closes the mobile sidebar and the profile dropdown. Standard
+  // WCAG 2.1 dismissible pattern — no focus trap yet, which is Phase 5
+  // accessibility hardening work.
+  useEffect(() => {
+    if (!sidebarOpen && !profileOpen) return;
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+        setProfileOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarOpen, profileOpen]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -127,7 +150,9 @@ export default function PortalShell({ children, portalName, navItems }: PortalSh
           <div className="flex items-center gap-4">
             <button
               className="lg:hidden text-secondary-500 hover:text-secondary-700"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={sidebarOpen}
             >
               <Menu className="h-6 w-6" />
             </button>
