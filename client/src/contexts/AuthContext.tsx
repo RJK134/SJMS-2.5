@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
+  AUTH_MODE,
   initKeycloak,
   isAuthenticated as kcIsAuth,
   getUser,
@@ -95,13 +96,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       });
 
-    // Set up automatic token refresh
-    keycloak.onTokenExpired = () => {
-      console.log('[auth] Token expired, refreshing...');
-      keycloak.updateToken(30).catch(() => {
-        console.error('[auth] Auto-refresh failed');
-      });
-    };
+    // Set up automatic token refresh — only meaningful in Keycloak mode.
+    // In dev mode keycloak.init() is never called so `onTokenExpired` would
+    // never fire anyway, but gating it keeps the intent explicit and avoids
+    // calling keycloak.updateToken() on an uninitialised instance.
+    if (AUTH_MODE === 'keycloak') {
+      keycloak.onTokenExpired = () => {
+        console.log('[auth] Token expired, refreshing...');
+        keycloak.updateToken(30).catch(() => {
+          console.error('[auth] Auto-refresh failed');
+        });
+      };
+    }
 
     return () => {
       cancelled = true;
@@ -114,9 +120,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Clear local React state FIRST so the UI never stays in an
+    // authenticated-looking state even if kcLogout throws. The try/catch
+    // defends against any future keycloak-js exception — the 2026-04-11
+    // crash was caused by kcLogout throwing `TypeError: Cannot read
+    // properties of undefined (reading 'logout')` on an uninitialised
+    // instance, which bubbled into React's synthetic event dispatcher.
     setUser(null);
     setRoles([]);
-    kcLogout();
+    try {
+      kcLogout();
+    } catch (err) {
+      console.error('[auth] kcLogout threw unexpectedly, swallowing:', err);
+      // Last-ditch fallback: force a reload to the home page so the user
+      // is not stranded on a half-broken screen.
+      window.location.replace(window.location.origin + '/');
+    }
   }, []);
 
   const hasRole = useCallback(

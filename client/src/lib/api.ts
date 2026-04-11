@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { getToken, keycloak } from './auth';
+import { getToken, refreshAccessToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -45,8 +45,16 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      await keycloak.updateToken(30);
-      const newToken = keycloak.token!;
+      // Route through refreshAccessToken() so the AUTH_MODE=dev and
+      // `!keycloak.didInitialize` guards are applied centrally. Previously
+      // this interceptor called keycloak.updateToken(30) directly, which
+      // threw `TypeError: Cannot read properties of undefined (reading
+      // 'logout')` if the 401 fired before Keycloak finished initialising
+      // (or ever, in dev mode).
+      const newToken = await refreshAccessToken();
+      if (!newToken) {
+        throw new Error('Token refresh returned no token');
+      }
       original.headers.Authorization = `Bearer ${newToken}`;
       processQueue(null, newToken);
       return api(original);
