@@ -1,42 +1,44 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/programmeApproval.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    
-    
-    ...(filters.programmeId ? { programmeId: filters.programmeId as any } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.programmeApproval.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.programmeApproval.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface ProgrammeApprovalListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  programmeId?: string;
+  status?: string;
+  approvalType?: string;
+}
+
+export async function list(query: ProgrammeApprovalListQuery) {
+  const { page, limit, sort, order, programmeId, status, approvalType } = query;
+  return repo.list(
+    { programmeId, status, approvalType },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.programmeApproval.findFirst({ where: { id, deletedAt: null }, include: { programme: true } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('ProgrammeApproval', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.programmeApproval.create({ data });
+export async function create(data: Prisma.ProgrammeApprovalUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('ProgrammeApproval', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('programme_approvals.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.ProgrammeApprovalUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.programmeApproval.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('ProgrammeApproval', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('programme_approvals.updated', { id });
   return result;
@@ -44,7 +46,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.programmeApproval.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('ProgrammeApproval', id, 'DELETE', userId, previous, null, req);
   await emitEvent('programme_approvals.deleted', { id });
 }

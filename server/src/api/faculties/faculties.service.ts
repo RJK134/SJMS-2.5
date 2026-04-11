@@ -1,42 +1,42 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/faculty.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    
-    ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' as const } }, { code: { contains: search, mode: 'insensitive' as const } }] } : {}),
-    
-  };
-  const [data, total] = await Promise.all([
-    prisma.faculty.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.faculty.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface FacultyListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  search?: string;
+}
+
+export async function list(query: FacultyListQuery) {
+  const { page, limit, sort, order, search } = query;
+  return repo.list(
+    { search },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.faculty.findFirst({ where: { id, deletedAt: null }, include: { schools: true } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('Faculty', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.faculty.create({ data });
+export async function create(data: Prisma.FacultyUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('Faculty', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('faculties.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.FacultyUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.faculty.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('Faculty', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('faculties.updated', { id });
   return result;
@@ -44,7 +44,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.faculty.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('Faculty', id, 'DELETE', userId, previous, null, req);
   await emitEvent('faculties.deleted', { id });
 }
