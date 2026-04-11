@@ -3,7 +3,7 @@ import * as service from './module-registrations.service';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.list(req.query);
+    const result = await service.list(req.query as unknown as service.ModuleRegistrationListQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }
