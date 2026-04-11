@@ -87,16 +87,32 @@ const ACADEMIC_PERSONA_ROLES = [
   'professor',
 ];
 
-// Persona → mock JWT payload. Seeded identities (verified against the live
-// DB on 2026-04-11):
-//   student    → per-stu-0001 / stu-0001 / james.taylor1@student.futurehorizons.ac.uk
-//   applicant  → per-app-0001 (applicants have no seeded PersonContact of
-//                type EMAIL; the data-scope middleware resolves the
-//                persona via the DEV_PERSONA_IDENTITY fast-path keyed off
-//                the `sub` value rather than an email lookup).
-//   admin / academic → scopeToUser short-circuits for admin + teaching roles,
-//                so the email is cosmetic — these personas don't need a
-//                seeded Person record.
+// Persona → mock JWT payload. Where possible the display name matches a
+// real seeded Person so the UI header ("Welcome, <first>") lines up with
+// the data the persona can actually see. Seeded identities verified
+// against the live DB on 2026-04-11:
+//
+//   admin      → Richard Knapp (cosmetic; there are no seeded admin
+//                staff Persons — the staff table only contains teaching
+//                roles. Kept as the project owner's name so the dev
+//                workflow feels natural. scopeToUser short-circuits for
+//                admin roles so no Person lookup happens.)
+//   academic   → stf-0003 / per-stf-0003 / Zoe Price (Lecturer). Real
+//                seeded teaching-staff Person. No seeded EMAIL contact
+//                so the DEV_PERSONA_IDENTITY fast-path in data-scope.ts
+//                bypasses the email lookup for this sub.
+//   student    → per-stu-0001 / stu-0001 / James Taylor. Real seeded
+//                student with an EMAIL contact of
+//                james.taylor1@student.futurehorizons.ac.uk.
+//   applicant  → per-app-0001 / Chloe Price. Real seeded applicant
+//                Person. No seeded EMAIL contact so the fast-path
+//                resolver handles it.
+//
+// The Comet smoke test round 1 F7 finding flagged the previous cosmetic
+// names ("Lena Lecturer", "Anne Applicant") because they had no
+// counterpart in the seed and made the persona dropdown look like a
+// mock stub. Now the student + applicant names point at actual seed
+// rows and the academic name points at an actual lecturer.
 export const DEV_PERSONA_PAYLOADS: Record<DevPersona, JWTPayload> = {
   admin: {
     sub: 'dev-persona-admin',
@@ -108,10 +124,10 @@ export const DEV_PERSONA_PAYLOADS: Record<DevPersona, JWTPayload> = {
   },
   academic: {
     sub: 'dev-persona-academic',
-    email: 'lecturer.demo@fhe.ac.uk',
-    preferred_username: 'lecturer.demo',
-    given_name: 'Lena',
-    family_name: 'Lecturer',
+    email: 'zoe.price@fhe.ac.uk',
+    preferred_username: 'zoe.price',
+    given_name: 'Zoe',
+    family_name: 'Price',
     realm_access: { roles: ACADEMIC_PERSONA_ROLES },
   },
   student: {
@@ -124,10 +140,10 @@ export const DEV_PERSONA_PAYLOADS: Record<DevPersona, JWTPayload> = {
   },
   applicant: {
     sub: 'dev-persona-applicant',
-    email: 'applicant.demo@fhe.ac.uk',
-    preferred_username: 'applicant.demo',
-    given_name: 'Anne',
-    family_name: 'Applicant',
+    email: 'chloe.price@applicant.futurehorizons.ac.uk',
+    preferred_username: 'chloe.price',
+    given_name: 'Chloe',
+    family_name: 'Price',
     realm_access: { roles: ['applicant'] },
   },
 };

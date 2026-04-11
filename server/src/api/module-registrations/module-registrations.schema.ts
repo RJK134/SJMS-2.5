@@ -10,6 +10,15 @@ export const querySchema = z.object({
   search: z.string().optional(),
   enrolmentId: z.string().optional(), moduleId: z.string().optional(),
     academicYear: z.string().optional(), status: z.string().optional(),
+  // studentId is accepted so `scopeToUser('studentId')` middleware can
+  // inject the authenticated student's id into req.query and have it
+  // survive validateQuery — without this field, zod strips it and the
+  // student persona sees every module registration in the system.
+  // ModuleRegistration has no direct studentId column; the repository
+  // translates this into `enrolment: { studentId }` because the link
+  // goes through Enrolment. Parallels the Application → Applicant
+  // personId fix in admissions (PR #17, commit 6959065).
+  studentId: z.string().optional(),
 });
 
 export const createSchema = z.object({
