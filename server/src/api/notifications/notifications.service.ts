@@ -1,54 +1,50 @@
-import prisma from '../../utils/prisma';
-import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import { logAudit } from '../../utils/audit';
+import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
+import * as repo from '../../repositories/notification.repository';
+import { logAudit } from '../../utils/audit';
+import { NotFoundError } from '../../utils/errors';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    ...(filters.userId ? { userId: filters.userId } : {}),
-    ...(filters.isRead !== undefined ? { isRead: filters.isRead === 'true' } : {}),
-    ...(filters.category ? { category: filters.category } : {}),
-    ...(filters.priority ? { priority: filters.priority } : {}),
-    OR: [
-      { expiresAt: null },
-      { expiresAt: { gte: new Date() } },
-    ],
-  };
-  const [data, total] = await Promise.all([
-    prisma.notification.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.notification.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface NotificationListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  userId?: string;
+  isRead?: boolean;
+  category?: string;
+  priority?: string;
+}
+
+export async function list(query: NotificationListQuery) {
+  const { page, limit, sort, order, userId, isRead, category, priority } = query;
+  return repo.list(
+    { userId, isRead, category, priority },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.notification.findUnique({ where: { id } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('Notification', id);
   return result;
 }
 
 export async function markAsRead(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.notification.update({
-    where: { id },
-    data: { isRead: true, readAt: new Date() },
-  });
+  const result = await repo.markAsRead(id);
   await logAudit('Notification', id, 'UPDATE', userId, previous, result, req);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.notification.create({ data: { ...data, createdBy: userId } });
+export async function create(data: Prisma.NotificationUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create({ ...data, createdBy: userId });
   await logAudit('Notification', result.id, 'CREATE', userId, null, result, req);
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.NotificationUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.notification.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('Notification', id, 'UPDATE', userId, previous, result, req);
   return result;
 }

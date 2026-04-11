@@ -34,7 +34,7 @@ export async function academicDashboard(req: Request, res: Response, next: NextF
 
 export async function engagementScores(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.getEngagementScores(req.query);
+    const result = await service.getEngagementScores(req.query as unknown as service.EngagementScoresQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }
@@ -42,7 +42,7 @@ export async function engagementScores(req: Request, res: Response, next: NextFu
 export async function staffTutees(req: Request, res: Response, next: NextFunction) {
   try {
     const staffId = typeof req.params.staffId === 'string' ? req.params.staffId : '';
-    const result = await service.getStaffTutees(staffId, req.query);
+    const result = await service.getStaffTutees(staffId, req.query as unknown as service.StaffTuteesQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }

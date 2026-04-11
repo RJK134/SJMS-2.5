@@ -3,7 +3,7 @@ import * as service from './timetable.service';
 
 export async function listSessions(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.listSessions(req.query);
+    const result = await service.listSessions(req.query as unknown as service.TimetableListQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }
