@@ -3,7 +3,7 @@ import * as service from './transcripts.service';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.list(req.query);
+    const result = await service.list(req.query as unknown as service.TranscriptListQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }
