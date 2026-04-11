@@ -15,12 +15,16 @@ export interface ApplicationListQuery {
   academicYear?: string;
   programmeId?: string;
   applicantId?: string;
+  // personId is injected by scopeToUser('personId') middleware on the
+  // applicant portal list route. The repository resolves it via the
+  // applicant relation (Application has no direct personId column).
+  personId?: string;
 }
 
 export async function list(query: ApplicationListQuery) {
-  const { page, limit, sort, order, search, status, academicYear, programmeId, applicantId } = query;
+  const { page, limit, sort, order, search, status, academicYear, programmeId, applicantId, personId } = query;
   return repo.list(
-    { search, status, academicYear, programmeId, applicantId },
+    { search, status, academicYear, programmeId, applicantId, personId },
     { page, limit, skip: (page - 1) * limit, sort, order },
   );
 }

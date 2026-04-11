@@ -8,6 +8,11 @@ export interface ApplicationFilters {
   programmeId?: string;
   applicantId?: string;
   search?: string;
+  // personId is the applicant-portal scope filter — set by
+  // scopeToUser('personId') middleware. Application has no direct personId
+  // column; the link is Application -> Applicant.personId, so the filter
+  // becomes a nested `applicant: { personId }` constraint.
+  personId?: string;
 }
 
 const defaultInclude = {
@@ -21,22 +26,33 @@ const defaultInclude = {
 } as const;
 
 export async function list(filters: ApplicationFilters = {}, pagination: PaginationParams) {
+  // Build the nested `applicant` filter explicitly so personId and search
+  // can coexist. A naive object spread would cause whichever spread came
+  // last to overwrite the other (both target the same `applicant` key) —
+  // a single applicant search request could silently drop the personId
+  // scope and leak across applicants.
+  const applicantFilter: Prisma.ApplicantWhereInput | undefined =
+    filters.personId || filters.search
+      ? {
+          ...(filters.personId && { personId: filters.personId }),
+          ...(filters.search && {
+            person: {
+              OR: [
+                { firstName: { contains: filters.search, mode: 'insensitive' as const } },
+                { lastName: { contains: filters.search, mode: 'insensitive' as const } },
+              ],
+            },
+          }),
+        }
+      : undefined;
+
   const where: Prisma.ApplicationWhereInput = {
     deletedAt: null,
     ...(filters.status && { status: filters.status as any }),
     ...(filters.academicYear && { academicYear: filters.academicYear }),
     ...(filters.programmeId && { programmeId: filters.programmeId }),
     ...(filters.applicantId && { applicantId: filters.applicantId }),
-    ...(filters.search && {
-      applicant: {
-        person: {
-          OR: [
-            { firstName: { contains: filters.search, mode: 'insensitive' as const } },
-            { lastName: { contains: filters.search, mode: 'insensitive' as const } },
-          ],
-        },
-      },
-    }),
+    ...(applicantFilter && { applicant: applicantFilter }),
   };
 
   const [data, total] = await Promise.all([
