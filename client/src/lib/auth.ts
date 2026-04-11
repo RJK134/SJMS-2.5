@@ -220,11 +220,14 @@ export function logout(): void {
   console.log('[auth] logout() called - mode:', AUTH_MODE);
 
   if (IS_DEV_MODE) {
-    // Dev mode: there is no Keycloak session to invalidate. Reload the home
-    // page so the app renders its landing view on the next render, and use
-    // location.replace so the back button does not return to the protected
-    // page the user just left.
-    window.location.replace(window.location.origin + '/');
+    // Dev mode: there is no Keycloak session to invalidate. Navigate to the
+    // hash-routed login page so the wouter `useHashLocation` router can
+    // resolve the path. Previously we replaced to `origin + '/'` which left
+    // an empty hash — wouter matched the top-level catch-all and rendered
+    // the NotFound page, so users appeared "stuck" after clicking Sign Out.
+    // location.replace is still used so the back button does not return to
+    // the protected page the user just left.
+    window.location.replace(window.location.origin + '/#/login');
     return;
   }
 
@@ -232,14 +235,18 @@ export function logout(): void {
     // Before this guard, calling keycloak.logout() on an uninitialised
     // instance would throw `TypeError: Cannot read properties of undefined
     // (reading 'logout')` — the exact crash reported 2026-04-11. Fall back
-    // to a plain home reload so the UI never enters a broken state.
-    console.warn('[auth] logout() called before Keycloak was initialised — reloading to home');
-    window.location.replace(window.location.origin + '/');
+    // to the hash-routed login page so the UI never enters a broken state.
+    console.warn('[auth] logout() called before Keycloak was initialised — redirecting to /#/login');
+    window.location.replace(window.location.origin + '/#/login');
     return;
   }
 
   keycloak.logout({
-    redirectUri: window.location.origin + '/',
+    // Fragment-preserving redirect so the post-logout landing hits the
+    // hash router at /#/login. Keycloak preserves URL fragments on
+    // post_logout_redirect_uri in v24; if a future deployment strips them,
+    // we fall back to origin and the browser lands on wouter's NotFound.
+    redirectUri: window.location.origin + '/#/login',
   });
 }
 

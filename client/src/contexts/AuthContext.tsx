@@ -132,9 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       kcLogout();
     } catch (err) {
       console.error('[auth] kcLogout threw unexpectedly, swallowing:', err);
-      // Last-ditch fallback: force a reload to the home page so the user
-      // is not stranded on a half-broken screen.
-      window.location.replace(window.location.origin + '/');
+      // Last-ditch fallback: navigate to the hash-routed login page so the
+      // wouter router can render it. Using origin + '/' would leave an
+      // empty hash and fall through to wouter's NotFound catch-all.
+      window.location.replace(window.location.origin + '/#/login');
     }
   }, []);
 
