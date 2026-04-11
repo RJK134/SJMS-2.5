@@ -11,6 +11,8 @@ import MyTimetable from './MyTimetable';
 import MyExamBoards from './MyExamBoards';
 import MyECClaims from './MyECClaims';
 import MyProfile from './MyProfile';
+import ComingSoon from '@/components/ComingSoon';
+import PortalNotFound from '@/components/shared/PortalNotFound';
 
 export default function AcademicRouter() {
   return (
@@ -26,7 +28,28 @@ export default function AcademicRouter() {
       <Route path="/academic/exam-boards" component={MyExamBoards} />
       <Route path="/academic/ec-claims" component={MyECClaims} />
       <Route path="/academic/profile" component={MyProfile} />
-      <Route component={AcademicDashboard} />
+      {/* Academic landing — explicit so /academic renders the dashboard
+          via a real route rather than the catch-all, which is now the
+          portal-scoped 404. */}
+      <Route path="/academic" component={AcademicDashboard} />
+      <Route path="/academic/dashboard" component={AcademicDashboard} />
+      {/* ── Coming Soon landings (Comet round 1 finding F2) ────────────
+          The academic sidebar links "My Students" and "Assessments" at
+          top-level paths that aren't yet built out. Render a labelled
+          ComingSoon card instead of silently falling through to the
+          dashboard. */}
+      <Route path="/academic/students">
+        <ComingSoon title="My Students" description="A module-scoped student list for teaching staff is planned. In the meantime, use My Tutees from the sidebar to see students you tutor, or open a specific module to see its enrolled cohort." />
+      </Route>
+      <Route path="/academic/assessments">
+        <ComingSoon title="Assessments" description="A cross-module assessments view for teaching staff is planned. In the meantime, use Marks Entry and Moderation from the sidebar to review component-level work." />
+      </Route>
+      {/* Portal-scoped 404 — unknown /academic/* paths render a
+          deliberate NotFound card inside the AcademicLayout instead of
+          the dashboard fallback that previously masked typos. */}
+      <Route>
+        <PortalNotFound portalHref="/academic" portalLabel="Academic Portal" />
+      </Route>
     </Switch>
   );
 }

@@ -7,6 +7,13 @@ export interface ModuleRegistrationFilters {
   moduleId?: string;
   academicYear?: string;
   status?: string;
+  // studentId is the student-portal scope filter — set by
+  // scopeToUser('studentId') middleware. ModuleRegistration has no
+  // direct studentId column; the link is
+  // ModuleRegistration → Enrolment.studentId, so the filter becomes a
+  // nested `enrolment: { studentId }` constraint. Parallels the
+  // Application → Applicant.personId pattern in admissions.repository.
+  studentId?: string;
 }
 
 export async function list(filters: ModuleRegistrationFilters = {}, pagination: PaginationParams) {
@@ -16,6 +23,7 @@ export async function list(filters: ModuleRegistrationFilters = {}, pagination: 
     ...(filters.moduleId && { moduleId: filters.moduleId }),
     ...(filters.academicYear && { academicYear: filters.academicYear }),
     ...(filters.status && { status: filters.status as any }),
+    ...(filters.studentId && { enrolment: { studentId: filters.studentId } }),
   };
 
   const [data, total] = await Promise.all([
@@ -24,6 +32,15 @@ export async function list(filters: ModuleRegistrationFilters = {}, pagination: 
       skip: pagination.skip,
       take: pagination.limit,
       orderBy: { [pagination.sort]: pagination.order } as any,
+      // Include the module so list consumers (the student MyModules
+      // page, the student dashboard) can render moduleCode / title
+      // without a separate fetch. Without this, those pages showed
+      // blank rows — the list route previously returned only the raw
+      // ModuleRegistration columns.
+      include: {
+        module: { select: { id: true, moduleCode: true, title: true, credits: true, level: true } },
+        enrolment: { select: { id: true, studentId: true, academicYear: true } },
+      },
     }),
     prisma.moduleRegistration.count({ where }),
   ]);

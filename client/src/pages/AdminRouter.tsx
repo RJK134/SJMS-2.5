@@ -5,6 +5,8 @@ import StaffLayout from '@/components/layout/StaffLayout';
 import { DashboardContent } from './Dashboard';
 import { ADMIN_STAFF_ROLES } from '@/constants/roles';
 import AuthLoadingOrError from '@/components/shared/AuthLoadingOrError';
+import ComingSoon from '@/components/ComingSoon';
+import PortalNotFound from '@/components/shared/PortalNotFound';
 
 // Phase 5A — Core entity pages
 import StudentList from './students/StudentList';
@@ -218,12 +220,67 @@ function AdminContent() {
       <Route path="/admin/settings/academic-years" component={AcademicYears} />
 
       {/* Admin landing — bare /admin renders the real dashboard content.
-          Must appear BEFORE the catch-all to match first. */}
+          `/admin/dashboard` is an explicit alias because several layouts
+          and external links use it as a canonical deep link (Comet smoke
+          test round 1 finding F4 — previously fell through to the old
+          catch-all, making it ambiguous whether the dashboard was "real"
+          or a fallback). Both paths render the same component. */}
       <Route path="/admin" component={DashboardContent} />
+      <Route path="/admin/dashboard" component={DashboardContent} />
 
-      {/* Default — any unknown /admin/* path also falls back to the dashboard. */}
+      {/* ── Coming Soon landings (Comet round 1 finding F2) ────────────
+          Parent paths for sidebar categories whose landing pages are not
+          yet built out. Previously these fell through to the catch-all
+          and silently showed the dashboard, which the Comet smoke test
+          flagged as "11 admin sidebar items silently redirect". Each
+          renders a labelled ComingSoon card so the user sees a
+          deliberate placeholder instead of a fake dashboard.
+
+          Note: deeper routes under these parents (e.g. /admin/finance/accounts,
+          /admin/assessment/marks-entry) are already registered above and
+          continue to render their real implementations — only the bare
+          parent path was broken. */}
+      <Route path="/admin/admissions">
+        <ComingSoon title="Admissions" description="Pick an Admissions sub-section from the sidebar to continue — the landing page is on the roadmap. Applications, offers, interviews, events, and agents are all wired." />
+      </Route>
+      <Route path="/admin/assessment">
+        <ComingSoon title="Assessment" description="Choose an Assessment sub-section from the sidebar. Marks entry, moderation, exam boards, external examiners, and grade distribution are all wired." />
+      </Route>
+      <Route path="/admin/finance">
+        <ComingSoon title="Finance" description="Choose a Finance sub-section from the sidebar. Accounts, invoicing, payments, payment plans, sponsors, bursaries, debt, and refunds are all wired." />
+      </Route>
+      <Route path="/admin/attendance">
+        <ComingSoon title="Attendance" description="Choose an Attendance sub-section from the sidebar. Records, engagement, alerts, and interventions are all wired." />
+      </Route>
+      <Route path="/admin/support">
+        <ComingSoon title="Support" description="Choose a Support sub-section from the sidebar. Tickets, flags, personal tutoring, wellbeing, and disability are all wired." />
+      </Route>
+      <Route path="/admin/compliance">
+        <ComingSoon title="Compliance" description="Choose a Compliance sub-section from the sidebar. UKVI, contact points, and Home Office reports are all wired." />
+      </Route>
+      <Route path="/admin/ec-appeals">
+        <ComingSoon title="EC & Appeals" description="Choose an EC & Appeals sub-section from the sidebar. EC claims, appeals, and academic misconduct are all wired." />
+      </Route>
+      <Route path="/admin/governance">
+        <ComingSoon title="Governance" description="Choose a Governance sub-section from the sidebar. Committees and meetings are wired." />
+      </Route>
+      <Route path="/admin/accommodation">
+        <ComingSoon title="Accommodation" description="Choose an Accommodation sub-section from the sidebar. Blocks, rooms, and bookings are wired." />
+      </Route>
+      <Route path="/admin/reports">
+        <ComingSoon title="Reports" description="Choose a Reports sub-section from the sidebar. HESA, statutory returns, custom reports, and management dashboards are wired." />
+      </Route>
+      <Route path="/admin/settings">
+        <ComingSoon title="Settings" description="Choose a Settings sub-section from the sidebar. System configuration, user management, roles, audit log, academic calendar, and academic years are wired." />
+      </Route>
+
+      {/* Default — any unknown /admin/* path is a portal-scoped 404
+          rendered inside the StaffLayout. Previously the catch-all
+          silently re-rendered the dashboard, which the Comet smoke test
+          flagged as finding F3 — typos and stale bookmarks looked like
+          successful navigation to the dashboard. */}
       <Route>
-        <DashboardContent />
+        <PortalNotFound portalHref="/admin" portalLabel="Staff Portal" />
       </Route>
     </Switch>
   );

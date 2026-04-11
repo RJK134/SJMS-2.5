@@ -14,12 +14,17 @@ export interface ModuleRegistrationListQuery {
   moduleId?: string;
   academicYear?: string;
   status?: string;
+  // studentId is injected by scopeToUser('studentId') middleware on the
+  // student portal list route. The repository resolves it via the
+  // enrolment relation (ModuleRegistration has no direct studentId
+  // column) so the where clause compiles to `enrolment: { studentId }`.
+  studentId?: string;
 }
 
 export async function list(query: ModuleRegistrationListQuery) {
-  const { page, limit, sort, order, enrolmentId, moduleId, academicYear, status } = query;
+  const { page, limit, sort, order, enrolmentId, moduleId, academicYear, status, studentId } = query;
   return repo.list(
-    { enrolmentId, moduleId, academicYear, status },
+    { enrolmentId, moduleId, academicYear, status, studentId },
     { page, limit, skip: (page - 1) * limit, sort, order },
   );
 }
