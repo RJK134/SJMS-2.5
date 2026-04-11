@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
+  AUTH_MODE,
   initKeycloak,
   isAuthenticated as kcIsAuth,
   getUser,
@@ -95,17 +96,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       });
 
-    // Set up automatic token refresh
-    keycloak.onTokenExpired = () => {
-      console.log('[auth] Token expired, refreshing...');
-      keycloak.updateToken(30).catch(() => {
-        console.error('[auth] Auto-refresh failed');
-      });
-    };
+    // Set up automatic token refresh — only meaningful in Keycloak mode.
+    // In dev mode keycloak.init() is never called so `onTokenExpired` would
+    // never fire anyway, but gating it keeps the intent explicit and avoids
+    // calling keycloak.updateToken() on an uninitialised instance.
+    if (AUTH_MODE === 'keycloak') {
+      keycloak.onTokenExpired = () => {
+        console.log('[auth] Token expired, refreshing...');
+        keycloak.updateToken(30).catch(() => {
+          console.error('[auth] Auto-refresh failed');
+        });
+      };
+    }
+
+    // Dev mode only: re-derive the persona (user + roles) whenever the hash
+    // route changes. The route IS the persona signal — `/#/student/...` is
+    // student, `/#/admin/...` is admin, etc. — so crossing portals within a
+    // single session updates React state without a page reload. In Keycloak
+    // mode this listener is not attached and the JWT tokenParsed is the
+    // sole source of truth.
+    let hashHandler: (() => void) | undefined;
+    if (AUTH_MODE === 'dev') {
+      hashHandler = () => {
+        const u = getUser();
+        if (u) {
+          setUser({
+            id: u.sub,
+            email: u.email,
+            username: u.preferred_username,
+            firstName: u.given_name,
+            lastName: u.family_name,
+          });
+        }
+        setRoles(getRoles());
+      };
+      window.addEventListener('hashchange', hashHandler);
+    }
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      if (hashHandler) {
+        window.removeEventListener('hashchange', hashHandler);
+      }
     };
   }, []);
 
@@ -114,9 +147,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Clear local React state FIRST so the UI never stays in an
+    // authenticated-looking state even if kcLogout throws. The try/catch
+    // defends against any future keycloak-js exception — the 2026-04-11
+    // crash was caused by kcLogout throwing `TypeError: Cannot read
+    // properties of undefined (reading 'logout')` on an uninitialised
+    // instance, which bubbled into React's synthetic event dispatcher.
     setUser(null);
     setRoles([]);
-    kcLogout();
+    try {
+      kcLogout();
+    } catch (err) {
+      console.error('[auth] kcLogout threw unexpectedly, swallowing:', err);
+      // Last-ditch fallback: navigate to the hash-routed login page so the
+      // wouter router can render it. Using origin + '/' would leave an
+      // empty hash and fall through to wouter's NotFound catch-all.
+      window.location.replace(window.location.origin + '/#/login');
+    }
   }, []);
 
   const hasRole = useCallback(

@@ -1,42 +1,45 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/submission.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    
-    ...(search ? { OR: [{ fileName: { contains: search, mode: 'insensitive' as const } }] } : {}),
-    ...(filters.assessmentId ? { assessmentId: filters.assessmentId as any } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.submission.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.submission.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface SubmissionListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  search?: string;
+  assessmentId?: string;
+  moduleRegistrationId?: string;
+  status?: string;
+}
+
+export async function list(query: SubmissionListQuery) {
+  const { page, limit, sort, order, search, assessmentId, moduleRegistrationId, status } = query;
+  return repo.list(
+    { search, assessmentId, moduleRegistrationId, status },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.submission.findFirst({ where: { id, deletedAt: null }, include: { assessment: true, moduleRegistration: true } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('Submission', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.submission.create({ data });
+export async function create(data: Prisma.SubmissionUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('Submission', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('submissions.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.SubmissionUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.submission.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('Submission', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('submissions.updated', { id });
   return result;
@@ -44,7 +47,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.submission.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('Submission', id, 'DELETE', userId, previous, null, req);
   await emitEvent('submissions.deleted', { id });
 }

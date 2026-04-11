@@ -1,42 +1,43 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/interview.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    
-    
-    ...(filters.applicationId ? { applicationId: filters.applicationId as any } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.interview.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.interview.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface InterviewListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  applicationId?: string;
+  status?: string;
+}
+
+export async function list(query: InterviewListQuery) {
+  const { page, limit, sort, order, applicationId, status } = query;
+  return repo.list(
+    { applicationId, status },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.interview.findFirst({ where: { id, deletedAt: null }, include: { application: { include: { applicant: { include: { person: true } } } } } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('Interview', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.interview.create({ data });
+export async function create(data: Prisma.InterviewUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('Interview', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('interviews.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.InterviewUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.interview.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('Interview', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('interviews.updated', { id });
   return result;
@@ -44,7 +45,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.interview.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('Interview', id, 'DELETE', userId, previous, null, req);
   await emitEvent('interviews.deleted', { id });
 }

@@ -1,64 +1,44 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/student.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    ...(search ? { OR: [{ studentNumber: { contains: search, mode: 'insensitive' as const } }, { person: { firstName: { contains: search, mode: 'insensitive' as const } } }, { person: { lastName: { contains: search, mode: 'insensitive' as const } } }] } : {}),
-    ...(filters.feeStatus ? { feeStatus: filters.feeStatus as any } : {}),
-      ...(filters.entryRoute ? { entryRoute: filters.entryRoute as any } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.student.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sort]: order } as any,
-      include: {
-        person: {
-          include: {
-            names: { where: { endDate: null }, orderBy: { startDate: 'desc' } },
-          },
-        },
-        enrolments: {
-          // Show the most-recent non-deleted enrolment regardless of status —
-          // this ensures the Programme column is populated for alumni
-          // (COMPLETED) as well as currently-enrolled students. Bulk-seeded
-          // rows share a createdAt, so academicYear is the reliable ordering.
-          where: { deletedAt: null },
-          take: 1,
-          orderBy: [{ academicYear: 'desc' }, { createdAt: 'desc' }],
-          include: { programme: { select: { title: true, programmeCode: true } } },
-        },
-      },
-    }),
-    prisma.student.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface StudentListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  search?: string;
+  feeStatus?: string;
+  entryRoute?: string;
+}
+
+export async function list(query: StudentListQuery) {
+  const { page, limit, sort, order, search, feeStatus, entryRoute } = query;
+  return repo.list(
+    { search, feeStatus, entryRoute },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.student.findUnique({ where: { id }, include: { person: { include: { contacts: true, addresses: true, identifiers: true, demographic: true } }, enrolments: { where: { deletedAt: null }, take: 5, orderBy: { createdAt: 'desc' } } } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('Student', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.student.create({ data });
+export async function create(data: Prisma.StudentUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('Student', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('students.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.StudentUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.student.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('Student', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('students.updated', { id });
   return result;
@@ -66,7 +46,7 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.student.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('Student', id, 'DELETE', userId, previous, null, req);
   await emitEvent('students.deleted', { id });
 }

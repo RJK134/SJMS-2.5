@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { getToken, keycloak } from './auth';
+import { AUTH_MODE, getCurrentDevPersona, getToken, refreshAccessToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -9,12 +9,20 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ── Request interceptor: inject Keycloak access token ───────────────────────
+// ── Request interceptor: inject Keycloak access token + dev persona ───────
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Dev mode: tell the server which persona this request is acting as.
+    // The header is re-evaluated on every request so cross-portal navigation
+    // is reflected immediately without any cached state. The server's
+    // AUTH_BYPASS branch reads the header and builds a matching mock user;
+    // in production (AUTH_MODE=keycloak) no header is sent.
+    if (AUTH_MODE === 'dev' && config.headers) {
+      config.headers['X-Dev-Persona'] = getCurrentDevPersona();
     }
     return config;
   },
@@ -45,8 +53,16 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      await keycloak.updateToken(30);
-      const newToken = keycloak.token!;
+      // Route through refreshAccessToken() so the AUTH_MODE=dev and
+      // `!keycloak.didInitialize` guards are applied centrally. Previously
+      // this interceptor called keycloak.updateToken(30) directly, which
+      // threw `TypeError: Cannot read properties of undefined (reading
+      // 'logout')` if the 401 fired before Keycloak finished initialising
+      // (or ever, in dev mode).
+      const newToken = await refreshAccessToken();
+      if (!newToken) {
+        throw new Error('Token refresh returned no token');
+      }
       original.headers.Authorization = `Bearer ${newToken}`;
       processQueue(null, newToken);
       return api(original);

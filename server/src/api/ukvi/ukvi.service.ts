@@ -1,41 +1,57 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/compliance.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    ...(search ? { OR: [{ casNumber: { contains: search, mode: 'insensitive' as const } }] } : {}),
-    ...(filters.studentId ? { studentId: filters.studentId as any } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.uKVIRecord.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.uKVIRecord.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface UkviListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  search?: string;
+  studentId?: string;
+  complianceStatus?: string;
+  tier4Status?: string;
+}
+
+export interface ContactPointListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  contactType?: string;
+  status?: string;
+  studentId?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export async function list(query: UkviListQuery) {
+  const { page, limit, sort, order, search, studentId, complianceStatus, tier4Status } = query;
+  return repo.list(
+    { search, studentId, complianceStatus, tier4Status },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.uKVIRecord.findUnique({ where: { id }, include: { student: { include: { person: true } }, contactPoints: true, reports: true } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('UKVIRecord', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.uKVIRecord.create({ data });
+export async function create(data: Prisma.UKVIRecordUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('UKVIRecord', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('ukvi.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.UKVIRecordUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.uKVIRecord.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('UKVIRecord', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('ukvi.updated', { id });
   return result;
@@ -43,46 +59,17 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.uKVIRecord.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('UKVIRecord', id, 'DELETE', userId, previous, null, req);
   await emitEvent('ukvi.deleted', { id });
 }
 
 // ── UKVI Contact Points ─────────────────────────────────────────────────
 
-export async function listContactPoints(query: Record<string, any>) {
-  const { page, limit, sort, order, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    ...(filters.contactType ? { contactType: filters.contactType } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
-    ...(filters.studentId ? { ukviRecord: { studentId: filters.studentId } } : {}),
-    ...(filters.fromDate || filters.toDate ? {
-      contactDate: {
-        ...(filters.fromDate ? { gte: new Date(filters.fromDate) } : {}),
-        ...(filters.toDate ? { lte: new Date(filters.toDate) } : {}),
-      },
-    } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.uKVIContactPoint.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sort]: order } as any,
-      include: {
-        ukviRecord: {
-          include: {
-            student: {
-              include: {
-                person: { select: { firstName: true, lastName: true } },
-              },
-            },
-          },
-        },
-      },
-    }),
-    prisma.uKVIContactPoint.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export async function listContactPoints(query: ContactPointListQuery) {
+  const { page, limit, sort, order, contactType, status, studentId, fromDate, toDate } = query;
+  return repo.listContactPoints(
+    { contactType, status, studentId, fromDate, toDate },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }

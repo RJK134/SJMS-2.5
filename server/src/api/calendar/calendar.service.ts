@@ -1,22 +1,20 @@
-import prisma from '../../utils/prisma';
-import { buildPaginatedResponse } from '../../utils/pagination';
+import * as repo from '../../repositories/academicCalendar.repository';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    ...(filters.academicYear ? { academicYear: filters.academicYear } : {}),
-    ...(filters.eventType ? { eventType: filters.eventType } : {}),
-    ...(filters.fromDate || filters.toDate ? {
-      startDate: {
-        ...(filters.fromDate ? { gte: new Date(filters.fromDate) } : {}),
-        ...(filters.toDate ? { lte: new Date(filters.toDate) } : {}),
-      },
-    } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.academicCalendar.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.academicCalendar.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface CalendarListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  academicYear?: string;
+  eventType?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export async function list(query: CalendarListQuery) {
+  const { page, limit, sort, order, academicYear, eventType, fromDate, toDate } = query;
+  return repo.list(
+    { academicYear, eventType, fromDate, toDate },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }

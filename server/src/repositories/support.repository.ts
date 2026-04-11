@@ -2,21 +2,28 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-interface TicketFilters {
+export interface TicketFilters {
   studentId?: string;
   status?: string;
   priority?: string;
   category?: string;
   assignedTo?: string;
+  search?: string;
 }
 
 export async function list(filters: TicketFilters = {}, pagination: PaginationParams) {
   const where: Prisma.SupportTicketWhereInput = {
+    deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
     ...(filters.status && { status: filters.status as any }),
     ...(filters.priority && { priority: filters.priority as any }),
     ...(filters.category && { category: filters.category as any }),
     ...(filters.assignedTo && { assignedTo: filters.assignedTo }),
+    ...(filters.search && {
+      OR: [
+        { subject: { contains: filters.search, mode: 'insensitive' as const } },
+      ],
+    }),
   };
 
   const [data, total] = await Promise.all([
@@ -34,8 +41,8 @@ export async function list(filters: TicketFilters = {}, pagination: PaginationPa
 }
 
 export async function getById(id: string) {
-  return prisma.supportTicket.findUnique({
-    where: { id },
+  return prisma.supportTicket.findFirst({
+    where: { id, deletedAt: null },
     include: {
       student: { include: { person: true } },
       interactions: { orderBy: { createdAt: 'asc' } },
@@ -49,6 +56,10 @@ export async function create(data: Prisma.SupportTicketUncheckedCreateInput) {
 
 export async function update(id: string, data: Prisma.SupportTicketUpdateInput) {
   return prisma.supportTicket.update({ where: { id }, data, include: { interactions: true } });
+}
+
+export async function softDelete(id: string) {
+  return prisma.supportTicket.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 export async function addInteraction(data: Prisma.SupportInteractionUncheckedCreateInput) {

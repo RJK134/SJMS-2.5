@@ -1,17 +1,19 @@
-import prisma from '../../utils/prisma';
-import { buildPaginatedResponse } from '../../utils/pagination';
+import * as repo from '../../repositories/statutoryReturn.repository';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    ...(filters.academicYear ? { academicYear: filters.academicYear } : {}),
-    ...(filters.returnType ? { returnType: filters.returnType } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.statutoryReturn.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.statutoryReturn.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface StatutoryReturnListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  academicYear?: string;
+  returnType?: string;
+  status?: string;
+}
+
+export async function list(query: StatutoryReturnListQuery) {
+  const { page, limit, sort, order, academicYear, returnType, status } = query;
+  return repo.list(
+    { academicYear, returnType, status },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }

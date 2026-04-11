@@ -8,7 +8,13 @@ export const querySchema = z.object({
   sort: z.string().default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
   userId: z.string().optional(),
-  isRead: z.enum(['true', 'false']).optional(),
+  // Accept the string form "true"/"false" from the query string and coerce to
+  // a real boolean. Prisma rejects `isRead: "false"` with a validation error
+  // — the enum() alone produced the string, `.transform` lifts it to bool.
+  isRead: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
   category: z.string().optional(),
   priority: z.string().optional(),
 });

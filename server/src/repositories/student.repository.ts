@@ -2,7 +2,7 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-const defaultInclude = {
+const detailInclude = {
   person: {
     include: {
       contacts: true,
@@ -13,7 +13,25 @@ const defaultInclude = {
   },
 } as const;
 
-interface StudentFilters {
+const listInclude: Prisma.StudentInclude = {
+  person: {
+    include: {
+      names: { where: { endDate: null }, orderBy: { startDate: 'desc' } },
+    },
+  },
+  enrolments: {
+    // Show the most-recent non-deleted enrolment regardless of status —
+    // this ensures the Programme column is populated for alumni
+    // (COMPLETED) as well as currently-enrolled students. Bulk-seeded
+    // rows share a createdAt, so academicYear is the reliable ordering.
+    where: { deletedAt: null },
+    take: 1,
+    orderBy: [{ academicYear: 'desc' }, { createdAt: 'desc' }],
+    include: { programme: { select: { title: true, programmeCode: true } } },
+  },
+};
+
+export interface StudentFilters {
   feeStatus?: string;
   entryRoute?: string;
   search?: string;
@@ -36,7 +54,7 @@ export async function list(filters: StudentFilters = {}, pagination: PaginationP
   const [data, total] = await Promise.all([
     prisma.student.findMany({
       where,
-      include: defaultInclude,
+      include: listInclude,
       skip: pagination.skip,
       take: pagination.limit,
       orderBy: { [pagination.sort]: pagination.order } as any,
@@ -48,20 +66,28 @@ export async function list(filters: StudentFilters = {}, pagination: PaginationP
 }
 
 export async function getById(id: string) {
-  return prisma.student.findUnique({
-    where: { id },
+  return prisma.student.findFirst({
+    where: { id, deletedAt: null },
     include: {
-      ...defaultInclude,
-      enrolments: { include: { programme: true }, where: { deletedAt: null } },
+      ...detailInclude,
+      enrolments: {
+        where: { deletedAt: null },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+      },
     },
   });
 }
 
 export async function getByStudentNumber(studentNumber: string) {
-  return prisma.student.findUnique({ where: { studentNumber }, include: defaultInclude });
+  return prisma.student.findUnique({ where: { studentNumber }, include: detailInclude });
 }
 
-export async function create(data: {
+export async function create(data: Prisma.StudentUncheckedCreateInput) {
+  return prisma.student.create({ data });
+}
+
+export async function createWithPerson(data: {
   person: Prisma.PersonCreateWithoutStudentInput;
   student: Omit<Prisma.StudentUncheckedCreateInput, 'personId'>;
 }) {
@@ -69,13 +95,13 @@ export async function create(data: {
     const person = await tx.person.create({ data: data.person });
     return tx.student.create({
       data: { ...data.student, personId: person.id },
-      include: defaultInclude,
+      include: detailInclude,
     });
   });
 }
 
 export async function update(id: string, data: Prisma.StudentUpdateInput) {
-  return prisma.student.update({ where: { id }, data, include: defaultInclude });
+  return prisma.student.update({ where: { id }, data });
 }
 
 export async function softDelete(id: string) {
@@ -88,7 +114,7 @@ export async function getStudentsByProgramme(programmeId: string, pagination: Pa
     enrolments: { some: { programmeId, status: 'ENROLLED' } },
   };
   const [data, total] = await Promise.all([
-    prisma.student.findMany({ where, include: defaultInclude, skip: pagination.skip, take: pagination.limit }),
+    prisma.student.findMany({ where, include: detailInclude, skip: pagination.skip, take: pagination.limit }),
     prisma.student.count({ where }),
   ]);
   return buildPaginatedResponse(data, total, pagination);

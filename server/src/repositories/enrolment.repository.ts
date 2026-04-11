@@ -2,7 +2,7 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma, type EnrolmentStatus } from '@prisma/client';
 
-interface EnrolmentFilters {
+export interface EnrolmentFilters {
   studentId?: string;
   programmeId?: string;
   academicYear?: string;

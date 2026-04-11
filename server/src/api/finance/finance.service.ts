@@ -1,40 +1,56 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/finance.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    ...(filters.studentId ? { studentId: filters.studentId as any } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.studentAccount.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.studentAccount.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface FinanceListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  search?: string;
+  studentId?: string;
+  academicYear?: string;
+  status?: string;
+}
+
+export interface TransactionListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  transactionType?: string;
+  status?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export async function list(query: FinanceListQuery) {
+  const { page, limit, sort, order, studentId, academicYear, status } = query;
+  return repo.list(
+    { studentId, academicYear, status },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.studentAccount.findFirst({ where: { id, deletedAt: null }, include: { student: { include: { person: true } }, chargeLines: { orderBy: { createdAt: 'desc' } }, invoices: { include: { payments: true } }, paymentPlans: true } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('StudentAccount', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.studentAccount.create({ data });
+export async function create(data: Prisma.StudentAccountUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('StudentAccount', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('finance.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.StudentAccountUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.studentAccount.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('StudentAccount', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('finance.updated', { id });
   return result;
@@ -42,48 +58,18 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.studentAccount.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('StudentAccount', id, 'DELETE', userId, previous, null, req);
   await emitEvent('finance.deleted', { id });
 }
 
 // ── Financial Transactions ──────────────────────────────────────────────
 
-export async function listTransactions(studentAccountId: string, query: Record<string, any>) {
-  const { page, limit, sort, order, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
+export async function listTransactions(studentAccountId: string, query: TransactionListQuery) {
+  const { page, limit, sort, order, transactionType, status, fromDate, toDate } = query;
+  return repo.listTransactions(
     studentAccountId,
-    ...(filters.transactionType ? { transactionType: filters.transactionType } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
-    ...(filters.fromDate || filters.toDate ? {
-      postedDate: {
-        ...(filters.fromDate ? { gte: new Date(filters.fromDate) } : {}),
-        ...(filters.toDate ? { lte: new Date(filters.toDate) } : {}),
-      },
-    } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.financialTransaction.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sort]: order } as any,
-      select: {
-        id: true,
-        transactionRef: true,
-        transactionType: true,
-        debitAmount: true,
-        creditAmount: true,
-        runningBalance: true,
-        description: true,
-        reference: true,
-        postedDate: true,
-        effectiveDate: true,
-        status: true,
-      },
-    }),
-    prisma.financialTransaction.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+    { transactionType, status, fromDate, toDate },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }

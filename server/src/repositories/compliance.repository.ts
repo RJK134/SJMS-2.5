@@ -2,10 +2,19 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-interface UKVIFilters {
+export interface UKVIFilters {
   studentId?: string;
   complianceStatus?: string;
   tier4Status?: string;
+  search?: string;
+}
+
+export interface ContactPointFilters {
+  contactType?: string;
+  status?: string;
+  studentId?: string;
+  fromDate?: string | Date;
+  toDate?: string | Date;
 }
 
 export async function list(filters: UKVIFilters = {}, pagination: PaginationParams) {
@@ -14,6 +23,11 @@ export async function list(filters: UKVIFilters = {}, pagination: PaginationPara
     ...(filters.studentId && { studentId: filters.studentId }),
     ...(filters.complianceStatus && { complianceStatus: filters.complianceStatus as any }),
     ...(filters.tier4Status && { tier4Status: filters.tier4Status as any }),
+    ...(filters.search && {
+      OR: [
+        { casNumber: { contains: filters.search, mode: 'insensitive' as const } },
+      ],
+    }),
   };
 
   const [data, total] = await Promise.all([
@@ -60,6 +74,46 @@ export async function addContactPoint(data: Prisma.UKVIContactPointUncheckedCrea
 
 export async function createReport(data: Prisma.UKVIReportUncheckedCreateInput) {
   return prisma.uKVIReport.create({ data });
+}
+
+export async function listContactPoints(
+  filters: ContactPointFilters = {},
+  pagination: PaginationParams,
+) {
+  const where: Prisma.UKVIContactPointWhereInput = {
+    ...(filters.contactType && { contactType: filters.contactType as any }),
+    ...(filters.status && { status: filters.status as any }),
+    ...(filters.studentId && { ukviRecord: { studentId: filters.studentId } }),
+    ...((filters.fromDate || filters.toDate) && {
+      contactDate: {
+        ...(filters.fromDate && { gte: new Date(filters.fromDate) }),
+        ...(filters.toDate && { lte: new Date(filters.toDate) }),
+      },
+    }),
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.uKVIContactPoint.findMany({
+      where,
+      skip: pagination.skip,
+      take: pagination.limit,
+      orderBy: { [pagination.sort]: pagination.order } as any,
+      include: {
+        ukviRecord: {
+          include: {
+            student: {
+              include: {
+                person: { select: { firstName: true, lastName: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.uKVIContactPoint.count({ where }),
+  ]);
+
+  return buildPaginatedResponse(data, total, pagination);
 }
 
 export async function getNonCompliantStudents(pagination: PaginationParams) {
