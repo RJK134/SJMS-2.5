@@ -1,41 +1,57 @@
-import prisma from '../../utils/prisma';
+import type { Prisma } from '@prisma/client';
+import type { Request } from 'express';
+import * as repo from '../../repositories/attendance.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
-import { buildPaginatedResponse } from '../../utils/pagination';
-import type { Request } from 'express';
 
-export async function list(query: Record<string, any>) {
-  const { page, limit, sort, order, search, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    deletedAt: null,
-    ...(filters.studentId ? { studentId: filters.studentId as any } : {}),
-      ...(filters.status ? { status: filters.status as any } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.attendanceRecord.findMany({ where, skip, take: limit, orderBy: { [sort]: order } as any }),
-    prisma.attendanceRecord.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export interface AttendanceListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  search?: string;
+  studentId?: string;
+  moduleRegistrationId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  status?: string;
+}
+
+export interface AttendanceAlertListQuery {
+  page: number;
+  limit: number;
+  sort: string;
+  order: 'asc' | 'desc';
+  studentId?: string;
+  alertType?: string;
+  status?: string;
+}
+
+export async function list(query: AttendanceListQuery) {
+  const { page, limit, sort, order, studentId, moduleRegistrationId, dateFrom, dateTo, status } = query;
+  return repo.list(
+    { studentId, moduleRegistrationId, dateFrom, dateTo, status },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }
 
 export async function getById(id: string) {
-  const result = await prisma.attendanceRecord.findFirst({ where: { id, deletedAt: null }, include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } } });
+  const result = await repo.getById(id);
   if (!result) throw new NotFoundError('AttendanceRecord', id);
   return result;
 }
 
-export async function create(data: any, userId: string, req: Request) {
-  const result = await prisma.attendanceRecord.create({ data });
+export async function create(data: Prisma.AttendanceRecordUncheckedCreateInput, userId: string, req: Request) {
+  const result = await repo.create(data);
   await logAudit('AttendanceRecord', result.id, 'CREATE', userId, null, result, req);
   await emitEvent('attendance.created', { id: result.id });
   return result;
 }
 
-export async function update(id: string, data: any, userId: string, req: Request) {
+export async function update(id: string, data: Prisma.AttendanceRecordUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await prisma.attendanceRecord.update({ where: { id }, data });
+  const result = await repo.update(id, data);
   await logAudit('AttendanceRecord', id, 'UPDATE', userId, previous, result, req);
   await emitEvent('attendance.updated', { id });
   return result;
@@ -43,42 +59,17 @@ export async function update(id: string, data: any, userId: string, req: Request
 
 export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
-  await prisma.attendanceRecord.update({ where: { id }, data: { deletedAt: new Date() } });
+  await repo.softDelete(id);
   await logAudit('AttendanceRecord', id, 'DELETE', userId, previous, null, req);
   await emitEvent('attendance.deleted', { id });
 }
 
 // ── Attendance Alerts ────────────────────────────────────────────────────
 
-export async function listAlerts(query: Record<string, any>) {
-  const { page, limit, sort, order, ...filters } = query;
-  const skip = (page - 1) * limit;
-  const where: Record<string, any> = {
-    ...(filters.studentId ? { studentId: filters.studentId } : {}),
-    ...(filters.alertType ? { alertType: filters.alertType } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
-  };
-  const [data, total] = await Promise.all([
-    prisma.attendanceAlert.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sort]: order } as any,
-      include: {
-        student: {
-          include: {
-            person: { select: { firstName: true, lastName: true } },
-            enrolments: {
-              where: { deletedAt: null, status: 'ENROLLED' },
-              take: 1,
-              orderBy: { createdAt: 'desc' },
-              include: { programme: { select: { title: true, programmeCode: true } } },
-            },
-          },
-        },
-      },
-    }),
-    prisma.attendanceAlert.count({ where }),
-  ]);
-  return buildPaginatedResponse(data, total, { page, limit, skip, sort, order });
+export async function listAlerts(query: AttendanceAlertListQuery) {
+  const { page, limit, sort, order, studentId, alertType, status } = query;
+  return repo.listAlerts(
+    { studentId, alertType, status },
+    { page, limit, skip: (page - 1) * limit, sort, order },
+  );
 }

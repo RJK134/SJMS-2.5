@@ -2,23 +2,30 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-interface AttendanceFilters {
+export interface AttendanceFilters {
   studentId?: string;
   moduleRegistrationId?: string;
-  dateFrom?: Date;
-  dateTo?: Date;
+  dateFrom?: Date | string;
+  dateTo?: Date | string;
+  status?: string;
+}
+
+export interface AttendanceAlertFilters {
+  studentId?: string;
+  alertType?: string;
   status?: string;
 }
 
 export async function list(filters: AttendanceFilters = {}, pagination: PaginationParams) {
   const where: Prisma.AttendanceRecordWhereInput = {
+    deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
     ...(filters.moduleRegistrationId && { moduleRegistrationId: filters.moduleRegistrationId }),
     ...(filters.status && { status: filters.status as any }),
     ...((filters.dateFrom || filters.dateTo) && {
       date: {
-        ...(filters.dateFrom && { gte: filters.dateFrom }),
-        ...(filters.dateTo && { lte: filters.dateTo }),
+        ...(filters.dateFrom && { gte: new Date(filters.dateFrom) }),
+        ...(filters.dateTo && { lte: new Date(filters.dateTo) }),
       },
     }),
   };
@@ -29,7 +36,7 @@ export async function list(filters: AttendanceFilters = {}, pagination: Paginati
       include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } },
       skip: pagination.skip,
       take: pagination.limit,
-      orderBy: { date: pagination.order },
+      orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.attendanceRecord.count({ where }),
   ]);
@@ -38,8 +45,8 @@ export async function list(filters: AttendanceFilters = {}, pagination: Paginati
 }
 
 export async function getById(id: string) {
-  return prisma.attendanceRecord.findUnique({
-    where: { id },
+  return prisma.attendanceRecord.findFirst({
+    where: { id, deletedAt: null },
     include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } }, teachingEvent: true },
   });
 }
@@ -50,6 +57,44 @@ export async function create(data: Prisma.AttendanceRecordUncheckedCreateInput) 
 
 export async function update(id: string, data: Prisma.AttendanceRecordUpdateInput) {
   return prisma.attendanceRecord.update({ where: { id }, data });
+}
+
+export async function softDelete(id: string) {
+  return prisma.attendanceRecord.update({ where: { id }, data: { deletedAt: new Date() } });
+}
+
+export async function listAlerts(filters: AttendanceAlertFilters = {}, pagination: PaginationParams) {
+  // AttendanceAlert has no deletedAt field — status drives the lifecycle.
+  const where: Prisma.AttendanceAlertWhereInput = {
+    ...(filters.studentId && { studentId: filters.studentId }),
+    ...(filters.alertType && { alertType: filters.alertType as any }),
+    ...(filters.status && { status: filters.status as any }),
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.attendanceAlert.findMany({
+      where,
+      skip: pagination.skip,
+      take: pagination.limit,
+      orderBy: { [pagination.sort]: pagination.order } as any,
+      include: {
+        student: {
+          include: {
+            person: { select: { firstName: true, lastName: true } },
+            enrolments: {
+              where: { deletedAt: null, status: 'ENROLLED' },
+              take: 1,
+              orderBy: { createdAt: 'desc' },
+              include: { programme: { select: { title: true, programmeCode: true } } },
+            },
+          },
+        },
+      },
+    }),
+    prisma.attendanceAlert.count({ where }),
+  ]);
+
+  return buildPaginatedResponse(data, total, pagination);
 }
 
 export async function getStudentAttendanceRate(studentId: string, academicYear: string) {

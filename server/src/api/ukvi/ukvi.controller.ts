@@ -3,7 +3,7 @@ import * as service from './ukvi.service';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.list(req.query);
+    const result = await service.list(req.query as unknown as service.UkviListQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }
@@ -41,7 +41,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
 
 export async function listContactPoints(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.listContactPoints(req.query);
+    const result = await service.listContactPoints(req.query as unknown as service.ContactPointListQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }

@@ -2,7 +2,7 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-interface ProgrammeFilters {
+export interface ProgrammeFilters {
   status?: string;
   level?: string;
   departmentId?: string;
@@ -11,6 +11,7 @@ interface ProgrammeFilters {
 
 export async function list(filters: ProgrammeFilters = {}, pagination: PaginationParams) {
   const where: Prisma.ProgrammeWhereInput = {
+    deletedAt: null,
     ...(filters.status && { status: filters.status as any }),
     ...(filters.level && { level: filters.level as any }),
     ...(filters.departmentId && { departmentId: filters.departmentId }),
@@ -18,6 +19,7 @@ export async function list(filters: ProgrammeFilters = {}, pagination: Paginatio
       OR: [
         { title: { contains: filters.search, mode: 'insensitive' as const } },
         { programmeCode: { contains: filters.search, mode: 'insensitive' as const } },
+        { ucasCode: { contains: filters.search, mode: 'insensitive' as const } },
       ],
     }),
   };
@@ -37,8 +39,8 @@ export async function list(filters: ProgrammeFilters = {}, pagination: Paginatio
 }
 
 export async function getById(id: string) {
-  return prisma.programme.findUnique({
-    where: { id },
+  return prisma.programme.findFirst({
+    where: { id, deletedAt: null },
     include: {
       department: { include: { school: { include: { faculty: true } } } },
       programmeModules: { include: { module: true } },
@@ -48,7 +50,7 @@ export async function getById(id: string) {
   });
 }
 
-export async function create(data: Prisma.ProgrammeCreateInput) {
+export async function create(data: Prisma.ProgrammeUncheckedCreateInput) {
   return prisma.programme.create({
     data,
     include: { department: true },
@@ -57,6 +59,10 @@ export async function create(data: Prisma.ProgrammeCreateInput) {
 
 export async function update(id: string, data: Prisma.ProgrammeUpdateInput) {
   return prisma.programme.update({ where: { id }, data, include: { department: true } });
+}
+
+export async function softDelete(id: string) {
+  return prisma.programme.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 export async function getModulesForProgramme(programmeId: string) {

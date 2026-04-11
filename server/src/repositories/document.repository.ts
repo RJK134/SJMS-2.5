@@ -2,7 +2,7 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-interface DocumentFilters {
+export interface DocumentFilters {
   studentId?: string;
   documentType?: string;
   verificationStatus?: string;
@@ -10,7 +10,7 @@ interface DocumentFilters {
 
 export async function list(filters: DocumentFilters = {}, pagination: PaginationParams) {
   const where: Prisma.DocumentWhereInput = {
-    status: 'active',
+    deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
     ...(filters.documentType && { documentType: filters.documentType as any }),
     ...(filters.verificationStatus && { verificationStatus: filters.verificationStatus as any }),
@@ -31,8 +31,8 @@ export async function list(filters: DocumentFilters = {}, pagination: Pagination
 }
 
 export async function getById(id: string) {
-  return prisma.document.findUnique({
-    where: { id },
+  return prisma.document.findFirst({
+    where: { id, deletedAt: null },
     include: {
       student: { include: { person: true } },
       verifications: { orderBy: { verifiedDate: 'desc' } },
@@ -46,6 +46,10 @@ export async function create(data: Prisma.DocumentUncheckedCreateInput) {
 
 export async function update(id: string, data: Prisma.DocumentUpdateInput) {
   return prisma.document.update({ where: { id }, data });
+}
+
+export async function softDelete(id: string) {
+  return prisma.document.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 export async function verify(documentId: string, data: Omit<Prisma.DocumentVerificationUncheckedCreateInput, 'documentId'>) {

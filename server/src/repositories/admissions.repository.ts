@@ -2,7 +2,7 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-interface ApplicationFilters {
+export interface ApplicationFilters {
   status?: string;
   academicYear?: string;
   programmeId?: string;
@@ -57,7 +57,11 @@ export async function getById(id: string) {
   return prisma.application.findUnique({ where: { id }, include: defaultInclude });
 }
 
-export async function create(data: {
+export async function createApplication(data: Prisma.ApplicationUncheckedCreateInput) {
+  return prisma.application.create({ data, include: defaultInclude });
+}
+
+export async function createApplicantWithApplication(data: {
   person: Prisma.PersonCreateInput;
   applicant: Omit<Prisma.ApplicantUncheckedCreateInput, 'personId'>;
   application: Omit<Prisma.ApplicationUncheckedCreateInput, 'applicantId'>;

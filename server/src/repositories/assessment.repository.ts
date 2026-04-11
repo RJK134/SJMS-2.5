@@ -2,17 +2,24 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
-interface AssessmentFilters {
+export interface AssessmentFilters {
   moduleId?: string;
   academicYear?: string;
   assessmentType?: string;
+  search?: string;
 }
 
 export async function list(filters: AssessmentFilters = {}, pagination: PaginationParams) {
   const where: Prisma.AssessmentWhereInput = {
+    deletedAt: null,
     ...(filters.moduleId && { moduleId: filters.moduleId }),
     ...(filters.academicYear && { academicYear: filters.academicYear }),
     ...(filters.assessmentType && { assessmentType: filters.assessmentType as any }),
+    ...(filters.search && {
+      OR: [
+        { title: { contains: filters.search, mode: 'insensitive' as const } },
+      ],
+    }),
   };
 
   const [data, total] = await Promise.all([
@@ -30,11 +37,11 @@ export async function list(filters: AssessmentFilters = {}, pagination: Paginati
 }
 
 export async function getById(id: string) {
-  return prisma.assessment.findUnique({
-    where: { id },
+  return prisma.assessment.findFirst({
+    where: { id, deletedAt: null },
     include: {
       module: true,
-      attempts: { orderBy: { attemptNumber: 'asc' } },
+      attempts: { orderBy: { attemptNumber: 'asc' }, take: 50 },
       criteria: { orderBy: { sortOrder: 'asc' } },
       markingSchemes: true,
       gradeBoundaries: { orderBy: { lowerBound: 'asc' } },
@@ -48,6 +55,10 @@ export async function create(data: Prisma.AssessmentUncheckedCreateInput) {
 
 export async function update(id: string, data: Prisma.AssessmentUpdateInput) {
   return prisma.assessment.update({ where: { id }, data, include: { module: true } });
+}
+
+export async function softDelete(id: string) {
+  return prisma.assessment.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 export async function submitMark(data: Prisma.AssessmentAttemptUncheckedCreateInput) {
