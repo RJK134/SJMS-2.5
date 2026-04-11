@@ -109,9 +109,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    // Dev mode only: re-derive the persona (user + roles) whenever the hash
+    // route changes. The route IS the persona signal — `/#/student/...` is
+    // student, `/#/admin/...` is admin, etc. — so crossing portals within a
+    // single session updates React state without a page reload. In Keycloak
+    // mode this listener is not attached and the JWT tokenParsed is the
+    // sole source of truth.
+    let hashHandler: (() => void) | undefined;
+    if (AUTH_MODE === 'dev') {
+      hashHandler = () => {
+        const u = getUser();
+        if (u) {
+          setUser({
+            id: u.sub,
+            email: u.email,
+            username: u.preferred_username,
+            firstName: u.given_name,
+            lastName: u.family_name,
+          });
+        }
+        setRoles(getRoles());
+      };
+      window.addEventListener('hashchange', hashHandler);
+    }
+
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      if (hashHandler) {
+        window.removeEventListener('hashchange', hashHandler);
+      }
     };
   }, []);
 

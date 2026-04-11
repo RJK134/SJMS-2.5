@@ -1,15 +1,26 @@
 // SJMS 2.5 — client auth flow
 //
 // Two modes, controlled by VITE_AUTH_MODE:
-//   - 'dev'      → skip Keycloak entirely, inject a mock admin user.
-//                  Default when no env var is set so a fresh clone boots
-//                  without needing Docker + Keycloak running locally.
+//   - 'dev'      → skip Keycloak entirely, inject a mock user keyed off
+//                  the current hash-routed portal. Default when no env var
+//                  is set so a fresh clone boots without needing Docker +
+//                  Keycloak running locally.
 //   - 'keycloak' → real Keycloak PKCE flow via keycloak-js, check-sso on
 //                  load, responseMode: 'query' (avoids collision with the
 //                  hash-based wouter router).
 //
 // The older VITE_AUTH_BYPASS=true env var is still honoured as a legacy
 // alias for AUTH_MODE=dev so existing .env files keep working.
+//
+// Dev persona simulation (2026-04-11, Phase 2 closeout part 2):
+// The dev bypass now exposes 4 personas (admin, academic, student,
+// applicant) rather than one global super-admin. The persona is derived
+// from the current hash route — `/#/student/...` → student persona, etc.
+// No sessionStorage, no query parameters, no new auth stack: the URL is
+// the single source of truth and the axios interceptor sends an
+// `X-Dev-Persona` header on every API call so the server's AUTH_BYPASS
+// branch can build a matching mock user with the correct role set and
+// seeded identity.
 //
 // Every public function here is safe to call before the Keycloak instance
 // has been initialised — previously login() / logout() / refreshAccessToken()
@@ -38,17 +49,29 @@ const IS_DEV_MODE = AUTH_MODE === 'dev';
 
 const MOCK_TOKEN = 'dev-bypass-token';
 
-const MOCK_USER_INFO = {
-  sub: 'dev-user-richard-knapp',
-  email: 'richard.knapp@fhe.ac.uk',
-  preferred_username: 'richard.knapp',
-  given_name: 'Richard',
-  family_name: 'Knapp',
-} as const;
+// ── Dev personas ────────────────────────────────────────────────────────────
+// Each persona is a fixed (user, roles) pair shared with the server via the
+// `X-Dev-Persona` header. The server mirrors these values in its own
+// DEV_PERSONA_PAYLOADS map so scoping middleware sees the same identity.
+export type DevPersona = 'admin' | 'academic' | 'student' | 'applicant';
 
-// Full admin role set — includes every role in ROLE_GROUPS.ALL_AUTHENTICATED
-// plus the specific admin roles requested for the dev bypass user.
-const MOCK_ROLES: string[] = [
+export interface DecodedUser {
+  sub: string;
+  email: string;
+  preferred_username: string;
+  given_name: string;
+  family_name: string;
+}
+
+interface PersonaSpec {
+  user: DecodedUser;
+  roles: readonly string[];
+}
+
+// Admin set: full administrative reach. Kept separate from the academic
+// teaching set so the admin persona cannot reach /academic/* (and vice
+// versa) — the portal role guards added in Commit 1 enforce isolation.
+const ADMIN_ROLES = [
   'super_admin',
   'system_admin',
   'dean',
@@ -68,6 +91,17 @@ const MOCK_ROLES: string[] = [
   'quality_director',
   'quality_officer',
   'compliance_officer',
+  'student_support_manager',
+  'student_support_officer',
+  'international_officer',
+  'accommodation_officer',
+] as const;
+
+// Academic set: teaching staff only, matches client constants/roles.ts
+// ACADEMIC_STAFF_ROLES. Intentionally does NOT include any admin roles so
+// the academic persona can be tested in isolation.
+const ACADEMIC_ROLES = [
+  'dean',
   'associate_dean',
   'head_of_department',
   'programme_leader',
@@ -76,14 +110,80 @@ const MOCK_ROLES: string[] = [
   'lecturer',
   'senior_lecturer',
   'professor',
-  'student_support_manager',
-  'student_support_officer',
-  'personal_tutor',
-  'disability_advisor',
-  'wellbeing_officer',
-  'international_officer',
-  'accommodation_officer',
-];
+] as const;
+
+const STUDENT_ROLES = ['student'] as const;
+const APPLICANT_ROLES = ['applicant'] as const;
+
+// Persona → user/role map.
+// Seeded identities (verified against live DB on 2026-04-11):
+//   student → per-stu-0001 / stu-0001 / james.taylor1@student.futurehorizons.ac.uk
+//   applicant → per-app-0001 (seed does not create a PersonContact for
+//     applicants; the server resolves the identity via a DEV_PERSONA_IDENTITY
+//     fast-path in data-scope.ts rather than an email lookup).
+//   admin / academic → scopeToUser short-circuits for admin + teaching roles,
+//     so the email is cosmetic; these personas do not need a seeded identity.
+const DEV_PERSONAS: Record<DevPersona, PersonaSpec> = {
+  admin: {
+    user: {
+      sub: 'dev-persona-admin',
+      email: 'richard.knapp@fhe.ac.uk',
+      preferred_username: 'richard.knapp',
+      given_name: 'Richard',
+      family_name: 'Knapp',
+    },
+    roles: ADMIN_ROLES,
+  },
+  academic: {
+    user: {
+      sub: 'dev-persona-academic',
+      email: 'lecturer.demo@fhe.ac.uk',
+      preferred_username: 'lecturer.demo',
+      given_name: 'Lena',
+      family_name: 'Lecturer',
+    },
+    roles: ACADEMIC_ROLES,
+  },
+  student: {
+    user: {
+      sub: 'dev-persona-student',
+      email: 'james.taylor1@student.futurehorizons.ac.uk',
+      preferred_username: 'james.taylor1',
+      given_name: 'James',
+      family_name: 'Taylor',
+    },
+    roles: STUDENT_ROLES,
+  },
+  applicant: {
+    user: {
+      sub: 'dev-persona-applicant',
+      email: 'applicant.demo@fhe.ac.uk',
+      preferred_username: 'applicant.demo',
+      given_name: 'Anne',
+      family_name: 'Applicant',
+    },
+    roles: APPLICANT_ROLES,
+  },
+};
+
+/**
+ * Derive the active dev persona from the current hash route. The top-level
+ * wouter router at client/src/App.tsx mounts each portal under a distinct
+ * path prefix, so the URL is authoritative — no sessionStorage, no query
+ * parameter. A page reload re-runs this function and lands on the same
+ * persona the URL describes.
+ *
+ * Returns 'admin' for `/`, `/login`, `/dashboard`, and any non-portal
+ * path so the dashboard router and login picker show the full admin view.
+ */
+export function getCurrentDevPersona(): DevPersona {
+  if (typeof window === 'undefined') return 'admin';
+  const hash = window.location.hash.replace(/^#/, '');
+  if (hash.startsWith('/academic')) return 'academic';
+  if (hash.startsWith('/student')) return 'student';
+  if (hash.startsWith('/applicant')) return 'applicant';
+  return 'admin';
+}
 
 // ── Keycloak instance (singleton) ───────────────────────────────────────────
 export const keycloak = new Keycloak({
@@ -111,8 +211,9 @@ export function initKeycloak(): Promise<boolean> {
   if (_initPromise) return _initPromise;
 
   if (IS_DEV_MODE) {
+    const persona = getCurrentDevPersona();
     console.warn(
-      '[auth] VITE_AUTH_MODE=dev — Keycloak init skipped, using mock admin user (dev only)',
+      `[auth] VITE_AUTH_MODE=dev — Keycloak init skipped, using dev persona "${persona}" (dev only)`,
     );
     _authenticated = true;
     _initPromise = Promise.resolve(true);
@@ -165,17 +266,12 @@ export function isAuthenticated(): boolean {
   return _authenticated && !!keycloak.authenticated;
 }
 
-// ── Token helpers ───────────────────────────────────────────────────────────
-export interface DecodedUser {
-  sub: string;
-  email: string;
-  preferred_username: string;
-  given_name: string;
-  family_name: string;
-}
+// ── User / role helpers ─────────────────────────────────────────────────────
 
 export function getUser(): DecodedUser | null {
-  if (IS_DEV_MODE) return { ...MOCK_USER_INFO };
+  if (IS_DEV_MODE) {
+    return { ...DEV_PERSONAS[getCurrentDevPersona()].user };
+  }
   if (!keycloak.tokenParsed) return null;
   const t = keycloak.tokenParsed as Record<string, unknown>;
   return {
@@ -188,7 +284,9 @@ export function getUser(): DecodedUser | null {
 }
 
 export function getRoles(): string[] {
-  if (IS_DEV_MODE) return [...MOCK_ROLES];
+  if (IS_DEV_MODE) {
+    return [...DEV_PERSONAS[getCurrentDevPersona()].roles];
+  }
   return keycloak.realmAccess?.roles ?? [];
 }
 
@@ -198,7 +296,9 @@ export function login(portal: string = '/admin'): void {
 
   if (IS_DEV_MODE) {
     // Dev mode: the mock user is always "logged in". Just navigate to the
-    // requested portal route so the app reflects the user's intent.
+    // requested portal route so the app (and the persona selector) reflect
+    // the user's intent. The next render will observe the new hash and
+    // `getCurrentDevPersona()` will return the matching persona.
     window.location.hash = '#' + portal;
     return;
   }

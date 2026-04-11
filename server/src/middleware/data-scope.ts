@@ -31,11 +31,38 @@ function setCachedIdentity(sub: string, identity: ResolvedIdentity): void {
   cacheTimestamps.set(sub, Date.now());
 }
 
+// Dev-persona fast-path: when the AUTH_BYPASS branch in auth.ts injects one
+// of the 4 fixed `dev-persona-*` sub values, skip the email → PersonContact
+// DB lookup and use a hardcoded seeded identity. The student id below is
+// real: `stu-0001` / `per-stu-0001` is the first seeded student (verified
+// against the live DB on 2026-04-11). The applicant id `per-app-0001` is
+// the first seeded applicant; applicants have no seeded EMAIL contact so
+// the lookup would otherwise 403 in dev mode.
+//
+// Admin and academic personas deliberately have empty identities — the
+// isAdminStaff / isTeachingStaff short-circuit below means they never hit
+// this resolver path anyway.
+const DEV_PERSONA_IDENTITY: Record<string, ResolvedIdentity> = {
+  'dev-persona-admin': {},
+  'dev-persona-academic': {},
+  'dev-persona-student': { personId: 'per-stu-0001', studentId: 'stu-0001' },
+  'dev-persona-applicant': { personId: 'per-app-0001' },
+};
+
 async function resolveIdentity(user: JWTPayload): Promise<ResolvedIdentity> {
   const cached = getCachedIdentity(user.sub);
   if (cached) return cached;
 
-  // Try to find student by matching Keycloak email → Person email → Student
+  // Dev bypass personas use hardcoded seed identities so tests are
+  // deterministic and don't depend on the seed running email contacts
+  // for every Person.
+  if (user.sub in DEV_PERSONA_IDENTITY) {
+    const identity = DEV_PERSONA_IDENTITY[user.sub];
+    setCachedIdentity(user.sub, identity);
+    return identity;
+  }
+
+  // Production path: find student by matching Keycloak email → Person email → Student
   const person = await prisma.person.findFirst({
     where: {
       contacts: { some: { value: user.email, contactType: 'EMAIL' } },
@@ -163,3 +190,99 @@ export function requireOwnership(getResourceOwnerId: (req: Request) => Promise<s
     next(new ForbiddenError('You do not have permission to access this resource'));
   };
 }
+
+// ── Ownership lookup helpers ────────────────────────────────────────────────
+// Single-resource owner resolvers for the routes wired with requireOwnership.
+// Each helper reads `req.params.id` and returns the `studentId` that the
+// middleware compares against the authenticated identity. Returning `null`
+// means "resource not found or has no owner" — the middleware passes through
+// so the controller can surface a 404 (or, for public/shared records like
+// institutional documents with studentId = null, allow access).
+//
+// Shallow `select` projections keep the lookup cheap — one extra indexed
+// read per protected detail request.
+export const ownerLookup = {
+  enrolment: async (req: Request): Promise<string | null> => {
+    const r = await prisma.enrolment.findUnique({
+      where: { id: req.params.id as string },
+      select: { studentId: true },
+    });
+    return r?.studentId ?? null;
+  },
+
+  moduleRegistration: async (req: Request): Promise<string | null> => {
+    const r = await prisma.moduleRegistration.findUnique({
+      where: { id: req.params.id as string },
+      select: { enrolment: { select: { studentId: true } } },
+    });
+    return r?.enrolment?.studentId ?? null;
+  },
+
+  // marks/:id maps to an AssessmentAttempt row — navigate via
+  // moduleRegistration → enrolment → studentId.
+  assessmentAttempt: async (req: Request): Promise<string | null> => {
+    const r = await prisma.assessmentAttempt.findUnique({
+      where: { id: req.params.id as string },
+      select: {
+        moduleRegistration: {
+          select: { enrolment: { select: { studentId: true } } },
+        },
+      },
+    });
+    return r?.moduleRegistration?.enrolment?.studentId ?? null;
+  },
+
+  attendanceRecord: async (req: Request): Promise<string | null> => {
+    const r = await prisma.attendanceRecord.findUnique({
+      where: { id: req.params.id as string },
+      select: { studentId: true },
+    });
+    return r?.studentId ?? null;
+  },
+
+  studentAccount: async (req: Request): Promise<string | null> => {
+    const r = await prisma.studentAccount.findUnique({
+      where: { id: req.params.id as string },
+      select: { studentId: true },
+    });
+    return r?.studentId ?? null;
+  },
+
+  // Variant for the finance/transactions/:studentAccountId nested route,
+  // which uses a differently-named path parameter but still resolves to
+  // a StudentAccount owner.
+  studentAccountByTransactionsParam: async (req: Request): Promise<string | null> => {
+    const r = await prisma.studentAccount.findUnique({
+      where: { id: req.params.studentAccountId as string },
+      select: { studentId: true },
+    });
+    return r?.studentId ?? null;
+  },
+
+  // Document.studentId is nullable — institutional documents (letter
+  // templates, policy PDFs) have no owner. Returning null for those
+  // lets the middleware pass through, preserving shared-document access.
+  document: async (req: Request): Promise<string | null> => {
+    const r = await prisma.document.findUnique({
+      where: { id: req.params.id as string },
+      select: { studentId: true },
+    });
+    return r?.studentId ?? null;
+  },
+
+  ecClaim: async (req: Request): Promise<string | null> => {
+    const r = await prisma.eCClaim.findUnique({
+      where: { id: req.params.id as string },
+      select: { studentId: true },
+    });
+    return r?.studentId ?? null;
+  },
+
+  supportTicket: async (req: Request): Promise<string | null> => {
+    const r = await prisma.supportTicket.findUnique({
+      where: { id: req.params.id as string },
+      select: { studentId: true },
+    });
+    return r?.studentId ?? null;
+  },
+};
