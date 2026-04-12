@@ -18,8 +18,9 @@ export default function TicketDetail() {
         return (<>
           <div className="flex items-center gap-3 mb-4"><StatusBadge status={t.priority} /><StatusBadge status={t.status} /></div>
           <Card><CardHeader><CardTitle>{t.subject}</CardTitle></CardHeader><CardContent><p className="text-sm">{t.description}</p></CardContent></Card>
+          {/* TODO: Wire interaction timeline when SupportInteraction relation is included in /v1/support/:id response */}
           <Card><CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Interactions</CardTitle></CardHeader>
-            <CardContent><p className="text-muted-foreground">Interaction timeline loads from the support API</p></CardContent></Card>
+            <CardContent><p className="text-sm text-muted-foreground text-center py-4">No interactions recorded. The interaction timeline will appear here once support correspondence is logged.</p></CardContent></Card>
         </>);
       })()}
     </div>
