@@ -15,6 +15,11 @@ export default function ApplicantRouter() {
     <Switch>
       <Route path="/applicant/application/edit" component={EditApplication} />
       <Route path="/applicant/application" component={MyApplication} />
+      {/* Plural alias — external links and admin-side URLs use
+          /applications/:id (plural). Applicant only has one application,
+          so both the list and detail routes render MyApplication. */}
+      <Route path="/applicant/applications/:id" component={MyApplication} />
+      <Route path="/applicant/applications" component={MyApplication} />
       <Route path="/applicant/offers" component={MyOffers} />
       <Route path="/applicant/documents" component={UploadDocuments} />
       <Route path="/applicant/courses" component={CourseSearch} />
