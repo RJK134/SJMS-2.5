@@ -43,6 +43,16 @@ import { reportsRouter } from './reports/reports.router';
 import { webhooksRouter } from './webhooks/webhooks.router';
 import { configRouter } from './config/config.router';
 
+import identityGroupRouter from './identity/group-index';
+import admissionsGroupRouter from './admissions/group-index';
+import enrolmentGroupRouter from './enrolment/group-index';
+import curriculumGroupRouter from './curriculum/group-index';
+import assessmentGroupRouter from './assessment/group-index';
+import progressionGroupRouter from './progression/group-index';
+import studentSupportGroupRouter from './student-support/group-index';
+import complianceGroupRouter from './compliance/group-index';
+import platformGroupRouter from './platform/group-index';
+
 export const apiV1Router = Router();
 apiV1Router.use(authenticateJWT);
 
@@ -87,3 +97,13 @@ apiV1Router.use('/audit', auditRouter);
 apiV1Router.use('/reports', reportsRouter);
 apiV1Router.use('/webhooks', webhooksRouter);
 apiV1Router.use('/config', configRouter);
+
+apiV1Router.use('/identity', identityGroupRouter);
+apiV1Router.use('/admissions', admissionsGroupRouter);
+apiV1Router.use('/enrolment', enrolmentGroupRouter);
+apiV1Router.use('/curriculum', curriculumGroupRouter);
+apiV1Router.use('/assessment', assessmentGroupRouter);
+apiV1Router.use('/progression', progressionGroupRouter);
+apiV1Router.use('/student-support', studentSupportGroupRouter);
+apiV1Router.use('/compliance', complianceGroupRouter);
+apiV1Router.use('/platform', platformGroupRouter);
