@@ -32,6 +32,7 @@ const listInclude: Prisma.StudentInclude = {
 };
 
 export interface StudentFilters {
+  moduleId?: string;
   feeStatus?: string;
   entryRoute?: string;
   search?: string;
@@ -40,6 +41,7 @@ export interface StudentFilters {
 export async function list(filters: StudentFilters = {}, pagination: PaginationParams) {
   const where: Prisma.StudentWhereInput = {
     deletedAt: null,
+    ...(filters.moduleId && { enrolments: { some: { moduleRegistrations: { some: { moduleId: filters.moduleId, deletedAt: null } }, deletedAt: null } } }),
     ...(filters.feeStatus && { feeStatus: filters.feeStatus as any }),
     ...(filters.entryRoute && { entryRoute: filters.entryRoute as any }),
     ...(filters.search && {
