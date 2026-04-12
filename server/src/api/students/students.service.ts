@@ -11,14 +11,15 @@ export interface StudentListQuery {
   sort: string;
   order: 'asc' | 'desc';
   search?: string;
+  moduleId?: string;
   feeStatus?: string;
   entryRoute?: string;
 }
 
 export async function list(query: StudentListQuery) {
-  const { page, limit, sort, order, search, feeStatus, entryRoute } = query;
+  const { page, limit, sort, order, search, moduleId, feeStatus, entryRoute } = query;
   return repo.list(
-    { search, feeStatus, entryRoute },
+    { search, moduleId, feeStatus, entryRoute },
     { page, limit, skip: (page - 1) * limit, sort, order },
   );
 }

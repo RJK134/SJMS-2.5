@@ -1,11 +1,9 @@
-import { Route, Switch, useLocation } from 'wouter';
-import { useAuth } from '@/contexts/AuthContext';
-import { AUTH_MODE, getCurrentDevPersona } from '@/lib/auth';
-import { useEffect } from 'react';
+import { Route, Switch } from 'wouter';
 import StaffLayout from '@/components/layout/StaffLayout';
 import { DashboardContent } from './Dashboard';
 import { ADMIN_STAFF_ROLES } from '@/constants/roles';
 import AuthLoadingOrError from '@/components/shared/AuthLoadingOrError';
+import { usePortalGuard } from '@/hooks/usePortalGuard';
 import ComingSoon from '@/components/ComingSoon';
 import PortalNotFound from '@/components/shared/PortalNotFound';
 
@@ -294,31 +292,9 @@ function AdminContent() {
 }
 
 export default function AdminRouter() {
-  const { isAuthenticated, isLoading, hasAnyRole, authError } = useAuth();
-  const [, navigate] = useLocation();
+  const guardState = usePortalGuard('admin', ADMIN_STAFF_ROLES);
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    // Dev mode: the hash URL is the canonical persona signal. Check it
-    // synchronously to avoid a race between wouter's sync re-render and
-    // AuthContext's async role state update — same fix as Student/Academic/
-    // Applicant portals (Comet round 2, F3/F4).
-    if (AUTH_MODE === 'dev') {
-      if (getCurrentDevPersona() !== 'admin') navigate('/dashboard');
-      return;
-    }
-    // Production (Keycloak): roles come from the JWT token.
-    if (!hasAnyRole([...ADMIN_STAFF_ROLES])) {
-      navigate('/dashboard');
-      return;
-    }
-  }, [isLoading, isAuthenticated, hasAnyRole, navigate]);
-
-  if (isLoading || authError) {
+  if (guardState !== 'allowed') {
     return <AuthLoadingOrError />;
   }
 

@@ -13,13 +13,14 @@ export interface QueryParams {
   [key: string]: string | number | boolean | undefined;
 }
 
-export function useList<T>(key: string, endpoint: string, params?: QueryParams) {
+export function useList<T>(key: string, endpoint: string, params?: QueryParams, options?: { enabled?: boolean }) {
   return useQuery<PaginatedResponse<T>>({
     queryKey: [key, params],
     queryFn: async () => {
       const { data } = await api.get(endpoint, { params });
       return data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 

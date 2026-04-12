@@ -8,6 +8,7 @@ export const querySchema = z.object({
   sort: z.string().default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
   search: z.string().optional(),
+  moduleId: z.string().optional(), // filter to students registered on this module
   feeStatus: z.string().optional(),
     entryRoute: z.string().optional(),
 });

@@ -11,6 +11,7 @@ import MyTimetable from './MyTimetable';
 import MyExamBoards from './MyExamBoards';
 import MyECClaims from './MyECClaims';
 import MyProfile from './MyProfile';
+import MyStudents from './MyStudents';
 import ComingSoon from '@/components/ComingSoon';
 import PortalNotFound from '@/components/shared/PortalNotFound';
 
@@ -38,9 +39,7 @@ export default function AcademicRouter() {
           top-level paths that aren't yet built out. Render a labelled
           ComingSoon card instead of silently falling through to the
           dashboard. */}
-      <Route path="/academic/students">
-        <ComingSoon title="My Students" description="A module-scoped student list for teaching staff is planned. In the meantime, use My Tutees from the sidebar to see students you tutor, or open a specific module to see its enrolled cohort." />
-      </Route>
+      <Route path="/academic/students" component={MyStudents} />
       <Route path="/academic/assessments">
         <ComingSoon title="Assessments" description="A cross-module assessments view for teaching staff is planned. In the meantime, use Marks Entry and Moderation from the sidebar to review component-level work." />
       </Route>
