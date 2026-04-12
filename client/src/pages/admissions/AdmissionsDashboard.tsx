@@ -3,15 +3,33 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/shared/StatCard';
 import { useList } from '@/hooks/useApi';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Users, Send, Gift, CheckCircle } from 'lucide-react';
+import { Users, Send, Gift, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 
 interface Application { id: string; status: string; applicationRoute: string }
 
 const COLOURS = ['#1e3a5f', '#d97706', '#16a34a', '#dc2626', '#6366f1', '#8b5cf6'];
 
 export default function AdmissionsDashboard() {
-  const { data } = useList<Application>('adm-dash', '/v1/applications', { limit: 100 });
+  const { data, isLoading, isError } = useList<Application>('adm-dash', '/v1/applications', { limit: 100 });
   const apps = data?.data ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Admissions Dashboard" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Dashboard' }]} />
+        <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Admissions Dashboard" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Dashboard' }]} />
+        <Card><CardContent className="py-12 text-center text-destructive flex items-center justify-center gap-2"><AlertCircle className="h-5 w-5" /> Unable to load admissions data</CardContent></Card>
+      </div>
+    );
+  }
 
   const statusCounts = apps.reduce<Record<string, number>>((acc, a) => { acc[a.status] = (acc[a.status] ?? 0) + 1; return acc; }, {});
   const routeCounts = apps.reduce<Record<string, number>>((acc, a) => { acc[a.applicationRoute] = (acc[a.applicationRoute] ?? 0) + 1; return acc; }, {});
