@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
 
 export interface AssessmentAttemptFilters {
+  studentId?: string;
   assessmentId?: string;
   moduleRegistrationId?: string;
   attemptNumber?: number;
@@ -12,6 +13,7 @@ export interface AssessmentAttemptFilters {
 export async function list(filters: AssessmentAttemptFilters = {}, pagination: PaginationParams) {
   const where: Prisma.AssessmentAttemptWhereInput = {
     deletedAt: null,
+    ...(filters.studentId && { moduleRegistration: { enrolment: { studentId: filters.studentId } } }),
     ...(filters.assessmentId && { assessmentId: filters.assessmentId }),
     ...(filters.moduleRegistrationId && { moduleRegistrationId: filters.moduleRegistrationId }),
     ...(filters.attemptNumber !== undefined && { attemptNumber: filters.attemptNumber }),
