@@ -111,6 +111,7 @@ export default function MarksEntry() {
     const allRows = attempts?.data ?? [];
     if (allRows.length === 0) return;
 
+    let errorCount = 0;
     for (const a of allRows) {
       const rawMark = marks[a.id] ?? a.rawMark;
       if (rawMark === null || rawMark === undefined) continue;
@@ -120,10 +121,16 @@ export default function MarksEntry() {
         setRowStatus(prev => ({ ...prev, [a.id]: 'saved' }));
       } catch {
         setRowStatus(prev => ({ ...prev, [a.id]: 'error' }));
+        errorCount++;
       }
     }
-    setSubmitted(true);
-    setToastMessage('All marks submitted for moderation');
+
+    if (errorCount === 0) {
+      setSubmitted(true);
+      setToastMessage('All marks submitted for moderation');
+    } else {
+      setToastMessage(`Submitted with ${errorCount} error${errorCount !== 1 ? 's' : ''} — please retry failed rows`);
+    }
     setTimeout(() => setToastMessage(''), 5000);
   }, [marks, validateMarks, attempts, updateMutation]);
 
