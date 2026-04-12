@@ -11,7 +11,7 @@ interface AttendanceRecord {
 }
 
 export default function MyAttendance() {
-  const { data, isLoading, isError } = useList<AttendanceRecord>('my-attendance', '/v1/attendance', { limit: 200, sort: 'date', order: 'desc' });
+  const { data, isLoading, isError } = useList<AttendanceRecord>('my-attendance', '/v1/attendance', { limit: 100, sort: 'date', order: 'desc' });
 
   const records = data?.data ?? [];
   const total = records.length;

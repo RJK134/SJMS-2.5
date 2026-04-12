@@ -25,6 +25,7 @@ export default function StudentRouter() {
       <Route path="/student/modules" component={StudentMyModules} />
       <Route path="/student/marks" component={MyMarks} />
       <Route path="/student/timetable" component={StudentMyTimetable} />
+      <Route path="/student/finance" component={MyAccount} />
       <Route path="/student/finance/account" component={MyAccount} />
       <Route path="/student/finance/payments" component={MakePayment} />
       <Route path="/student/finance/payment-plan" component={MyPaymentPlan} />
@@ -45,6 +46,9 @@ export default function StudentRouter() {
           assignments until this view lands. */}
       <Route path="/student/assessments">
         <ComingSoon title="Assessments" description="A unified view of your current and upcoming assessments is planned. In the meantime, use My Marks from the sidebar to see marks and feedback for completed assessments, and open a module to see its component breakdown." />
+      </Route>
+      <Route path="/student/enrolments">
+        <ComingSoon title="Enrolments" description="A detailed enrolment history view is planned. In the meantime, use My Programme from the sidebar to see your current programme, year of study, and module registrations." />
       </Route>
       {/* Portal-scoped 404 — unknown /student/* paths render a
           deliberate NotFound card inside the StudentLayout instead of
