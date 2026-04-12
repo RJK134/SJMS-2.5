@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+import { AUTH_MODE, getCurrentDevPersona } from '@/lib/auth';
 import AcademicLayout from '@/components/layout/AcademicLayout';
 import AcademicRouter from './academic/AcademicRouter';
 import AuthLoadingOrError from '@/components/shared/AuthLoadingOrError';
@@ -16,10 +17,14 @@ export default function AcademicPortal() {
       navigate('/login');
       return;
     }
-    // Gate academic portal entry on teaching role membership.
-    // Non-academic authenticated users are redirected to /dashboard, where
-    // the role-aware Dashboard wrapper picks the correct portal layout for
-    // them. Mirrors the AdminRouter guard pattern.
+    // Dev mode: the hash URL is the canonical persona signal. Check it
+    // synchronously to avoid a race between wouter's sync re-render and
+    // AuthContext's async role state update.
+    if (AUTH_MODE === 'dev') {
+      if (getCurrentDevPersona() !== 'academic') navigate('/dashboard');
+      return;
+    }
+    // Production (Keycloak): roles come from the JWT token.
     if (!hasAnyRole([...ACADEMIC_STAFF_ROLES])) {
       navigate('/dashboard');
       return;

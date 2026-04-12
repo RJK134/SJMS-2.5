@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+import { AUTH_MODE, getCurrentDevPersona } from '@/lib/auth';
 import ApplicantLayout from '@/components/layout/ApplicantLayout';
 import ApplicantRouter from './applicant/ApplicantRouter';
 import AuthLoadingOrError from '@/components/shared/AuthLoadingOrError';
@@ -16,10 +17,14 @@ export default function ApplicantPortal() {
       navigate('/login');
       return;
     }
-    // Gate applicant portal entry on the applicant role. Non-applicant
-    // authenticated users are redirected to /dashboard, where the role-aware
-    // Dashboard wrapper picks the correct portal layout for them. Mirrors
-    // the AdminRouter guard pattern.
+    // Dev mode: the hash URL is the canonical persona signal. Check it
+    // synchronously to avoid a race between wouter's sync re-render and
+    // AuthContext's async role state update.
+    if (AUTH_MODE === 'dev') {
+      if (getCurrentDevPersona() !== 'applicant') navigate('/dashboard');
+      return;
+    }
+    // Production (Keycloak): roles come from the JWT token.
     if (!hasAnyRole([...APPLICANT_ROLES])) {
       navigate('/dashboard');
       return;

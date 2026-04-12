@@ -137,10 +137,10 @@ const DEV_PERSONAS: Record<DevPersona, PersonaSpec> = {
   academic: {
     user: {
       sub: 'dev-persona-academic',
-      email: 'lecturer.demo@fhe.ac.uk',
-      preferred_username: 'lecturer.demo',
-      given_name: 'Lena',
-      family_name: 'Lecturer',
+      email: 'zoe.price@fhe.ac.uk',
+      preferred_username: 'zoe.price',
+      given_name: 'Zoe',
+      family_name: 'Price',
     },
     roles: ACADEMIC_ROLES,
   },
@@ -157,10 +157,10 @@ const DEV_PERSONAS: Record<DevPersona, PersonaSpec> = {
   applicant: {
     user: {
       sub: 'dev-persona-applicant',
-      email: 'applicant.demo@fhe.ac.uk',
-      preferred_username: 'applicant.demo',
-      given_name: 'Anne',
-      family_name: 'Applicant',
+      email: 'chloe.price@applicant.futurehorizons.ac.uk',
+      preferred_username: 'chloe.price',
+      given_name: 'Chloe',
+      family_name: 'Price',
     },
     roles: APPLICANT_ROLES,
   },
