@@ -1,5 +1,6 @@
 import { Route, Switch, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+import { AUTH_MODE, getCurrentDevPersona } from '@/lib/auth';
 import { useEffect } from 'react';
 import StaffLayout from '@/components/layout/StaffLayout';
 import { DashboardContent } from './Dashboard';
@@ -140,6 +141,9 @@ function AdminContent() {
       <Route path="/admin/admissions/interviews" component={InterviewSchedule} />
       <Route path="/admin/admissions/events" component={EventsManagement} />
       <Route path="/admin/admissions/agents" component={AgentManagement} />
+      <Route path="/admin/admissions/applicants">
+        <ComingSoon title="Applicants" description="A flat applicant list for registry workflows is planned. In the meantime, use the Applications Pipeline to view and manage applicants by status." />
+      </Route>
       <Route path="/admin/admissions/dashboard" component={AdmissionsDashboard} />
 
       {/* Assessment */}
@@ -160,6 +164,9 @@ function AdminContent() {
       <Route path="/admin/finance/bursaries" component={Bursaries} />
       <Route path="/admin/finance/debt-management" component={DebtManagement} />
       <Route path="/admin/finance/refunds" component={Refunds} />
+      <Route path="/admin/finance/transactions">
+        <ComingSoon title="Transactions" description="A cross-account transaction search for the finance team is planned. In the meantime, open a student account to view its transaction history." />
+      </Route>
 
       {/* Attendance */}
       <Route path="/admin/attendance/records" component={AttendanceRecords} />
@@ -296,9 +303,15 @@ export default function AdminRouter() {
       navigate('/login');
       return;
     }
-    // Gate admin portal entry on staff role membership.
-    // Non-staff authenticated users are redirected to /dashboard, where the
-    // role-aware Dashboard wrapper picks the correct portal layout for them.
+    // Dev mode: the hash URL is the canonical persona signal. Check it
+    // synchronously to avoid a race between wouter's sync re-render and
+    // AuthContext's async role state update — same fix as Student/Academic/
+    // Applicant portals (Comet round 2, F3/F4).
+    if (AUTH_MODE === 'dev') {
+      if (getCurrentDevPersona() !== 'admin') navigate('/dashboard');
+      return;
+    }
+    // Production (Keycloak): roles come from the JWT token.
     if (!hasAnyRole([...ADMIN_STAFF_ROLES])) {
       navigate('/dashboard');
       return;
