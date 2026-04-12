@@ -44,6 +44,9 @@ export default function AcademicRouter() {
       <Route path="/academic/assessments">
         <ComingSoon title="Assessments" description="A cross-module assessments view for teaching staff is planned. In the meantime, use Marks Entry and Moderation from the sidebar to review component-level work." />
       </Route>
+      <Route path="/academic/reports">
+        <ComingSoon title="Reports" description="Academic reports including module statistics, grade distributions, and cohort analytics are planned. Management dashboards and HESA extracts will be available from the admin portal." />
+      </Route>
       {/* Portal-scoped 404 — unknown /academic/* paths render a
           deliberate NotFound card inside the AcademicLayout instead of
           the dashboard fallback that previously masked typos. */}
