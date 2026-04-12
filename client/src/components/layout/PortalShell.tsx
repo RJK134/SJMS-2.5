@@ -261,8 +261,10 @@ export const studentNavItems: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: LayoutDashboard },
   { label: "My Programme", href: "/student/programme", icon: GraduationCap },
   { label: "Modules", href: "/student/modules", icon: BookOpen },
-  { label: "Assessments", href: "/student/assessments", icon: ClipboardCheck },
+  { label: "Marks", href: "/student/marks", icon: ClipboardCheck },
   { label: "Timetable", href: "/student/timetable", icon: Calendar },
+  { label: "Finance", href: "/student/finance", icon: Wallet },
+  { label: "Attendance", href: "/student/attendance", icon: UserCheck },
   { label: "Documents", href: "/student/documents", icon: FileText },
 ];
 
