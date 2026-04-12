@@ -10,6 +10,7 @@ export interface MarkListQuery {
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
+  studentId?: string;
   assessmentId?: string;
   moduleRegistrationId?: string;
   attemptNumber?: number;
@@ -17,9 +18,9 @@ export interface MarkListQuery {
 }
 
 export async function list(query: MarkListQuery) {
-  const { page, limit, sort, order, assessmentId, moduleRegistrationId, attemptNumber, status } = query;
+  const { page, limit, sort, order, studentId, assessmentId, moduleRegistrationId, attemptNumber, status } = query;
   return repo.list(
-    { assessmentId, moduleRegistrationId, attemptNumber, status },
+    { studentId, assessmentId, moduleRegistrationId, attemptNumber, status },
     { page, limit, skip: (page - 1) * limit, sort, order },
   );
 }

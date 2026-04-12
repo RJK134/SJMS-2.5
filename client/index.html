@@ -8,6 +8,11 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Hash-router default: redirect bare "/" to the dashboard so the
+      // user never lands on the NotFound page on first load.
+      if (!window.location.hash) window.location.replace('#/dashboard');
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

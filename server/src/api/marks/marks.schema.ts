@@ -8,6 +8,7 @@ export const querySchema = z.object({
   sort: z.string().default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
   search: z.string().optional(),
+  studentId: z.string().optional(), // injected by scopeToUser middleware — do NOT remove
   assessmentId: z.string().optional(), moduleRegistrationId: z.string().optional(), status: z.string().optional(),
 });
 
