@@ -46,11 +46,13 @@ export default function MyStudents() {
   );
   const modules = modulesData?.data ?? [];
 
-  // Fetch students for the selected module
+  // Fetch students for the selected module — disabled until a module is chosen
+  // to prevent an unguarded GET /v1/students with no moduleId filter.
   const { data: studentsData, isLoading: stuLoading, isError } = useList<Student>(
     'academic-module-students',
     '/v1/students',
-    selectedModule ? { moduleId: selectedModule, limit: 100, sort: 'createdAt', order: 'desc' } : undefined,
+    { moduleId: selectedModule, limit: 100, sort: 'createdAt', order: 'desc' },
+    { enabled: !!selectedModule },
   );
   const students = studentsData?.data ?? [];
   const total = studentsData?.pagination?.total ?? 0;
