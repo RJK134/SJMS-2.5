@@ -57,7 +57,7 @@ export default function StudentMyTimetable() {
   const { data: sessionData, isLoading: sessLoading, isError } = useList<TeachingSession>(
     'student-timetable-sessions',
     '/v1/timetable/sessions',
-    { limit: 200, sort: 'dayOfWeek', order: 'asc' },
+    { limit: 100, sort: 'dayOfWeek', order: 'asc' },
   );
 
   const registeredModuleIds = new Set(
