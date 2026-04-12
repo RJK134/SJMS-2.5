@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface QualificationListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -15,10 +15,10 @@ export interface QualificationListQuery {
 }
 
 export async function list(query: QualificationListQuery) {
-  const { page, limit, sort, order, search, applicationId } = query;
+  const { cursor, limit, sort, order, search, applicationId } = query;
   return repo.list(
     { search, applicationId },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

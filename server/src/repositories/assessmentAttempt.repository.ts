@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface AssessmentAttemptFilters {
   studentId?: string;
@@ -10,7 +10,7 @@ export interface AssessmentAttemptFilters {
   status?: string;
 }
 
-export async function list(filters: AssessmentAttemptFilters = {}, pagination: PaginationParams) {
+export async function list(filters: AssessmentAttemptFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.AssessmentAttemptWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { moduleRegistration: { enrolment: { studentId: filters.studentId } } }),
@@ -23,14 +23,14 @@ export async function list(filters: AssessmentAttemptFilters = {}, pagination: P
   const [data, total] = await Promise.all([
     prisma.assessmentAttempt.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.assessmentAttempt.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

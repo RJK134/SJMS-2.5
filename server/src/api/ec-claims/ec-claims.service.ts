@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface ECClaimListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -16,10 +16,10 @@ export interface ECClaimListQuery {
 }
 
 export async function list(query: ECClaimListQuery) {
-  const { page, limit, sort, order, studentId, status, claimType } = query;
+  const { cursor, limit, sort, order, studentId, status, claimType } = query;
   return repo.list(
     { studentId, status, claimType },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

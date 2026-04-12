@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const paramsSchema = z.object({ id: z.string().min(1) });
 
 export const querySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
+  cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(25),
   sort: z.string().default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
@@ -22,7 +22,7 @@ export const createSchema = z.object({
 export const updateSchema = createSchema.partial();
 
 export const alertsQuerySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
+  cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(25),
   sort: z.string().default('triggerDate'),
   order: z.enum(['asc', 'desc']).default('desc'),

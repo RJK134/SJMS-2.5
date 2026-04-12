@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface AttendanceFilters {
@@ -16,7 +16,7 @@ export interface AttendanceAlertFilters {
   status?: string;
 }
 
-export async function list(filters: AttendanceFilters = {}, pagination: PaginationParams) {
+export async function list(filters: AttendanceFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.AttendanceRecordWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -34,14 +34,14 @@ export async function list(filters: AttendanceFilters = {}, pagination: Paginati
     prisma.attendanceRecord.findMany({
       where,
       include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.attendanceRecord.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {
@@ -63,7 +63,7 @@ export async function softDelete(id: string) {
   return prisma.attendanceRecord.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
-export async function listAlerts(filters: AttendanceAlertFilters = {}, pagination: PaginationParams) {
+export async function listAlerts(filters: AttendanceAlertFilters = {}, pagination: CursorPaginationParams) {
   // AttendanceAlert has no deletedAt field — status drives the lifecycle.
   const where: Prisma.AttendanceAlertWhereInput = {
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -74,8 +74,8 @@ export async function listAlerts(filters: AttendanceAlertFilters = {}, paginatio
   const [data, total] = await Promise.all([
     prisma.attendanceAlert.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
       include: {
         student: {
@@ -94,7 +94,7 @@ export async function listAlerts(filters: AttendanceAlertFilters = {}, paginatio
     prisma.attendanceAlert.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getStudentAttendanceRate(studentId: string, academicYear: string) {

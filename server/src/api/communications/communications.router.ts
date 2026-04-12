@@ -4,9 +4,18 @@ import { validate, validateParams, validateQuery } from '../../middleware/valida
 import { ROLE_GROUPS } from '../../constants/roles';
 import * as ctrl from './communications.controller';
 import { createSchema, updateSchema, querySchema, paramsSchema } from './communications.schema';
+import * as notifCtrl from './notifications.controller';
+import { querySchema as notifQuerySchema, paramsSchema as notifParamsSchema, createSchema as notifCreateSchema, updateSchema as notifUpdateSchema } from './notifications.schema';
 
 export const communicationsRouter = Router();
 
+// ─── Notification sub-routes (merged from notifications module) ─────────────
+communicationsRouter.get('/notifications', validateQuery(notifQuerySchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), notifCtrl.list);
+communicationsRouter.get('/notifications/:id', validateParams(notifParamsSchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), notifCtrl.getById);
+communicationsRouter.post('/notifications', validate(notifCreateSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), notifCtrl.create);
+communicationsRouter.patch('/notifications/:id', validateParams(notifParamsSchema), validate(notifUpdateSchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), notifCtrl.update);
+
+// ─── Core communications routes ─────────────────────────────────────────────
 communicationsRouter.get('/', validateQuery(querySchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.list);
 communicationsRouter.get('/:id', validateParams(paramsSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.getById);
 communicationsRouter.post('/', validate(createSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.create);

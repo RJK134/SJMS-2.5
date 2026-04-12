@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface FacultyListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -14,10 +14,10 @@ export interface FacultyListQuery {
 }
 
 export async function list(query: FacultyListQuery) {
-  const { page, limit, sort, order, search } = query;
+  const { cursor, limit, sort, order, search } = query;
   return repo.list(
     { search },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

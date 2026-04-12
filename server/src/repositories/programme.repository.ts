@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface ProgrammeFilters {
@@ -9,7 +9,7 @@ export interface ProgrammeFilters {
   search?: string;
 }
 
-export async function list(filters: ProgrammeFilters = {}, pagination: PaginationParams) {
+export async function list(filters: ProgrammeFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.ProgrammeWhereInput = {
     deletedAt: null,
     ...(filters.status && { status: filters.status as any }),
@@ -28,14 +28,14 @@ export async function list(filters: ProgrammeFilters = {}, pagination: Paginatio
     prisma.programme.findMany({
       where,
       include: { department: { include: { school: { include: { faculty: true } } } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.programme.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

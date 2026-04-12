@@ -32,7 +32,7 @@ const filterConfig: FilterConfig[] = [
 
 export default function ProgrammeList() {
   const [, navigate] = useLocation();
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'programmeCode', order: 'asc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'programmeCode', order: 'asc' });
   const [filters, setFilters] = useState<Record<string, string>>({});
   const queryParams = { ...params, ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) };
   const { data, isLoading } = useList<Programme>('programmes', '/v1/programmes', queryParams);
@@ -45,8 +45,8 @@ export default function ProgrammeList() {
       </PageHeader>
       <FilterPanel filters={filterConfig} values={filters} onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />
       <DataTable<Programme> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        searchPlaceholder="Search by title or code..." onSearch={s => setParams(p => ({ ...p, search: s, page: 1 }))}
-        onPageChange={page => setParams(p => ({ ...p, page }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
+        searchPlaceholder="Search by title or code..." onSearch={s => setParams(p => ({ ...p, search: s, cursor: undefined }))}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         onRowClick={row => navigate(`/admin/programmes/${row.id}`)} currentSort={params.sort} currentOrder={params.order} />
     </div>
   );

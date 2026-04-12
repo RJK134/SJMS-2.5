@@ -27,7 +27,7 @@ interface EngagementResponse {
   success: boolean;
   summary: { total: number; green: number; amber: number; red: number };
   data: EngagementScore[];
-  pagination: { page: number; limit: number; total: number; totalPages: number; hasNext: boolean; hasPrev: boolean };
+  pagination: { limit: number; total: number; hasNext: boolean; nextCursor: string | null };
 }
 
 const ratingColour = {
@@ -67,22 +67,22 @@ const columns: Column<EngagementScore>[] = [
 ];
 
 export default function EngagementDashboard() {
-  const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [riskLevel, setRiskLevel] = useState<string>('');
 
   const queryParams = new URLSearchParams({
-    page: String(page),
     limit: '25',
+    ...(cursor ? { cursor } : {}),
     ...(search ? { search } : {}),
     ...(riskLevel ? { riskLevel } : {}),
   });
 
   const { data, isLoading, isError } = useQuery<EngagementResponse>({
-    queryKey: ['engagement-scores', page, search, riskLevel],
+    queryKey: ['engagement-scores', cursor, search, riskLevel],
     queryFn: async () => {
-      const { data } = await api.get(`/v1/dashboard/engagement-scores?${queryParams}`);
+      const { data } = await api.get(`/v1/reports/dashboard/engagement-scores?${queryParams}`);
       return data;
     },
   });
@@ -92,14 +92,14 @@ export default function EngagementDashboard() {
 
   const handleSearch = () => {
     setSearch(searchInput);
-    setPage(1);
+    setCursor(null);
   };
 
   const clearFilters = () => {
     setSearch('');
     setSearchInput('');
     setRiskLevel('');
-    setPage(1);
+    setCursor(null);
   };
 
   return (
@@ -146,7 +146,7 @@ export default function EngagementDashboard() {
             </div>
             <div className="w-48">
               <label className="text-sm font-medium block mb-1">Risk Level</label>
-              <Select value={riskLevel} onValueChange={v => { setRiskLevel(v); setPage(1); }}>
+              <Select value={riskLevel} onValueChange={v => { setRiskLevel(v); setCursor(null); }}>
                 <SelectTrigger><SelectValue placeholder="All levels" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="green">Green (On Track)</SelectItem>
@@ -167,7 +167,7 @@ export default function EngagementDashboard() {
         data={scores}
         pagination={data?.pagination}
         isLoading={isLoading}
-        onPageChange={setPage}
+        onPageChange={setCursor}
         emptyMessage="No attendance data available to calculate engagement scores"
       />
     </div>

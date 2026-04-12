@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface AttendanceListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -19,7 +19,7 @@ export interface AttendanceListQuery {
 }
 
 export interface AttendanceAlertListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -29,10 +29,10 @@ export interface AttendanceAlertListQuery {
 }
 
 export async function list(query: AttendanceListQuery) {
-  const { page, limit, sort, order, studentId, moduleRegistrationId, dateFrom, dateTo, status } = query;
+  const { cursor, limit, sort, order, studentId, moduleRegistrationId, dateFrom, dateTo, status } = query;
   return repo.list(
     { studentId, moduleRegistrationId, dateFrom, dateTo, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 
@@ -67,9 +67,9 @@ export async function remove(id: string, userId: string, req: Request) {
 // ── Attendance Alerts ────────────────────────────────────────────────────
 
 export async function listAlerts(query: AttendanceAlertListQuery) {
-  const { page, limit, sort, order, studentId, alertType, status } = query;
+  const { cursor, limit, sort, order, studentId, alertType, status } = query;
   return repo.listAlerts(
     { studentId, alertType, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }

@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface SubmissionListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -17,10 +17,10 @@ export interface SubmissionListQuery {
 }
 
 export async function list(query: SubmissionListQuery) {
-  const { page, limit, sort, order, search, assessmentId, moduleRegistrationId, status } = query;
+  const { cursor, limit, sort, order, search, assessmentId, moduleRegistrationId, status } = query;
   return repo.list(
     { search, assessmentId, moduleRegistrationId, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

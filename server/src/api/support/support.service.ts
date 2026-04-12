@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface SupportListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -19,10 +19,10 @@ export interface SupportListQuery {
 }
 
 export async function list(query: SupportListQuery) {
-  const { page, limit, sort, order, search, studentId, status, priority, category, assignedTo } = query;
+  const { cursor, limit, sort, order, search, studentId, status, priority, category, assignedTo } = query;
   return repo.list(
     { search, studentId, status, priority, category, assignedTo },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

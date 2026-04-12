@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface InterviewListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -15,10 +15,10 @@ export interface InterviewListQuery {
 }
 
 export async function list(query: InterviewListQuery) {
-  const { page, limit, sort, order, applicationId, status } = query;
+  const { cursor, limit, sort, order, applicationId, status } = query;
   return repo.list(
     { applicationId, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

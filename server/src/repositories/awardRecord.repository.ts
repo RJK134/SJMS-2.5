@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface AwardRecordFilters {
   studentId?: string;
@@ -8,7 +8,7 @@ export interface AwardRecordFilters {
   classification?: string;
 }
 
-export async function list(filters: AwardRecordFilters = {}, pagination: PaginationParams) {
+export async function list(filters: AwardRecordFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.AwardRecordWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -19,14 +19,14 @@ export async function list(filters: AwardRecordFilters = {}, pagination: Paginat
   const [data, total] = await Promise.all([
     prisma.awardRecord.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.awardRecord.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

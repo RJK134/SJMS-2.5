@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 interface CommitteeFilters {
@@ -7,7 +7,7 @@ interface CommitteeFilters {
   status?: string;
 }
 
-export async function list(filters: CommitteeFilters = {}, pagination: PaginationParams) {
+export async function list(filters: CommitteeFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.CommitteeWhereInput = {
     ...(filters.committeeType && { committeeType: filters.committeeType as any }),
     ...(filters.status && { status: filters.status }),
@@ -17,14 +17,14 @@ export async function list(filters: CommitteeFilters = {}, pagination: Paginatio
     prisma.committee.findMany({
       where,
       include: { members: { include: { staff: { include: { person: true } } } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.committee.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

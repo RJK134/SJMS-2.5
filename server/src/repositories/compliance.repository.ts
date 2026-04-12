@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface UKVIFilters {
@@ -17,7 +17,7 @@ export interface ContactPointFilters {
   toDate?: string | Date;
 }
 
-export async function list(filters: UKVIFilters = {}, pagination: PaginationParams) {
+export async function list(filters: UKVIFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.UKVIRecordWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -34,14 +34,14 @@ export async function list(filters: UKVIFilters = {}, pagination: PaginationPara
     prisma.uKVIRecord.findMany({
       where,
       include: { student: { include: { person: true } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.uKVIRecord.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {
@@ -78,7 +78,7 @@ export async function createReport(data: Prisma.UKVIReportUncheckedCreateInput) 
 
 export async function listContactPoints(
   filters: ContactPointFilters = {},
-  pagination: PaginationParams,
+  pagination: CursorPaginationParams,
 ) {
   const where: Prisma.UKVIContactPointWhereInput = {
     ...(filters.contactType && { contactType: filters.contactType as any }),
@@ -95,8 +95,8 @@ export async function listContactPoints(
   const [data, total] = await Promise.all([
     prisma.uKVIContactPoint.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
       include: {
         ukviRecord: {
@@ -113,10 +113,10 @@ export async function listContactPoints(
     prisma.uKVIContactPoint.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
-export async function getNonCompliantStudents(pagination: PaginationParams) {
+export async function getNonCompliantStudents(pagination: CursorPaginationParams) {
   const where: Prisma.UKVIRecordWhereInput = {
     deletedAt: null,
     complianceStatus: { in: ['AT_RISK', 'NON_COMPLIANT'] },
@@ -125,10 +125,10 @@ export async function getNonCompliantStudents(pagination: PaginationParams) {
     prisma.uKVIRecord.findMany({
       where,
       include: { student: { include: { person: true } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
     }),
     prisma.uKVIRecord.count({ where }),
   ]);
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }

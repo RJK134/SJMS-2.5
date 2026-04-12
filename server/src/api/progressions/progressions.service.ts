@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface ProgressionListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -15,10 +15,10 @@ export interface ProgressionListQuery {
 }
 
 export async function list(query: ProgressionListQuery) {
-  const { page, limit, sort, order, enrolmentId, decision } = query;
+  const { cursor, limit, sort, order, enrolmentId, decision } = query;
   return repo.list(
     { enrolmentId, decision },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

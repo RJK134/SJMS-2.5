@@ -33,7 +33,7 @@ const filterConfig: FilterConfig[] = [
 
 export default function StudentList() {
   const [, navigate] = useLocation();
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'createdAt', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
   const [filters, setFilters] = useState<Record<string, string>>({});
 
   const queryParams = { ...params, ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) };
@@ -64,8 +64,8 @@ export default function StudentList() {
         pagination={data?.pagination}
         isLoading={isLoading}
         searchPlaceholder="Search by name or student number..."
-        onSearch={search => setParams(p => ({ ...p, search, page: 1 }))}
-        onPageChange={page => setParams(p => ({ ...p, page }))}
+        onSearch={search => setParams(p => ({ ...p, search, cursor: undefined }))}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))}
         onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         onRowClick={row => navigate(`/admin/students/${row.id}`)}
         currentSort={params.sort}

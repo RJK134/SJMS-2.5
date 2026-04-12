@@ -17,7 +17,7 @@ const columns: Column<Mark>[] = [
 ];
 
 export default function ModerationQueue() {
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, status: 'MARKED' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, status: 'MARKED' });
   const { data, isLoading } = useList<Mark>('moderation-queue', '/v1/marks', params);
 
   return (
@@ -25,7 +25,7 @@ export default function ModerationQueue() {
       <PageHeader title="Moderation Queue" subtitle="Marks awaiting moderation"
         breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Assessment' }, { label: 'Moderation' }]} />
       <DataTable<Mark> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        onPageChange={page => setParams(p => ({ ...p, page }))} emptyMessage="No marks awaiting moderation" />
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} emptyMessage="No marks awaiting moderation" />
     </div>
   );
 }

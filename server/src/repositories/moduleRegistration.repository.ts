@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface ModuleRegistrationFilters {
   enrolmentId?: string;
@@ -16,7 +16,7 @@ export interface ModuleRegistrationFilters {
   studentId?: string;
 }
 
-export async function list(filters: ModuleRegistrationFilters = {}, pagination: PaginationParams) {
+export async function list(filters: ModuleRegistrationFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.ModuleRegistrationWhereInput = {
     deletedAt: null,
     ...(filters.enrolmentId && { enrolmentId: filters.enrolmentId }),
@@ -29,8 +29,8 @@ export async function list(filters: ModuleRegistrationFilters = {}, pagination: 
   const [data, total] = await Promise.all([
     prisma.moduleRegistration.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
       // Include the module so list consumers (the student MyModules
       // page, the student dashboard) can render moduleCode / title
@@ -45,7 +45,7 @@ export async function list(filters: ModuleRegistrationFilters = {}, pagination: 
     prisma.moduleRegistration.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

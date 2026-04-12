@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface AwardListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -16,10 +16,10 @@ export interface AwardListQuery {
 }
 
 export async function list(query: AwardListQuery) {
-  const { page, limit, sort, order, studentId, programmeId, classification } = query;
+  const { cursor, limit, sort, order, studentId, programmeId, classification } = query;
   return repo.list(
     { studentId, programmeId, classification },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

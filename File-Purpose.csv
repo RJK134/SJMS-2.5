@@ -1,0 +1,8 @@
+"File","Purpose"
+"domain-guide.md","All 23 domains with entities, relationships, business rules, SITS equivalents"
+"api-patterns.md","Standard 4-file module pattern with code examples for router, controller, service, schema"
+"assessment-domain.md","7-stage marks pipeline, moderation rules, exam board process, late penalty formulas"
+"hesa-data-futures.md","4-layer HESA architecture, Data Futures entity mapping, HUSID generation algorithm"
+"schema-remediation.md","Both BugBot findings (cascade delete + redundant indexes) with exact fixes and verification steps"
+"review-strategy.md","5-layer review pipeline: Claude Code → BugBot → Cursor Pro → GitHub Copilot → Manual"
+"sits-mapping.md","Every SJMS entity mapped to its Tribal SITS equivalent"

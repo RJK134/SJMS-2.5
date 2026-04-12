@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface ExamBoardFilters {
   programmeId?: string;
@@ -8,7 +8,7 @@ export interface ExamBoardFilters {
   search?: string;
 }
 
-export async function list(filters: ExamBoardFilters = {}, pagination: PaginationParams) {
+export async function list(filters: ExamBoardFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.ExamBoardWhereInput = {
     deletedAt: null,
     ...(filters.programmeId && { programmeId: filters.programmeId }),
@@ -21,14 +21,14 @@ export async function list(filters: ExamBoardFilters = {}, pagination: Paginatio
   const [data, total] = await Promise.all([
     prisma.examBoard.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.examBoard.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

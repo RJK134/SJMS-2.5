@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface ExamBoardListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -16,10 +16,10 @@ export interface ExamBoardListQuery {
 }
 
 export async function list(query: ExamBoardListQuery) {
-  const { page, limit, sort, order, search, programmeId, status } = query;
+  const { cursor, limit, sort, order, search, programmeId, status } = query;
   return repo.list(
     { search, programmeId, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

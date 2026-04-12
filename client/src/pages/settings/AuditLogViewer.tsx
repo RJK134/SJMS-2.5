@@ -28,7 +28,7 @@ const columns: Column<AuditEntry>[] = [
 ];
 
 export default function AuditLogViewer() {
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'timestamp', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'timestamp', order: 'desc' });
   const [entityType, setEntityType] = useState('');
   const [action, setAction] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -42,7 +42,7 @@ export default function AuditLogViewer() {
     ...(toDate ? { toDate } : {}),
   };
 
-  const { data, isLoading } = useList<AuditEntry>('audit-logs', '/v1/audit-logs', queryParams);
+  const { data, isLoading } = useList<AuditEntry>('audit-logs', '/v1/audit', queryParams);
 
   return (
     <div className="space-y-6">
@@ -90,7 +90,7 @@ export default function AuditLogViewer() {
         data={data?.data ?? []}
         pagination={data?.pagination}
         isLoading={isLoading}
-        onPageChange={page => setParams(p => ({ ...p, page }))}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))}
         onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         currentSort={params.sort}
         currentOrder={params.order}

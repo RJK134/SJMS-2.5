@@ -1,0 +1,90 @@
+Comet Browser test b: PREREQUISITE — Admin Login
+Logged in successfully as Richard Knapp via the Admin Portal card (note: the card is labelled "Admin Portal", not "Staff Portal"). Keycloak auth worked without issues. Landed on /#/dashboard.
+
+TEST 1 — Student List Page
+URL: http://localhost:5173/#/admin/students
+
+Criteria	Result
+Table appears?	Yes — a table of students loads
+Student count	149 student records total, 25 per page
+Student numbers visible?	Yes — format STU-2025-XXXX (e.g. STU-2025-0004 through STU-2025-0027)
+Student names visible?	No — all names display as "—" (em dash). Every single row has a blank name. This is a critical bug.
+Programme names visible?	No — there is no Programme column at all. Visible columns are: Student No., Name, Fee Status, Entry Route, and a date column (enrolment date)
+Search box?	Yes — placeholder text "Search by name or student number..."
+Search works?	Yes — typing "Smith" filtered from 149 to 6 student records. This confirms the backend has name data, but the frontend isn't rendering it in the Name column.
+Pagination?	Yes — "Showing 1–25 of 149 records", Page 1 of 6, with Previous/Next buttons
+Page 2 works?	Yes — clicking Next loaded different students (STU-2025-0029 onwards)
+Filters?	Yes — Fee Status dropdown and Entry Route dropdown are present
+Other features	"New Student" button and "Export CSV" button are present
+Bugs found:
+
+All student names are blank ("—") — high severity
+
+No Programme column in the table — missing feature or data binding issue
+
+All Fee Status values on page 1 show "Overseas" / "INTERNATIONAL" — page 2 shows a mix of "Home" with UCAS/CLEARING/DIRECT routes, so filtering by page appears to work
+
+TEST 2 — Student Profile Page
+Result: Student profile page does not exist.
+
+Clicking on any student row in the table redirects to the dashboard (/#/dashboard)
+
+The table rows are not proper links — the Name cell ("—") appears to trigger navigation to an undefined route
+
+Directly navigating to /#/admin/students/STU-2025-0005 also redirects to dashboard
+
+There are no tabs, no profile sections, no student detail view at all
+
+This is a major missing feature — the entire student detail/profile page needs to be built.
+
+TEST 3 — Programmes Page
+URL: http://localhost:5173/#/admin/programmes
+
+Criteria	Result
+List appears?	Yes
+Count	30 programmes
+Programme codes visible?	Yes — but format is PGT-XX-001 not UG-CS-001. Examples: PGT-AI-001, PGT-BM-001, PGT-CS-001, PGT-DA-001, PGT-ED-001
+Columns	Code, Title, Level, Credits
+Data quality	Titles are real (MSc Computer Science, MBA Business Administration, MEng Chemical Engineering, etc.). All show Level 7, 180 credits — suggesting these are all postgraduate programmes
+Filters	Level dropdown, Status dropdown, search box
+Programme detail page?	No — clicking a programme row redirects to the dashboard, same bug as student rows
+Bugs found:
+
+No programme detail page — clicking a row redirects to dashboard
+
+All 30 programmes appear to be postgraduate (PGT prefix, Level 7) — no undergraduate programmes visible
+
+Programme codes use PGT-XX-001 format, not UG-CS-001 as expected
+
+TEST 4 — Finance Page
+Result: Finance page does not exist.
+
+There is no "Finance" item in the admin sidebar navigation. The sidebar contains: Dashboard, Students, Programmes, Modules, Assessments, Timetable, Admissions, Reports, Settings.
+
+Navigating directly to /#/admin/finance shows a bare fallback page with just "Admin Dashboard" heading and "Welcome to the SJMS 2.5 administration portal." — no finance content at all.
+
+No student accounts, balances, charge lines, or payment data anywhere.
+
+Bonus: Modules Page
+Since Finance wasn't available, I checked Modules at /#/admin/modules:
+
+120 modules listed with Code, Title, Credits, Level columns
+
+Real data (Deep Learning, NLP, Computer Vision, AI Dissertation, Clinical Assessment, Nursing, Astrophysics, Cosmology, etc.)
+
+Search and filters (Status, Level) are present
+
+Clicking a module row likely has the same redirect-to-dashboard bug (consistent pattern)
+
+Summary of All Issues
+Issue	Severity	Area
+All student names render as "—"	Critical	Student List
+No student profile/detail page — rows redirect to dashboard	Critical	Student Profile
+No programme detail page — rows redirect to dashboard	High	Programmes
+Finance page does not exist — not in sidebar, no route	High	Finance
+No Programme column in student table	Medium	Student List
+All programmes are postgraduate only (no UG)	Medium	Programmes
+Programme code format is PGT-XX-001, not UG-CS-001	Low	Programmes
+Clicking rows in any list table redirects to dashboard (systemic routing bug)	Critical	All detail views
+/admin/finance falls back to a bare "Admin Dashboard" page instead of 404	Low	Routing
+The systemic issue is that detail/profile views for students, programmes, and likely modules are not wired up. The list pages render API data reasonably well (counts, pagination, search, filters all work), but drill-down into any record is completely broken — every click redirects to the dashboard. The name field binding is also broken despite the API clearly returning name data (search proves this).

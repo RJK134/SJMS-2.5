@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface ProgrammeRouteListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -17,10 +17,10 @@ export interface ProgrammeRouteListQuery {
 }
 
 export async function list(query: ProgrammeRouteListQuery) {
-  const { page, limit, sort, order, studentId, programmeId, routeCode, pathwayCode } = query;
+  const { cursor, limit, sort, order, studentId, programmeId, routeCode, pathwayCode } = query;
   return repo.list(
     { studentId, programmeId, routeCode, pathwayCode },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

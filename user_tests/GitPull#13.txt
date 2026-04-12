@@ -1,0 +1,146 @@
+Summary
+Addresses the Comet user-testing report from 10 April 2026. After an up-front audit comparing each reported bug against the current main branch (post PR #11, #12, and #13), only 2 of the 6 Comet findings still represent real bugs in today's code — the other 4 are either already fixed by intervening commits or were based on typing incorrect URLs into the test.
+
+Two atomic commits on fix/comet-test-findings, both TSC-clean (server + client), 4 files changed, 241 lines.
+
+Comet findings audit (what is real, what is not)
+#	Comet finding	Status in current main	Action
+2.1	SPA router crash on navigating to unimplemented portal then back to /admin	REAL — no top-level React error boundary exists in the tree; a render throw in any portal unmounts the whole app	FIXED (commit 1)
+2.1b	No 404 page — /admin/nonexistent blank white screen	REAL — unmatched top-level routes fell through to the Login page, which was confusing for authenticated users	FIXED (commit 1)
+2.2	Student profile tab content mismatch (Personal shows attendance, etc.)	ALREADY FIXED — StudentProfile.tsx correctly maps each TabsContent value to the matching tab component (verified by reading tabs/PersonalTab.tsx, AcademicTab.tsx, FinanceTab.tsx, AttendanceTab.tsx). Comet report predates the tab fix.	No action
+2.3	/admin/students/create and /admin/enrolments/bulk-registration broken	NOT A BUG — the actual routes are /admin/students/new and /admin/enrolments/module-registration. Grep confirms the UI (StudentList.tsx line 49) navigates to /admin/students/new, matching the route. Comet tested URLs that do not exist in the application.	No action
+2.4	Mobile sidebar cannot be dismissed; hamburger only opens	PARTIAL REAL — PortalShell already had a backdrop and X button (those worked), but the hamburger was wired to setSidebarOpen(true) so tapping it a second time did nothing. Tapping a nav link also left the sidebar covering the destination page. Escape key was unhandled.	FIXED (commit 2)
+2.5	12 admin modules render blank white screens (Finance, Attendance, Support, etc.)	ALREADY FIXED — spot-checked Invoicing.tsx, DocumentList.tsx, SystemSettings.tsx, ECClaims.tsx, Committees.tsx, Blocks.tsx, AttendanceRecords.tsx, UKVIDashboard.tsx, TimetableView.tsx — every one has content (PageHeader + Card with description, or a full DataTable with live data hooks). Comet report predates Phase 5B/C portal work.	No action
+2.6	Academic, Student, Applicant portals completely blank	ALREADY FIXED — AcademicDashboard.tsx, StudentDashboard.tsx, ApplicantDashboard.tsx all render full dashboards with stat cards, React Query hooks against real API endpoints (/v1/dashboard/academic, /v1/module-registrations, /v1/applications), and structured layouts. AcademicRouter, StudentRouter, ApplicantRouter all have full route tables.	No action
+Net: 2 real bugs fixed, 4 findings either already fixed or were test-tool errors.
+
+Commit 1 — fix(router): prevent SPA crash on unimplemented portal routes + add 404 page
+Files created:
+
+client/src/components/shared/ErrorBoundary.tsx (new, 106 lines) — top-level class-based React error boundary
+client/src/components/shared/NotFound.tsx (new, 58 lines) — friendly 404 page with Back + Dashboard recovery buttons
+Files modified:
+
+client/src/App.tsx — wraps the Router in ErrorBoundary and replaces the bare Login fallback with NotFound
+Why class component: React error boundaries require getDerivedStateFromError + componentDidCatch lifecycle methods, which are not available in functional components.
+
+Error boundary behaviour:
+
+Catches any render-time error thrown by descendants — prevents the crash-the-whole-tree scenario Comet reported
+Shows a recoverable fallback card with two actions: Try again (re-mounts children via resetKey increment) and Go to dashboard (hash-navigates to /dashboard then re-mounts)
+Deliberately avoids window.location.reload() so React Query cache state is preserved
+Logs structured console.error output — external telemetry wiring is deferred to Phase 2 observability work
+NotFound behaviour:
+
+Shows the unmatched path in a code block so the user knows what they typed
+Back — window.history.back()
+Dashboard — navigate('/dashboard') via wouter hash-router-aware hook
+Replaces the previous route-to-Login fallback which was confusing for authenticated users
+Commit 2 — fix(ui): toggle mobile sidebar via hamburger + escape key + route change
+File modified:
+
+client/src/components/layout/PortalShell.tsx — shared by StaffLayout, AcademicLayout, StudentLayout, ApplicantLayout via composition, so one change fixes the sidebar UX in all four portals.
+Three behaviour changes:
+
+Hamburger is now a toggle. Was setSidebarOpen(true); now setSidebarOpen((v) => !v). Also added aria-label ("Open/Close navigation menu") and aria-expanded for screen readers.
+
+Route change closes the sidebar. New useEffect(() => setSidebarOpen(false), [location]). Previously, tapping a nav link changed the route but left the sidebar covering the destination page on narrow viewports, making content unreachable. The profile dropdown is also closed on route change for consistency.
+
+Escape key closes the sidebar and profile dropdown. New useEffect that attaches a keydown listener while either panel is open, mapping Escape -> close. Standard WCAG 2.1 dismissible pattern. The listener is cleaned up when both panels are closed. Focus trap is deferred to Phase 5 accessibility hardening.
+
+What was already working (verified by code reading — no code change needed):
+
+Backdrop overlay (z-40 bg-black/50 lg:hidden) already existed with onClick={() => setSidebarOpen(false)}
+X button in the sidebar header already existed with onClick={() => setSidebarOpen(false)}
+lg:relative lg:translate-x-0 class already hides the sidebar slide on desktop
+Rules followed (per task brief)
+British English throughout comments and microcopy
+One commit per logical fix, explicit file paths on every git add — never git add -A
+npx tsc --noEmit run on server + client after each commit — both stay at 0 errors
+No prisma/schema.prisma changes, no seed data changes, no docker or env changes
+No new npm packages — works with React 18 built-in error boundary API and existing shadcn/ui + lucide-react components
+No dev server started
+No services refactored, no repository wiring, no Phase 2 auth work
+All changes confined to client/src/ — server code untouched
+No existing components deleted
+Final TSC state
+$ cd server && npx tsc --noEmit
+(no output, exit 0)
+
+$ cd client && npx tsc --noEmit
+(no output, exit 0)
+Which Comet tests should now pass
+Comet finding	Pre-PR	Post-PR
+2.1 SPA crash on unimplemented routes	FAIL (crash)	PASS (ErrorBoundary catches, shows recovery card)
+2.1b Blank 404 page	FAIL (blank)	PASS (NotFound page with Back + Dashboard)
+2.2 Student profile tabs	PASS (already correct)	PASS (unchanged)
+2.3 /students/create + /bulk-registration	N/A — wrong URLs in test	N/A
+2.4 Hamburger does not toggle	FAIL (one-way open)	PASS (Toggle + Escape + route-change close)
+2.5 12 blank admin modules	PASS (already had content)	PASS (unchanged)
+2.6 Academic/Student/Applicant portals blank	PASS (already had dashboards)	PASS (unchanged)
+Test plan
+ cd server && npx tsc --noEmit -> 0 errors
+ cd client && npx tsc --noEmit -> 0 errors
+ 2 atomic commits, each revertible independently
+ git diff --stat -> 4 files, 241 lines (well under 2000-line stop condition)
+ Runtime smoke test via dev server (deferred per task rule "do not start the dev server")
+ Rerun Comet test suite against fix/comet-test-findings to re-verify fixes 2.1 and 2.4
+ Manual mobile viewport test: verify hamburger toggle + Escape + nav-link behaviour on iOS Safari / Chrome Android
+ Intentionally trigger a render error in a portal and confirm the ErrorBoundary card appears instead of a blank tree
+What was NOT done and why
+No alias routes added for /admin/students/create or /admin/enrolments/bulk-registration — the UI already uses the correct URLs (/new, /module-registration), so aliases would only serve hypothetical external bookmarks. Adding them without a clear consumer would be YAGNI.
+No blank-module placeholders added — every reported blank module already has content. Adding placeholders would be a net regression.
+No Academic/Student/Applicant portal shells built — all three already exist with full dashboards and router tables.
+No focus trap on the mobile sidebar — deferred to Phase 5 accessibility hardening per inline comment.
+No external telemetry for caught errors — deferred to Phase 2 observability work per inline comment.
+Generated with Claude Code
+
+Note
+
+Medium Risk
+Touches top-level routing and introduces a global React ErrorBoundary, which can change how failures surface and affect navigation recovery paths. Behavioural changes are contained to UI error/404 handling and sidebar interactions with minimal data/security impact.
+
+Overview
+Prevents whole-app blank screens by wrapping the SPA router in a new top-level ErrorBoundary with a recoverable fallback (retry or navigate to dashboard).
+
+Replaces the previous unmatched-route fallthrough to Login with a dedicated NotFound 404 page.
+
+Improves PortalShell mobile UX by toggling the hamburger button, auto-closing sidebar/profile on route changes, and adding Escape-key dismissal plus basic ARIA state.
+
+Reviewed by Cursor Bugbot for commit 06f1cad. Bugbot is set up for automated code reviews on this repo. Configure here.
+
+Mention @copilot in a comment to make changes to this pull request.
+RJK134 and others added 2 commits 6 hours ago
+@RJK134
+@claude
+fix(router): prevent SPA crash on unimplemented portal routes + add 4… 
+79925fd
+@RJK134
+@claude
+fix(ui): toggle mobile sidebar via hamburger + escape key + route change 
+06f1cad
+cursor[bot]
+cursor bot reviewed 6 hours ago
+@cursor
+cursor bot
+left a comment
+Cursor Bugbot has reviewed your changes and found 1 potential issue.
+
+Fix All in Cursor
+
+❌ Bugbot Autofix is OFF. To automatically fix reported issues with cloud agents, enable autofix in the Cursor dashboard.
+
+Reviewed by Cursor Bugbot for commit 06f1cad. Configure here.
+
+client/src/App.tsx
+              <Login />, which was confusing for authenticated users. */}
+          <Route>
+            <NotFound />
+          </Route>
+@cursor
+cursor bot
+6 hours ago
+Root path shows 404 instead of login page
+High Severity
+
+Replacing the catch-all <Login /> with <NotFound /> breaks the app's primary entry point. There is no <Route path="/"> defined, so visiting the root path / (no hash or empty hash) now falls through to the NotFound catch-all instead of showing the login/portal-selection page. This directly affects two critical flows: first-time visitors landing at the root URL, and users returning after logout — since auth.ts sets redirectUri to window.location.origin + '/' with no hash fragment. Both groups now see a confusing "Page not found" message instead of being able to sign in.

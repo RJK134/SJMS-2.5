@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface DocumentFilters {
@@ -8,7 +8,7 @@ export interface DocumentFilters {
   verificationStatus?: string;
 }
 
-export async function list(filters: DocumentFilters = {}, pagination: PaginationParams) {
+export async function list(filters: DocumentFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.DocumentWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -20,14 +20,14 @@ export async function list(filters: DocumentFilters = {}, pagination: Pagination
     prisma.document.findMany({
       where,
       include: { student: { include: { person: true } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.document.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

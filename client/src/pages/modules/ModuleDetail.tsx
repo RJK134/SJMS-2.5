@@ -54,7 +54,7 @@ export default function ModuleDetail() {
   const mid = params?.id;
   const { data, isLoading } = useDetail<Module>('modules', '/v1/modules', mid);
   const { data: marks } = useList<Attempt>('mod-marks', '/v1/marks', { moduleId: mid, limit: 100 });
-  const [attParams, setAttParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'date', order: 'desc' });
+  const [attParams, setAttParams] = useState<QueryParams>({ limit: 25, sort: 'date', order: 'desc' });
   const [attFilters, setAttFilters] = useState<Record<string, string>>({});
   const { data: attendance, isLoading: attLoading } = useList<AttRec>('mod-att', '/v1/attendance', { ...attParams, moduleRegistrationId: mid, ...Object.fromEntries(Object.entries(attFilters).filter(([, v]) => v)) });
   const mod = data?.data;
@@ -147,7 +147,7 @@ export default function ModuleDetail() {
             </div>
             <FilterPanel filters={attFilterConfig} values={attFilters} onChange={(k, v) => setAttFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setAttFilters({})} />
             <DataTable<AttRec> columns={attColumns} data={attRecs} pagination={attendance?.pagination} isLoading={attLoading}
-              onPageChange={page => setAttParams(p => ({ ...p, page }))} currentSort={attParams.sort} currentOrder={attParams.order}
+              onPageChange={cursor => setAttParams(p => ({ ...p, cursor: cursor ?? undefined }))} currentSort={attParams.sort} currentOrder={attParams.order}
               onSort={(sort, order) => setAttParams(p => ({ ...p, sort, order }))} />
           </div>
         </TabsContent>

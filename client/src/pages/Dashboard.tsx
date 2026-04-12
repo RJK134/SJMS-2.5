@@ -43,7 +43,7 @@ function NotificationsCard() {
   const { data, isLoading } = useQuery<{ success: boolean; data: Notification[]; pagination: any }>({
     queryKey: ['dashboard-notifications'],
     queryFn: async () => {
-      const { data } = await api.get('/v1/notifications', { params: { limit: 5, isRead: 'false' } });
+      const { data } = await api.get('/v1/communications/notifications', { params: { limit: 5, isRead: 'false' } });
       return data;
     },
   });
@@ -82,7 +82,7 @@ function CalendarEventsCard() {
   const { data, isLoading } = useQuery<{ success: boolean; data: CalendarEvent[]; pagination: any }>({
     queryKey: ['dashboard-calendar'],
     queryFn: async () => {
-      const { data } = await api.get('/v1/calendar/events', { params: { limit: 5, fromDate: new Date().toISOString() } });
+      const { data } = await api.get('/v1/attendance/calendar/events', { params: { limit: 5, fromDate: new Date().toISOString() } });
       return data;
     },
   });
@@ -131,7 +131,7 @@ export function DashboardContent() {
   const { data, isLoading, isError } = useQuery<{ success: boolean; data: DashboardStats }>({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      const { data } = await api.get('/v1/dashboard/stats');
+      const { data } = await api.get('/v1/reports/dashboard/stats');
       return data;
     },
   });

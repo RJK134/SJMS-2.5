@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface MarkListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -18,10 +18,10 @@ export interface MarkListQuery {
 }
 
 export async function list(query: MarkListQuery) {
-  const { page, limit, sort, order, studentId, assessmentId, moduleRegistrationId, attemptNumber, status } = query;
+  const { cursor, limit, sort, order, studentId, assessmentId, moduleRegistrationId, attemptNumber, status } = query;
   return repo.list(
     { studentId, assessmentId, moduleRegistrationId, attemptNumber, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 
