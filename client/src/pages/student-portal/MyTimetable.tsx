@@ -2,7 +2,6 @@ import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useList } from '@/hooks/useApi';
 import { Loader2, AlertCircle, Calendar } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface TeachingSession {
   id: string;
@@ -23,20 +22,17 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 /**
  * Student Portal → Timetable
  *
- * Queries GET /v1/timetable/sessions?studentId=<current student>. The
- * server resolves the student's registered moduleIds via module-registrations
- * and filters teaching events to those modules — no client-side merge needed.
+ * scopeToUser('studentId') on the timetable router injects the student's
+ * identity into the query. The server resolves studentId → moduleIds via
+ * module-registrations and filters teaching events to those modules —
+ * no client-side merge needed.
  *
  * If the student has no module registrations or no teaching events are
  * seeded, the empty state explains that sessions haven't been published yet.
  */
 export default function StudentMyTimetable() {
-  const { user } = useAuth();
-
-  // The server resolves studentId → moduleIds → teaching events server-side.
-  // scopeToUser('studentId') on module-registrations already handles the
-  // persona mapping. For the timetable endpoint we pass the dev persona's
-  // student identity which the server uses to resolve modules.
+  // scopeToUser middleware injects studentId server-side — the client
+  // just requests sessions and the server scopes the response.
   const { data: sessionData, isLoading, isError } = useList<TeachingSession>(
     'student-timetable-sessions',
     '/v1/timetable/sessions',

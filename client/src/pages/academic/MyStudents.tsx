@@ -5,7 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useList } from '@/hooks/useApi';
 import { Loader2, AlertCircle, Users } from 'lucide-react';
-import { Link } from 'wouter';
+// No Link import — academic portal has no student detail route yet.
+// Student numbers are displayed as selectable text. A read-only
+// academic student detail page is logged for round 6.
 
 interface Module {
   id: string;
@@ -129,9 +131,9 @@ export default function MyStudents() {
                     return (
                       <tr key={s.id} className="border-b last:border-0 hover:bg-muted/50">
                         <td className="py-2 pr-4">
-                          <Link href={`/admin/students/${s.id}`} className="text-primary hover:underline font-mono text-xs">
+                          <span className="font-mono text-xs text-primary select-all" title="Student detail view coming soon">
                             {s.studentNumber}
-                          </Link>
+                          </span>
                         </td>
                         <td className="py-2 pr-4 font-medium">
                           {s.person ? `${s.person.lastName}, ${s.person.firstName}` : '—'}

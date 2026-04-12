@@ -17,9 +17,20 @@ export interface TeachingEventFilters {
 }
 
 export async function listSessions(filters: TeachingEventFilters = {}, pagination: PaginationParams) {
+  // Merge moduleId and moduleIds into a single clause to avoid key collision.
+  // When both are present, intersect: only the direct moduleId IF it's in the
+  // student-scoped array. Otherwise one filter wins and the other is silently lost.
+  const moduleIdClause: Prisma.TeachingEventWhereInput = (() => {
+    if (filters.moduleIds && filters.moduleId) {
+      return { moduleId: { in: filters.moduleIds.filter(id => id === filters.moduleId) } };
+    }
+    if (filters.moduleIds) return { moduleId: { in: filters.moduleIds } };
+    if (filters.moduleId) return { moduleId: filters.moduleId };
+    return {};
+  })();
+
   const where: Prisma.TeachingEventWhereInput = {
-    ...(filters.moduleIds && { moduleId: { in: filters.moduleIds } }),
-    ...(filters.moduleId && { moduleId: filters.moduleId }),
+    ...moduleIdClause,
     ...(filters.staffId && { staffId: filters.staffId }),
     ...(filters.roomId && { roomId: filters.roomId }),
     ...(filters.dayOfWeek !== undefined && { dayOfWeek: filters.dayOfWeek }),
