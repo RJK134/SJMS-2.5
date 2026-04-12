@@ -8,6 +8,7 @@ import { type PaginationParams, buildPaginatedResponse } from '../utils/paginati
 export interface TeachingEventFilters {
   search?: string;
   moduleId?: string;
+  moduleIds?: string[];
   staffId?: string;
   roomId?: string;
   dayOfWeek?: number;
@@ -17,6 +18,7 @@ export interface TeachingEventFilters {
 
 export async function listSessions(filters: TeachingEventFilters = {}, pagination: PaginationParams) {
   const where: Prisma.TeachingEventWhereInput = {
+    ...(filters.moduleIds && { moduleId: { in: filters.moduleIds } }),
     ...(filters.moduleId && { moduleId: filters.moduleId }),
     ...(filters.staffId && { staffId: filters.staffId }),
     ...(filters.roomId && { roomId: filters.roomId }),

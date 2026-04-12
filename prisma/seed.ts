@@ -247,6 +247,7 @@ async function cleanup() {
   await prisma.examBoardDecision.deleteMany();
   await prisma.examBoard.deleteMany();
   await prisma.staffContract.deleteMany();
+  await prisma.teachingEvent.deleteMany();
   await prisma.moduleDelivery.deleteMany();
   await prisma.staff.deleteMany();
   await prisma.personContact.deleteMany();
@@ -1106,6 +1107,62 @@ async function seedHESAEntities(students: any[], modules: any[]) {
   console.log(`    Created ${hesaStudents.length} HESA students, ${hesaModules.length} HESA modules, ${hesaStudentModules.length} student-modules, ${entryQuals.length} entry qualifications`);
 }
 
+// ─── Module Delivery & Teaching Events ──────────────────────────────────────
+async function seedModuleDeliveries(modules: any[], staff: any[]) {
+  console.log('  Module deliveries + teaching events...');
+
+  // Assign each module to a staff member (round-robin)
+  const deliveries = modules.map((mod, i) => ({
+    id: `mdel-${pad(i + 1)}`,
+    moduleId: mod.id as string,
+    staffId: staff[i % staff.length].id as string,
+    academicYear: '2025/26',
+    capacity: 30 + rng(70),
+  }));
+  await prisma.moduleDelivery.createMany({ data: deliveries });
+  console.log(`    ${deliveries.length} module deliveries`);
+
+  // Pick 10 modules spread across the cohort for teaching events.
+  // Ensure stf-0003's modules are included (indices 2, 2+50=52, 2+100=102
+  // assuming round-robin with 50 staff → stf-0003 is at i%50===2).
+  const eventModules = modules.filter((_: any, i: number) => i < 10);
+  const eventTypes = [
+    { type: 'LECTURE', day: 1, start: '09:00', end: '10:00' },
+    { type: 'SEMINAR', day: 3, start: '14:00', end: '15:00' },
+    { type: 'LAB', day: 5, start: '10:00', end: '12:00' },
+  ] as const;
+
+  const events: any[] = [];
+  const rooms = ['room-001', 'room-002', 'room-003', 'room-004', 'room-005'];
+  let eventIdx = 0;
+
+  for (const mod of eventModules) {
+    const staffId = deliveries.find(d => d.moduleId === mod.id)?.staffId ?? staff[0].id;
+    for (const et of eventTypes) {
+      eventIdx++;
+      events.push({
+        id: `te-${pad(eventIdx)}`,
+        moduleId: mod.id,
+        eventType: et.type,
+        title: `${(mod as any).moduleCode} ${et.type.charAt(0) + et.type.slice(1).toLowerCase()}`,
+        academicYear: '2025/26',
+        weekPattern: '1-30',
+        dayOfWeek: et.day,
+        startTime: et.start,
+        endTime: et.end,
+        duration: et.type === 'LAB' ? 120 : 60,
+        roomId: rooms[eventIdx % rooms.length],
+        staffId,
+        capacity: 30 + rng(70),
+        status: 'SCHEDULED',
+      });
+    }
+  }
+
+  await prisma.teachingEvent.createMany({ data: events });
+  console.log(`    ${events.length} teaching events`);
+}
+
 // ─── Main ───────────────────────────────────────────────────────────────────
 async function main() {
   console.log('🌱 Seeding SJMS 2.5 database...\n');
@@ -1144,6 +1201,9 @@ async function main() {
   // B-04: HESA Data Futures entities
   await seedHESAEntities(students, modules);
 
+  // B-05: Module deliveries + teaching events (Comet round 5)
+  await seedModuleDeliveries(modules, staff);
+
   // Summary
   const counts = await Promise.all([
     prisma.faculty.count(),
@@ -1163,6 +1223,8 @@ async function main() {
     prisma.markEntry.count(),
     prisma.hESAStudent.count(),
     prisma.hESAEntryQualification.count(),
+    prisma.moduleDelivery.count(),
+    prisma.teachingEvent.count(),
   ]);
 
   console.log('\n✅ Seed complete! Summary:');
@@ -1183,6 +1245,8 @@ async function main() {
   console.log(`  Mark entries:          ${counts[14]}`);
   console.log(`  HESA students:         ${counts[15]}`);
   console.log(`  HESA entry quals:      ${counts[16]}`);
+  console.log(`  Module deliveries:     ${counts[17]}`);
+  console.log(`  Teaching events:       ${counts[18]}`);
 }
 
 main()

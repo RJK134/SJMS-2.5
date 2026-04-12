@@ -1,4 +1,5 @@
 import * as repo from '../../repositories/teachingEvent.repository';
+import * as modRegRepo from '../../repositories/moduleRegistration.repository';
 import { NotFoundError } from '../../utils/errors';
 
 export interface TimetableListQuery {
@@ -7,6 +8,7 @@ export interface TimetableListQuery {
   sort: string;
   order: 'asc' | 'desc';
   search?: string;
+  studentId?: string;
   moduleId?: string;
   staffId?: string;
   roomId?: string;
@@ -16,9 +18,25 @@ export interface TimetableListQuery {
 }
 
 export async function listSessions(query: TimetableListQuery) {
-  const { page, limit, sort, order, search, moduleId, staffId, roomId, dayOfWeek, academicYear, status } = query;
+  const { page, limit, sort, order, search, studentId, moduleId, staffId, roomId, dayOfWeek, academicYear, status } = query;
+
+  // If studentId is provided, resolve their registered moduleIds server-side
+  // so the client doesn't need a two-step fetch + client-side merge.
+  let resolvedModuleIds: string[] | undefined;
+  if (studentId) {
+    const regs = await modRegRepo.list(
+      { studentId },
+      { page: 1, limit: 200, skip: 0, sort: 'createdAt', order: 'desc' },
+    );
+    resolvedModuleIds = regs.data.map((r: any) => r.moduleId).filter(Boolean);
+    if (resolvedModuleIds.length === 0) {
+      // Student has no module registrations — return empty result
+      return { data: [], pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false } };
+    }
+  }
+
   return repo.listSessions(
-    { search, moduleId, staffId, roomId, dayOfWeek, academicYear, status },
+    { search, moduleId, moduleIds: resolvedModuleIds, staffId, roomId, dayOfWeek, academicYear, status },
     { page, limit, skip: (page - 1) * limit, sort, order },
   );
 }

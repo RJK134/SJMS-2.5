@@ -8,6 +8,7 @@ export const querySchema = z.object({
   sort: z.string().default('dayOfWeek'),
   order: z.enum(['asc', 'desc']).default('asc'),
   search: z.string().optional(),
+  studentId: z.string().optional(), // injected by scopeToUser middleware — do NOT remove
   moduleId: z.string().optional(),
   staffId: z.string().optional(),
   roomId: z.string().optional(),
