@@ -1,0 +1,253 @@
+[ROLE: LEAD_SYSTEMS_ENGINEER]
+
+
+You are bootstrapping SJMS 2.5 — the Student Journey Management System for Future Horizons Education. This is a UK Higher Education academic management platform built to rival Tribal SITS and Ellucian Banner.
+
+
+CONTEXT: You are working in the project directory. The GitHub repo RJK134/SJMS-2.5 exists but is currently empty except for README. Docker Desktop is running on the host machine.
+
+
+STEP 1 — INITIALISE PROJECT
+
+
+Create the project structure at the current working directory:
+
+
+mkdir -p sjms-2.5/{client,server,prisma,docker,n8n-workflows,scripts,docs,progress}
+
+
+Initialise:
+
+- Root package.json with workspaces: ["client", "server"]
+
+- TypeScript config (strict mode, ES2022 target, paths)
+
+- .gitignore (node_modules, dist, .env, *.log, .prisma)
+
+- .env.example with all required environment variables
+
+- README.md with project overview, architecture, and setup instructions
+
+
+STEP 2 — DOCKER COMPOSE STACK
+
+
+Create docker-compose.yml with 8 services:
+
+
+1. postgres: PostgreSQL 16, port 5432, volume pgdata, POSTGRES_DB=sjms, POSTGRES_USER=sjms, POSTGRES_PASSWORD=${DB_PASSWORD}
+
+2. redis: Redis 7-alpine, port 6379, volume redisdata
+
+3. minio: MinIO latest, ports 9000/9001, MINIO_ROOT_USER/PASSWORD from env, volume miniodata
+
+SJMS 2.5 Build & Verify Prompts — Future Horizons Education — CONFIDENTIAL | Page 4 of 103
+
+SJMS 2.5 — Phased Build & Verification Package
+
+4. keycloak: quay.io/keycloak/keycloak:24.0, port 8080, KC_DB=postgres, linked to postgres, command: start-dev
+
+5. n8n: n8nio/n8n:latest, port 5678, N8N_BASIC_AUTH from env, volume n8ndata
+
+6. api: build ./server, port 3001, depends_on postgres/redis/minio, env_file .env
+
+7. client: build ./client, port 5173, depends_on api
+
+8. nginx: nginx:alpine, ports 80/443, volumes for nginx.conf, depends_on all
+
+
+Network: sjms-network (bridge)
+
+Volumes: pgdata, redisdata, miniodata, n8ndata
+
+
+Create docker/nginx.conf with reverse proxy rules:
+
+- / → client:5173
+
+- /api → api:3001
+
+- /auth → keycloak:8080
+
+- /n8n → n8n:5678
+
+- /minio → minio:9000
+
+
+STEP 3 — SERVER FOUNDATION
+
+
+Create server/ with:
+
+- package.json (express, @prisma/client, zod, cors, helmet, morgan, jsonwebtoken, winston, multer, ioredis, dotenv)
+
+- tsconfig.json
+
+- src/index.ts — Express entry point with:
+
+- CORS, helmet, morgan, JSON body parser
+
+- Health check: GET /api/health → { status: "ok", version: "2.5.0", timestamp }
+
+- API router mounting at /api/v1
+
+- Global error handler
+
+- Graceful shutdown (SIGTERM/SIGINT)
+
+- src/utils/prisma.ts — Singleton PrismaClient
+
+SJMS 2.5 Build & Verify Prompts — Future Horizons Education — CONFIDENTIAL | Page 5 of 103
+
+SJMS 2.5 — Phased Build & Verification Package
+
+- src/utils/errors.ts — Custom error classes (NotFoundError, ValidationError, ConflictError, ForbiddenError, UnauthorizedError)
+
+- src/utils/pagination.ts — Pagination parser and response builder (page/limit/sort/order, default 25, max 100)
+
+- src/utils/logger.ts — Winston structured JSON logging
+
+- src/middleware/error-handler.ts — Global Express error handler
+
+- src/middleware/validate.ts — Zod validation middleware (validate, validateParams, validateQuery)
+
+- src/middleware/auth.ts — JWT authentication middleware (authenticateJWT, requireRole, optionalAuth) — reads Bearer tokens, extracts roles from Keycloak JWT
+
+- src/constants/roles.ts — All 27+ roles as constants plus ROLE_GROUPS
+
+
+Dockerfile for server:
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci --production
+
+COPY . .
+
+RUN npx prisma generate
+
+CMD ["node", "dist/index.js"]
+
+
+STEP 4 — CLIENT FOUNDATION
+
+
+Create client/ with:
+
+- package.json (react, react-dom, react-router-dom, @tanstack/react-query, wouter, tailwindcss, @radix-ui/*, lucide-react, date-fns, recharts, axios)
+
+- All shadcn/ui component files from SJMS 2.4 (Button, Card, Badge, Table, Dialog, Tabs, Select, Input, Form, etc.)
+
+- tailwind.config.ts with FHE theme:
+
+- Primary: navy #1e3a5f
+
+- Secondary: slate #334155
+
+- Accent: amber #d97706
+
+- Background: #f8fafc
+
+- Dark mode support
+
+- src/index.css with CSS variables for light/dark themes
+
+- src/main.tsx — React 18 entry with QueryClientProvider
+
+- src/App.tsx — Router with hash-based routing (useHashLocation from wouter)
+
+- src/lib/api.ts — API client with axios, base URL from env, token injection, error handling
+
+- src/lib/auth.ts — Keycloak OIDC adapter (login, logout, refresh token, get roles)
+
+- src/contexts/AuthContext.tsx — React context providing user, roles, isAuthenticated, login/logout
+
+- src/components/layout/ — PortalShell.tsx, StaffLayout.tsx, AcademicLayout.tsx, StudentLayout.tsx, ApplicantLayout.tsx
+
+- Sidebar navigation with FHE logo
+
+- Role-based menu items
+
+- User profile dropdown
+
+- Search bar
+
+- Design: deep navy sidebar, slate content area, amber accent
+
+- src/pages/Login.tsx — Portal selection cards (Admin, Academic, Student, Applicant) → Keycloak OIDC login
+
+- src/pages/Dashboard.tsx — Role-aware dashboard (redirects to role-specific dashboard)
+
+
+Dockerfile for client:
+
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+FROM nginx:alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+
+STEP 5 — GIT SETUP
+
+
+git init
+
+git add .
+
+git commit -m "feat: Phase 0 — project bootstrap, Docker stack, server/client foundation"
+
+git remote add origin https://github.com/RJK134/SJMS-2.5.git
+
+git branch -M main
+
+git push -u origin main
+
+
+STEP 6 — VERIFY LOCALLY
+
+
+docker-compose up -d postgres redis
+
+npm install (in server/ and client/)
+
+npx prisma generate (in server/)
+
+Start server: npm run dev (port 3001)
+
+Start client: npm run dev (port 5173)
+
+Verify: GET http://localhost:3001/api/health returns 200
+
+
+ACCEPTANCE CRITERIA:
+
+- [ ] Docker Compose file with 8 services, all correctly configured
+
+- [ ] Server starts, health check returns 200
+
+- [ ] Client starts, login page renders with FHE branding
+
+- [ ] All middleware files created with correct exports
+
+- [ ] Git repo pushed to RJK134/SJMS-2.5
+
+- [ ] .env.example has all required variables documented
+
+- [ ] TypeScript compiles with zero errors

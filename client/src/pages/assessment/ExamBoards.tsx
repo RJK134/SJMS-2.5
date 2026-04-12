@@ -18,14 +18,14 @@ const columns: Column<Board>[] = [
 
 export default function ExamBoards() {
   const [, navigate] = useLocation();
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'scheduledDate', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'scheduledDate', order: 'desc' });
   const { data, isLoading } = useList<Board>('exam-boards', '/v1/exam-boards', params);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Exam Boards" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Assessment' }, { label: 'Exam Boards' }]} />
       <DataTable<Board> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        onRowClick={row => navigate(`/admin/assessment/exam-boards/${row.id}`)} onPageChange={page => setParams(p => ({ ...p, page }))}
+        onRowClick={row => navigate(`/admin/assessment/exam-boards/${row.id}`)} onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))}
         onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))} currentSort={params.sort} currentOrder={params.order} />
     </div>
   );

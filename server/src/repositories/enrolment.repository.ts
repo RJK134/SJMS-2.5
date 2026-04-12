@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma, type EnrolmentStatus } from '@prisma/client';
 
 export interface EnrolmentFilters {
@@ -14,7 +14,7 @@ const defaultInclude = {
   programme: true,
 } as const;
 
-export async function list(filters: EnrolmentFilters = {}, pagination: PaginationParams) {
+export async function list(filters: EnrolmentFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.EnrolmentWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -27,14 +27,14 @@ export async function list(filters: EnrolmentFilters = {}, pagination: Paginatio
     prisma.enrolment.findMany({
       where,
       include: defaultInclude,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.enrolment.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

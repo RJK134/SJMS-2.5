@@ -35,7 +35,7 @@ export default function StudentMyTimetable() {
   // just requests sessions and the server scopes the response.
   const { data: sessionData, isLoading, isError } = useList<TeachingSession>(
     'student-timetable-sessions',
-    '/v1/timetable/sessions',
+    '/v1/attendance/timetable/sessions',
     { limit: 100, sort: 'dayOfWeek', order: 'asc' },
   );
 

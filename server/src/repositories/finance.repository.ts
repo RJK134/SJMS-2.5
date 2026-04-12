@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface AccountFilters {
@@ -15,7 +15,7 @@ export interface TransactionFilters {
   toDate?: string | Date;
 }
 
-export async function list(filters: AccountFilters = {}, pagination: PaginationParams) {
+export async function list(filters: AccountFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.StudentAccountWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -27,14 +27,14 @@ export async function list(filters: AccountFilters = {}, pagination: PaginationP
     prisma.studentAccount.findMany({
       where,
       include: { student: { include: { person: true } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.studentAccount.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {
@@ -65,7 +65,7 @@ export async function softDelete(id: string) {
 export async function listTransactions(
   studentAccountId: string,
   filters: TransactionFilters = {},
-  pagination: PaginationParams,
+  pagination: CursorPaginationParams,
 ) {
   const where: Prisma.FinancialTransactionWhereInput = {
     studentAccountId,
@@ -82,8 +82,8 @@ export async function listTransactions(
   const [data, total] = await Promise.all([
     prisma.financialTransaction.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
       select: {
         id: true,
@@ -102,7 +102,7 @@ export async function listTransactions(
     prisma.financialTransaction.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function createCharge(data: Prisma.ChargeLineUncheckedCreateInput) {

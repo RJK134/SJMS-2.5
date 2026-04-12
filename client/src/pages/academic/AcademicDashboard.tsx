@@ -25,7 +25,7 @@ export default function AcademicDashboard() {
   const { data: statsData, isLoading: statsLoading, isError: statsError } = useQuery<{ success: boolean; data: AcademicStats }>({
     queryKey: ['dashboard-academic'],
     queryFn: async () => {
-      const { data } = await api.get('/v1/dashboard/academic');
+      const { data } = await api.get('/v1/reports/dashboard/academic');
       return data;
     },
   });

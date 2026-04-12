@@ -1,13 +1,13 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface ApplicationReferenceFilters {
   applicationId?: string;
   search?: string;
 }
 
-export async function list(filters: ApplicationReferenceFilters = {}, pagination: PaginationParams) {
+export async function list(filters: ApplicationReferenceFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.ApplicationReferenceWhereInput = {
     deletedAt: null,
     ...(filters.applicationId && { applicationId: filters.applicationId }),
@@ -19,14 +19,14 @@ export async function list(filters: ApplicationReferenceFilters = {}, pagination
   const [data, total] = await Promise.all([
     prisma.applicationReference.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.applicationReference.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

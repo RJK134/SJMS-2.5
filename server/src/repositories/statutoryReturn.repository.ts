@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 // StatutoryReturn is a read-heavy model with no deletedAt field — returns
 // are state-driven via the `status` column (DRAFT, SUBMITTED, ACCEPTED, etc.)
@@ -12,7 +12,7 @@ export interface StatutoryReturnFilters {
   status?: string;
 }
 
-export async function list(filters: StatutoryReturnFilters = {}, pagination: PaginationParams) {
+export async function list(filters: StatutoryReturnFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.StatutoryReturnWhereInput = {
     ...(filters.academicYear && { academicYear: filters.academicYear }),
     ...(filters.returnType && { returnType: filters.returnType as any }),
@@ -22,14 +22,14 @@ export async function list(filters: StatutoryReturnFilters = {}, pagination: Pag
   const [data, total] = await Promise.all([
     prisma.statutoryReturn.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.statutoryReturn.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

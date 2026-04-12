@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface TicketFilters {
@@ -11,7 +11,7 @@ export interface TicketFilters {
   search?: string;
 }
 
-export async function list(filters: TicketFilters = {}, pagination: PaginationParams) {
+export async function list(filters: TicketFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.SupportTicketWhereInput = {
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
@@ -30,14 +30,14 @@ export async function list(filters: TicketFilters = {}, pagination: PaginationPa
     prisma.supportTicket.findMany({
       where,
       include: { student: { include: { person: true } } },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.supportTicket.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

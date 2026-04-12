@@ -36,7 +36,7 @@ const tableColumns: Column<Application>[] = [
 export default function ApplicationPipeline() {
   const [, navigate] = useLocation();
   const [view, setView] = useState<'kanban' | 'table'>('kanban');
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 100, sort: 'createdAt', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 100, sort: 'createdAt', order: 'desc' });
   const { data, isLoading } = useList<Application>('applications', '/v1/applications', params);
   const apps = data?.data ?? [];
 
@@ -79,7 +79,7 @@ export default function ApplicationPipeline() {
       ) : (
         <DataTable<Application> columns={tableColumns} data={apps} pagination={data?.pagination} isLoading={isLoading}
           onRowClick={row => navigate(`/admin/admissions/applications/${row.id}`)}
-          onPageChange={page => setParams(p => ({ ...p, page }))} currentSort={params.sort} currentOrder={params.order} />
+          onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} currentSort={params.sort} currentOrder={params.order} />
       )}
     </div>
   );

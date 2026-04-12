@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface EnrolmentListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -18,10 +18,10 @@ export interface EnrolmentListQuery {
 }
 
 export async function list(query: EnrolmentListQuery) {
-  const { page, limit, sort, order, studentId, programmeId, academicYear, status } = query;
+  const { cursor, limit, sort, order, studentId, programmeId, academicYear, status } = query;
   return repo.list(
     { studentId, programmeId, academicYear, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

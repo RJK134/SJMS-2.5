@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface CommunicationListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -16,10 +16,10 @@ export interface CommunicationListQuery {
 }
 
 export async function list(query: CommunicationListQuery) {
-  const { page, limit, sort, order, search, channel, isActive } = query;
+  const { cursor, limit, sort, order, search, channel, isActive } = query;
   return repo.list(
     { search, channel, isActive },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

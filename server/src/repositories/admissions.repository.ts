@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface ApplicationFilters {
@@ -25,7 +25,7 @@ const defaultInclude = {
   clearanceChecks: true,
 } as const;
 
-export async function list(filters: ApplicationFilters = {}, pagination: PaginationParams) {
+export async function list(filters: ApplicationFilters = {}, pagination: CursorPaginationParams) {
   // Build the nested `applicant` filter explicitly so personId and search
   // can coexist. A naive object spread would cause whichever spread came
   // last to overwrite the other (both target the same `applicant` key) —
@@ -59,14 +59,14 @@ export async function list(filters: ApplicationFilters = {}, pagination: Paginat
     prisma.application.findMany({
       where,
       include: { applicant: { include: { person: true } }, programme: true },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.application.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

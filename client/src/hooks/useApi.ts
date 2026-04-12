@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import type { PaginatedResponse, SingleResponse } from '@/types/api';
 
 export interface QueryParams {
-  page?: number;
+  cursor?: string;
   limit?: number;
   sort?: string;
   order?: 'asc' | 'desc';

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHE Curriculum Management Process Map</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1B2A4A 0%, #0D9488 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.95;
+        }
+
+        .container {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        main {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .sidebar h3 {
+            color: #1B2A4A;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #0D9488;
+            padding-bottom: 0.5rem;
+        }
+
+        .sidebar p {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 1.2rem;
+            color: #555;
+        }
+
+        .sidebar ul {
+            font-size: 0.85rem;
+            line-height: 1.8;
+            margin-left: 1.2rem;
+            margin-bottom: 1.2rem;
+            color: #555;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.5rem;
+        }
+
+        .phase-container {
+            margin-bottom: 2rem;
+        }
+
+        .phase-header {
+            background: linear-gradient(90deg, #1B2A4A 0%, #0D9488 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .phase-header:hover {
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .phase-number {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+        }
+
+        .toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .phase-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .phase-content {
+            background: #f5f7fa;
+            border-left: 4px solid #0D9488;
+            padding: 1.5rem;
+            border-radius: 0 6px 6px 0;
+            max-height: 1000px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .phase-content.collapsed {
+            max-height: 0;
+            padding: 0 1.5rem;
+            overflow: hidden;
+        }
+
+        .sub-stage {
+            margin-bottom: 1rem;
+        }
+
+        .sub-stage-title {
+            color: #1B2A4A;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .sub-stage-desc {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        .gate {
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #856404;
+        }
+
+        .gate strong {
+            color: #ff9800;
+        }
+
+        .mermaid-container {
+            margin: 2rem 0;
+            background: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .architecture-box {
+            background: #e8f5e9;
+            border-left: 4px solid #0D9488;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .architecture-box strong {
+            color: #1B2A4A;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .compliance-badge {
+            display: inline-block;
+            background: #0D9488;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        footer {
+            background: #1B2A4A;
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+            }
+        }
+
+        @media print {
+            .sidebar {
+                break-inside: avoid;
+            }
+
+            .phase-content {
+                max-height: none !important;
+            }
+
+            .phase-header {
+                page-break-inside: avoid;
+            }
+        }
+
+        .divider {
+            height: 1px;
+            background: #ddd;
+            margin: 1.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>FHE Curriculum Management Process Map</h1>
+        <p>Complete Lifecycle from Strategic Planning through Review & Enhancement | UK Higher Education Best Practices</p>
+    </header>
+
+    <div class="container">
+        <main>
+            <!-- Overall Process Flow Diagram -->
+            <div class="mermaid-container">
+                <div class="mermaid">
+graph LR
+    A["🎯 Phase 1<br/>Strategic<br/>Planning"] --> B["💼 Phase 2<br/>Business Case<br/>Development"]
+    B --> C["🎓 Phase 3<br/>Academic<br/>Design"]
+    C --> D["✓ Phase 4<br/>External<br/>Validation"]
+    D --> E["✅ Phase 5<br/>Approval &<br/>Implementation"]
+    E --> F["📊 Phase 6<br/>Delivery &<br/>Monitoring"]
+    F --> G["🔄 Phase 7<br/>Review &<br/>Enhancement"]
+    G -.->|Continuous Improvement| C
+
+    style A fill:#1B2A4A,stroke:#0D9488,stroke-width:3px,color:#fff
+    style B fill:#1B2A4A,stroke:#0D9488,stroke-width:3px,color:#fff
+    style C fill:#1B2A4A,stroke:#0D9488,stroke-width:3px,color:#fff
+    style D fill:#ff9800,stroke:#0D9488,stroke-width:3px,color:#fff
+    style E fill:#0D9488,stroke:#1B2A4A,stroke-width:3px,color:#fff
+    style F fill:#0D9488,stroke:#1B2A4A,stroke-width:3px,color:#fff
+    style G fill:#4CAF50,stroke:#1B2A4A,stroke-width:3px,color:#fff
+                </div>
+            </div>
+
+            <!-- Phase 1 -->
+            <div class="phase-container">
+                <div class="phase-header" onclick="togglePhase(this)">
+                    <span><span class="phase-number">1</span>Strategic Planning & Initiation</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔗 Institutional Strategy Alignment</div>
+                        <div class="sub-stage-desc">Review institutional learning and teaching strategy, strategic plan, and faculty priorities. Identify strategic fit with organisational goals.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">👥 Programme Team Formed</div>
+                        <div class="sub-stage-desc">Establish core team: Programme Lead, Academic Coordinators, Module Leaders, External Advisor. Define roles and responsibilities.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📋 Initial Proposal Drafted</div>
+                        <div class="sub-stage-desc">Develop outline programme proposal: title, level (FHEQ), mode of delivery, student cohort, broad learning aims, estimated student numbers.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📈 Market Demand Assessment</div>
+                        <div class="sub-stage-desc">Conduct market research: stakeholder consultation, UCAS trends analysis, graduate employment data, skills gap identification.</div>
+                    </div>
+                    <div class="gate">
+                        <strong>🚪 GATE: Strategic Approval</strong><br/>
+                        Academic Strategy Committee reviews proposal alignment with institutional direction and approves progression to Phase 2.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 2 -->
+            <div class="phase-container">
+                <div class="phase-header" onclick="togglePhase(this)">
+                    <span><span class="phase-number">2</span>Business Case Development</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔍 Market Analysis</div>
+                        <div class="sub-stage-desc">Competitor review: analyse existing programmes in UK and internationally. Demand forecasting: project recruitment targets. UCAS trends: historical application patterns for similar disciplines.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">💰 Financial Modelling</div>
+                        <div class="sub-stage-desc">Income projections based on student fees and other revenue. Cost analysis: staffing, facilities, marketing, systems. Break-even analysis and ROI calculations.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🏢 Resource Planning</div>
+                        <div class="sub-stage-desc">Staffing requirements and recruitment timescale. Facilities and estate needs. IT infrastructure and learning platform requirements. Library and information resources.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📢 Recruitment Strategy</div>
+                        <div class="sub-stage-desc">Marketing plan, recruitment channels, target markets, international recruitment considerations, employer partnerships for recruitment.</div>
+                    </div>
+                    <div class="gate">
+                        <strong>🚪 GATE: Business Viability</strong><br/>
+                        Finance & Planning Committee approves financial projections, confirms resource availability, and authorises progression to Phase 3.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 3 -->
+            <div class="phase-container">
+                <div class="phase-header" onclick="togglePhase(this)">
+                    <span><span class="phase-number">3</span>Academic Design</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📐 Programme Specification Development</div>
+                        <div class="sub-stage-desc">Detailed programme specification: aims, teaching and learning strategy, entry requirements, progression rules, assessment methods, programme structure (modules/credits).</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🎯 Programme Learning Outcomes (PLOs)</div>
+                        <div class="sub-stage-desc">Define PLOs using Bloom's taxonomy (Knowledge, Skills, Competence). Ensure alignment with FHEQ level descriptors. Specify outcomes at exit points (diploma, degree).</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📚 Module Design & Descriptors</div>
+                        <div class="sub-stage-desc">Design each module: learning outcomes aligned to PLOs, content outline, assessment methods, credit weighting. Create comprehensive module descriptors for student handbook.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">✍️ Assessment Strategy</div>
+                        <div class="sub-stage-desc">Assessment methods aligned with QAA Quality Code. Mix of formative and summative assessment. Clear marking criteria and feedback mechanisms. Academic integrity and student support provisions.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🗺️ Curriculum Mapping</div>
+                        <div class="sub-stage-desc">Matrix of modules × PLOs showing where each outcome is Introduced, Developed, or Assessed. Ensures comprehensive coverage and appropriate sequencing.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔐 Entry Requirements & Progression</div>
+                        <div class="sub-stage-desc">Clear entry criteria (qualifications, experience). Progression rules between levels. Exit point awards. Support for students with additional needs.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🏛️ PSRB Alignment</div>
+                        <div class="sub-stage-desc">If applicable, ensure alignment with Professional, Statutory and Regulatory Bodies (e.g. BPS, RIBA). Accreditation pathways identified.</div>
+                    </div>
+                    <div class="gate">
+                        <strong>🚪 GATE: Academic Quality</strong><br/>
+                        Faculty Learning & Teaching Committee reviews programme specification, learning outcomes, and assessment strategy for academic rigor and alignment with QAA Quality Code.
+                    </div>
+                    <div class="gate">
+                        <strong>🚪 GATE: Resource Adequacy</strong><br/>
+                        Faculty Board confirms sufficient staffing expertise, facilities, and resources to deliver programme to specified standard.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 4 -->
+            <div class="phase-container">
+                <div class="phase-header" onclick="togglePhase(this)">
+                    <span><span class="phase-number">4</span>External Review & Validation</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">👨‍🎓 External Subject Expert Review</div>
+                        <div class="sub-stage-desc">Recruit experienced external subject matter expert(s). Provide comprehensive documentation. Expert reviews programme specification, curriculum design, and learning outcomes for academic standards and disciplinary currency.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🤝 Industry/Employer Consultation</div>
+                        <div class="sub-stage-desc">Engage employers and industry practitioners. Gather feedback on employability focus, skills development, graduate competencies. Incorporate into programme design.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">👔 Validation Panel Assembled</div>
+                        <div class="sub-stage-desc">Panel composition: Independent Chair, Internal Academic Member, External Subject Specialist, External Industry Representative, Student Representative, QA Officer, Secretary. All undergo briefing on institutional context and validation process.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📦 Pre-Validation Documentation</div>
+                        <div class="sub-stage-desc">Comprehensive validation dossier: programme specification, module descriptors, curriculum mapping, assessment strategy, resource plans, external expert report, employer feedback, evidence of consultation.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🎤 Formal Validation Event</div>
+                        <div class="sub-stage-desc">Validation panel meets with programme team. Presentation of programme, Q&A session, review of documentation. Panel deliberations and judgement on academic standards and viability.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📋 Conditions, Recommendations, Commendations</div>
+                        <div class="sub-stage-desc">Panel issues formal validation report: Conditions (must be met before approval), Recommendations (should be considered for enhancement), Commendations (areas of excellence).</div>
+                    </div>
+                    <div class="gate">
+                        <strong>🚪 GATE: External Validation</strong><br/>
+                        Independent Validation Panel confirms academic standards, market viability, and readiness for delivery. Conditions must be satisfied before Phase 5 approval.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 5 -->
+            <div class="phase-container">
+                <div class="phase-header" onclick="togglePhase(this)">
+                    <span><span class="phase-number">5</span>Approval & Implementation</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">✅ Conditions Met & Verified</div>
+                        <div class="sub-stage-desc">Programme team addresses all validation conditions. QA Office verifies completion. Evidence submitted to Academic Board for final sign-off.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📊 Programme Created in SITS/SJMS</div>
+                        <div class="sub-stage-desc">Administrator creates programme record in student record system. Establishes programme code, version control, approval date. Links to modules in system.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🎓 UCAS Listing Setup</div>
+                        <div class="sub-stage-desc">Register programme with UCAS. Configure entry requirements, course details, tariff information. Set recruitment cycle and application deadlines.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📱 Marketing Materials Produced</div>
+                        <div class="sub-stage-desc">Prospectus entries, web content, brochures, social media materials. Admissions team trained on programme specifics. UCAS Apply integration configured.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">⚙️ n8n Workflow Automation</div>
+                        <div class="sub-stage-desc">Trigger "Programme Approved" workflow: Creates student intake profile, configures assessment templates, initiates timetabling, registers programme with data warehouse.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">👨‍💼 Staff Appointment & Briefing</div>
+                        <div class="sub-stage-desc">Recruit and appoint module leaders and teaching staff. Conduct briefing sessions on programme aims, assessment strategy, student support mechanisms, learning analytics.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📖 Student Handbook Prepared</div>
+                        <div class="sub-stage-desc">Comprehensive handbook with programme aims, module details, assessment criteria, progression rules, support services, academic integrity policies, appeals procedures.</div>
+                    </div>
+                    <div class="gate">
+                        <strong>🚪 GATE: Final Approval</strong><br/>
+                        Academic Board formally approves programme for delivery. Authorises UCAS registration and student recruitment to commence.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 6 -->
+            <div class="phase-container">
+                <div class="phase-header" onclick="togglePhase(this)">
+                    <span><span class="phase-number">6</span>Delivery & Monitoring</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🏫 Programme Runs</div>
+                        <div class="sub-stage-desc">Students recruited and enrolled. Teaching delivery commences according to timetable. Learning resources and support services activated.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📝 Module Evaluations</div>
+                        <div class="sub-stage-desc">Conduct module feedback surveys at end of each module/semester. Analyse feedback data. Module leaders respond to feedback with action plans.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🗣️ Student Feedback</div>
+                        <div class="sub-stage-desc">Student-Staff Liaison Committee (SSLC) meetings. National Student Survey (NSS) results analysed. Programme-specific feedback mechanisms. Feedback loop closure demonstrated.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔍 External Examiner Reports</div>
+                        <div class="sub-stage-desc">Appointed external examiner reviews assessment and student work. Annual report submitted covering standards, assessment rigour, learning outcomes achievement. Recommendations addressed.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📊 Annual Programme Report (APR)</div>
+                        <div class="sub-stage-desc">Comprehensive annual review: feedback analysis, performance data, student outcomes, teaching innovations, action plans. Submitted to Faculty and QA Office.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">📈 KPI Tracking</div>
+                        <div class="sub-stage-desc">Monitor: Student retention rates, achievement rates by module, degree classification distribution, student satisfaction scores, graduate employability, progression to further study.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔄 Action Plans Implemented</div>
+                        <div class="sub-stage-desc">Based on feedback, external examiner reports, and KPI data, implement enhancement actions. Track completion and effectiveness of actions.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 7 -->
+            <div class="phase-container">
+                <div class="phase-header" onclick="togglePhase(this)">
+                    <span><span class="phase-number">7</span>Review & Enhancement</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔍 Annual Monitoring Review</div>
+                        <div class="sub-stage-desc">Conducted each year. Review APR data, feedback trends, KPIs, and effectiveness of previous action plans. Identify emerging issues and enhancement opportunities.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔄 Periodic Review (5-6 Year Cycle)</div>
+                        <div class="sub-stage-desc">Comprehensive review of entire programme. Examine curriculum relevance, learning outcomes currency, assessment methods, student outcomes over time. Engage external advisor.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">♻️ Revalidation</div>
+                        <div class="sub-stage-desc">Formal revalidation event (similar to initial validation) to confirm programme continues to meet academic standards. May involve revised specification or modest enhancements.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">✏️ Programme Modification</div>
+                        <div class="sub-stage-desc">Major modifications: Significant curriculum changes, new learning outcomes, assessment method changes - require validation event. Minor modifications: Module content updates, staff changes - documented approval.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">⏸️ Programme Suspension/Withdrawal</div>
+                        <div class="sub-stage-desc">If programme no longer viable or strategically aligned, plan suspension or withdrawal. Manage student transition, graduation support, and teach-out arrangements.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🌟 Enhancement-Led Review</div>
+                        <div class="sub-stage-desc">Proactive identification of excellence and innovation. Document best practice. Share learning across programmes. Drive continuous improvement culture.</div>
+                    </div>
+                    <div class="sub-stage">
+                        <div class="sub-stage-title">🔁 Continuous Improvement Cycle</div>
+                        <div class="sub-stage-desc">Insights from Phase 7 feed back to Phase 3 (Academic Design) for iterative curriculum enhancement. Create feedback loops between delivery, monitoring, and design.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Models Diagram -->
+            <div class="mermaid-container">
+                <h3 style="color: #1B2A4A; margin-bottom: 1rem;">SJMS v4 Data Model Integration</h3>
+                <div class="mermaid">
+graph TB
+    subgraph "Programme Management"
+        A["Programme Record<br/>(Title, Level, Status)"]
+        B["Module Instances<br/>(Code, Credits, Leader)"]
+        C["Learning Outcomes<br/>(PLOs, MLOs)"]
+    end
+
+    subgraph "Assessment & Tracking"
+        D["Assessment Components<br/>(Type, Weight, Criteria)"]
+        E["Curriculum Mapping<br/>(Module→PLO Links)"]
+        F["Student Achievement<br/>(Marks, Grades, Feedback)"]
+    end
+
+    subgraph "Monitoring & Approval"
+        G["Validation Records<br/>(Panel, Conditions, Date)"]
+        H["Annual Programme Report<br/>(Feedback, KPIs, Actions)"]
+        I["Approval Gates<br/>(Status, Approver, Date)"]
+    end
+
+    A --> B
+    A --> C
+    B --> D
+    C --> E
+    D --> F
+    E --> F
+    G --> A
+    A --> H
+    H --> I
+    I --> A
+
+    style A fill:#e8f5e9
+    style B fill:#e8f5e9
+    style C fill:#e8f5e9
+    style D fill:#e3f2fd
+    style E fill:#e3f2fd
+    style F fill:#e3f2fd
+    style G fill:#fff9c4
+    style H fill:#fff9c4
+    style I fill:#fff9c4
+                </div>
+            </div>
+
+        </main>
+
+        <aside class="sidebar">
+            <h3>🔧 Technical Architecture</h3>
+
+            <div class="architecture-box">
+                <strong>n8n Workflow Automation</strong>
+                Event-driven workflows manage state transitions. "Programme Approved" trigger initiates cascading tasks: SITS updates, UCAS registration, intake profile creation, assessment template deployment.
+            </div>
+
+            <div class="architecture-box">
+                <strong>SJMS v4 Pipeline Tracking</strong>
+                Programme proposals progress through defined status stages: Draft → Submitted → Validated → Approved → Active → Under Review → Archived. Status linked to approval gates with audit trail of all decisions.
+            </div>
+
+            <div class="architecture-box">
+                <strong>Data Model Integration</strong>
+                <ul style="margin-left: 0; list-style: none;">
+                    <li>• Programme → Module relationships</li>
+                    <li>• Module → Assessment Links</li>
+                    <li>• Curriculum Mapping (PLO coverage)</li>
+                    <li>• Student Enrolment Records</li>
+                    <li>• Achievement & Progression Data</li>
+                </ul>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3>📋 Quality Assurance</h3>
+
+            <p>
+                <span class="compliance-badge">QAA Code</span>
+                <span class="compliance-badge">OfS Conditions</span>
+                <span class="compliance-badge">FHEQ Aligned</span>
+            </p>
+
+            <div class="architecture-box">
+                <strong>QAA UK Quality Code Alignment</strong>
+                Programme design and monitoring aligned with QAA Quality Code expectations: clear learning outcomes, rigorous assessment, effective feedback, continuous improvement.
+            </div>
+
+            <div class="architecture-box">
+                <strong>OfS Conditions of Registration</strong>
+                Compliance with Office for Students requirements: academic standards, teaching quality, student support, financial viability tracking through monitoring framework.
+            </div>
+
+            <div class="architecture-box">
+                <strong>FHEQ Level Framework</strong>
+                All programmes designed to FHEQ level descriptors. Learning outcomes mapped to Framework for Higher Education Qualifications in England, Wales, Northern Ireland, Scotland.
+            </div>
+
+            <div class="divider"></div>
+
+            <h3>🔗 Key Integrations</h3>
+
+            <ul>
+                <li><strong>UCAS:</strong> Programme listings, application processing</li>
+                <li><strong>SITS:</strong> Student enrolment, assessment recording</li>
+                <li><strong>Learning Platform:</strong> Module delivery and resources</li>
+                <li><strong>Analytics:</strong> KPI tracking and dashboards</li>
+                <li><strong>Email:</strong> Notifications at approval gates</li>
+            </ul>
+
+            <div class="divider"></div>
+
+            <h3>✅ Validation Checklist</h3>
+
+            <ul style="font-size: 0.8rem;">
+                <li>☑ Programme specification complete</li>
+                <li>☑ PLOs defined and mapped</li>
+                <li>☑ Assessment strategy aligned</li>
+                <li>☑ Module descriptors approved</li>
+                <li>☑ Resource plan confirmed</li>
+                <li>☑ External reviews obtained</li>
+                <li>☑ Panel assembled and briefed</li>
+                <li>☑ Validation event conducted</li>
+                <li>☑ Conditions addressed</li>
+                <li>☑ Final approval obtained</li>
+            </ul>
+
+        </aside>
+    </div>
+
+    <footer>
+        <p>FHE Curriculum Management Process Map | Future Horizons University | Designed for SJMS v4 Integration | QAA & OfS Compliant</p>
+    </footer>
+
+    <script>
+        // Mermaid configuration
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+
+        // Phase toggle functionality
+        function togglePhase(header) {
+            header.classList.toggle('collapsed');
+            const content = header.nextElementSibling;
+            content.classList.toggle('collapsed');
+        }
+
+        // Expand all on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const headers = document.querySelectorAll('.phase-header');
+            headers.forEach(header => {
+                header.click();
+            });
+        });
+    </script>
+</body>
+</html>

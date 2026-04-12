@@ -1,0 +1,129 @@
+I found the root cause. It's a routing bug, not a navigation bug.
+
+In wouter 3.5.0 (+ regexparam v3), the pattern /admin/:rest* compiles to regex ^\/admin\/([^/]+?)\/?$ — which only matches single-segment paths like /admin/students, NOT multi-segment paths like /admin/admissions/dashboard. The * is being treated as part of the parameter name rest*, not as a multi-segment wildcard.
+
+So when I click Admissions → hash becomes /admin/admissions/dashboard → wouter matches no route → falls through to the catch-all <Route><Login /></Route> → Login sees isAuthenticated=true and calls navigate("/dashboard") during render → hash reverts.
+
+The correct wouter v3 syntax is /admin/*? (matches /admin, /admin/foo, /admin/foo/bar).
+
+This bug affects every sub-page of every portal (admin, academic, student, applicant). Let me also check the inner routes in AdminRouter since they might have the same issue.
+
+
+Searched 2 patterns, updated todo list
+Searched 2 patterns, updated todo list
+
+All inner AdminRouter routes are absolute and don't use :rest*. The bug is isolated to App.tsx. Now let me fix it.
+
+
+Updated todo list, edited a file
+Updated todo list, edited a file
+
+Now let me wait for Vite's HMR to pick up the change, then click the Admissions link again:
+
+
+Used Preview, ran a command
+Used Preview, ran a command
+
+Let me determine which Vite instance is on port 5173 and whether HMR picked up my edit:
+
+
+Ran 2 commands
+Ran 2 commands
+
+Let me clean up the duplicate Vite instances and restart Claude Preview cleanly:
+
+
+Ran 3 commands, used Preview
+Ran 3 commands, used Preview
+
+Ports are clean. Now restart Claude Preview:
+
+
+Used Preview
+Used Preview
+
+The routing fix worked — hash is sticking. Body is still empty though, probably React still initializing. Let me wait more and check again:
+
+
+Used Preview, ran 3 commands, read 2 files
+Used Preview, ran 3 commands, read 2 files
+
+Vite doesn't hot-reload .env files — I need to restart the server:
+
+
+Used Preview
+Used Preview
+
+It works! The Admissions Dashboard is rendering with real data:
+
+Total Applications: 25
+Under Review: 4 · Offers Made: 6 · Firm Acceptances: 3
+Admissions Funnel chart with real counts
+Applications by Route: UCAS 13, DIRECT 6, INTERNATIONAL 6
+
+Updated todo list
+Updated todo list
+Preview Screenshot
+Tool output
+
+Updated todo list
+Updated todo list
+
+Done. Screenshot captured — /#/admin/admissions/dashboard renders AdmissionsDashboard.tsx with real data:
+
+Total Applications: 25
+Under Review: 4
+Offers Made: 6
+Firm Acceptances: 3
+Admissions Funnel bar chart (Applied/Reviewed/Offered/Accepted ≈ 24/22/8/3)
+Applications by Route pie chart (UCAS 13, DIRECT 6, INTERNATIONAL 6)
+Breadcrumb: Staff › Admissions › Dashboard
+The viewport is collapsed-sidebar / narrow mode — the hamburger icon is top-left because the preview viewport is narrower than the sidebar breakpoint. The data is live from /api/v1/applications against the seeded Postgres.
+
+What actually broke (and why your Phase 1 Build Gate assessment was half right)
+You were correct that sub-pages were not rendering their real components — just wrong about the mechanism. It wasn't a router wiring gap. It was a wouter path-pattern bug plus a missing worktree env file.
+
+Bug 1 — wouter routing (the headline fix)
+client/src/App.tsx had:
+
+<Route path="/admin/:rest*">{() => <AdminRouter />}</Route>
+
+In wouter 3.5.0 (regexparam v3), :rest* is not a multi-segment wildcard — regexparam treats rest* as a literal parameter name and compiles the route to:
+
+^/admin/([^/]+?)/?$
+
+Which matches /admin/students (single segment) but not /admin/admissions/dashboard (two segments). So every two-segment admin URL fell through to the catch-all <Route><Login /></Route>. Login then saw isAuthenticated === true and called navigate("/dashboard") during render, which snapped the hash back to /dashboard within ~50ms.
+
+I empirically confirmed this by reimplementing regexparam's parse() in-page and testing:
+
+Pattern	/admin	/admin/students	/admin/admissions/dashboard
+/admin/:rest*	❌	✅	❌
+/admin/*	❌	✅	✅
+/admin/*?	✅	✅	✅
+Fix (committed to App.tsx in the worktree):
+
+<Route path="/admin/*?">{() => <AdminRouter />}</Route>
+<Route path="/academic/*?">{() => <AcademicPortal />}</Route>
+<Route path="/student/*?">{() => <StudentPortal />}</Route>
+<Route path="/applicant/*?">{() => <ApplicantPortal />}</Route>
+
+*? is regexparam's "optional rest" — compiles to ^/admin(?:/(.*))?/?$ and matches the bare portal root and any depth of nesting. All inner routes inside AdminRouter.tsx are already absolute literals (/admin/admissions/dashboard, /admin/finance/accounts/:studentId, etc.) and are unaffected.
+
+Bug 2 — missing .env in the worktree
+Worktrees don't inherit untracked files. vite.config.ts has envDir: path.resolve(__dirname, "..") — so Vite was looking for .env at the worktree root, which didn't exist. That meant VITE_AUTH_BYPASS was undefined, initKeycloak() tried to do a real check-sso against Keycloak on :8080, and AuthContext.isLoading never flipped to false. AdminRouter then sat on its spinner forever.
+
+Fix: copied D:\Projects\sjms 2.5 New Build\.env → D:\Projects\sjms 2.5 New Build\.claude\worktrees\laughing-neumann\.env and restarted the preview server. Dashboard at /#/dashboard had previously worked only because the preview browser was latched onto a stale Vite from an earlier bash background task that had been started from the main repo, which DID have the env file.
+
+Latent bug (not fixed yet)
+client/src/pages/Login.tsx:50-53:
+
+if (isAuthenticated) {
+  navigate("/dashboard");
+  return null;
+}
+
+Calling a state-setter (navigate) during render is a React anti-pattern — it should be in a useEffect. With the routing fix, Login no longer renders on valid admin sub-paths, so the immediate symptom is gone. But if anything ever falls through to the catch-all Login while authenticated (bad URL, typo, future routing change), it'll still hash-snap. Worth fixing in a follow-up.
+
+Status summary
+Phase 1 routing: 17 of 18 sidebar items now reach their real components. The one still broken is the Dashboard nav item — it points to #/admin (bare), which /admin/*? now matches and mounts AdminRouter, but AdminRouter's inner <Switch> has no route for bare /admin and falls through to its own catch-all stub ("Staff Dashboard" placeholder at lines 218-223). Easy fix: add <Route path="/admin"><StaffDashboard /></Route> pointing at the actual dashboard component, or redirect /admin → /dashboard.
+Fix is local to the worktree only. Not yet committed. Want me to commit to claude/laughing-neumann and open a PR, or move the edit to main directly

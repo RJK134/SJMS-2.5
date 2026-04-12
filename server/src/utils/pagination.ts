@@ -1,56 +1,53 @@
-import { Request } from "express";
+// ─── Cursor-based Pagination (Phase 3) ──────────────────────────────────────
 
-export interface PaginationParams {
-  page: number;
+export interface CursorPaginationParams {
+  cursor?: string;
   limit: number;
-  skip: number;
   sort: string;
-  order: "asc" | "desc";
+  order: 'asc' | 'desc';
 }
 
-export interface PaginatedResponse<T> {
+export interface CursorPaginatedResponse<T> {
   data: T[];
   pagination: {
-    page: number;
     limit: number;
     total: number;
-    totalPages: number;
     hasNext: boolean;
-    hasPrev: boolean;
+    nextCursor: string | null;
   };
 }
 
-const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
 
-export function parsePagination(req: Request): PaginationParams {
-  const page = Math.max(1, parseInt(req.query.page as string, 10) || DEFAULT_PAGE);
-  const rawLimit = parseInt(req.query.limit as string, 10) || DEFAULT_LIMIT;
-  const limit = Math.min(Math.max(1, rawLimit), MAX_LIMIT);
-  const sort = (req.query.sort as string) || "createdAt";
-  const order = (req.query.order as string)?.toLowerCase() === "asc" ? "asc" : "desc";
-  const skip = (page - 1) * limit;
-
-  return { page, limit, skip, sort, order };
-}
-
-export function buildPaginatedResponse<T>(
-  data: T[],
+/**
+ * Build a cursor-paginated response from a Prisma result set.
+ *
+ * Repositories should fetch `limit + 1` rows. If more rows are returned
+ * than `limit`, there is a next page — the extra row is trimmed and the
+ * last returned row's `id` becomes `nextCursor`.
+ */
+export function buildCursorPaginatedResponse<T extends { id: string }>(
+  items: T[],
   total: number,
-  params: PaginationParams
-): PaginatedResponse<T> {
-  const totalPages = Math.ceil(total / params.limit);
+  limit: number,
+): CursorPaginatedResponse<T> {
+  const hasNext = items.length > limit;
+  const data = hasNext ? items.slice(0, limit) : items;
 
   return {
     data,
     pagination: {
-      page: params.page,
-      limit: params.limit,
+      limit,
       total,
-      totalPages,
-      hasNext: params.page < totalPages,
-      hasPrev: params.page > 1,
+      hasNext,
+      nextCursor: hasNext ? data[data.length - 1].id : null,
     },
   };
+}
+
+/** Clamp a raw limit value to the allowed range. */
+export function clampLimit(raw: number | undefined): number {
+  if (!raw || raw < 1) return DEFAULT_LIMIT;
+  return Math.min(raw, MAX_LIMIT);
 }

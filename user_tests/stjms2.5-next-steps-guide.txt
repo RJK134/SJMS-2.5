@@ -1,0 +1,280 @@
+# Build two documents:
+# 1. Simple response for Claude Code
+# 2. Phase 3 preparation materials with Comet prompts
+
+response_to_claude = """# Response to Claude Code — Auth Fix + Phase 3 Preparation
+
+## Part 1: Reply to Paste Into Claude Code RIGHT NOW
+
+Copy everything between the START and END lines below and paste it as your response:
+
+---START---
+
+Good investigation — you're right on all three counts. Here's my direction:
+
+1. **The crash trace was real** — I clicked the logout button while Keycloak was down. That's exactly the bug you identified in #3. My description of it as an "init loop" was wrong — it was the logout button path.
+
+2. **Do the small auth.ts fix (#3) only.** Guard `login()`, `logout()`, and `refreshAccessToken()` against uninitialised Keycloak / AUTH_BYPASS mode. ~15 lines, one file, one commit. That's all.
+
+3. **Do NOT build a password-login system.** You're correct that it doesn't exist and I was wrong to describe it that way. `VITE_AUTH_BYPASS=true` is the dev path — that's fine.
+
+4. **After that commit, confirm Phase 2.5 remediation is complete and push the branch.** Then open a PR from `phase-2.5/architecture-remediation` to `main`.
+
+5. **Then stop.** I need to run a Comet browser test before we start Phase 3.
+
+---END---
+
+---
+
+## Part 2: What to Do After Claude Commits
+
+Once Claude makes the auth.ts fix and pushes the PR:
+
+1. **Merge the PR** on GitHub (or tell Claude to merge it)
+2. **Start the dev server:**
+   ```
+   cd D:\\Projects\\sjms 2.5 New Build\\server
+   npm run dev
+   ```
+   ```
+   cd D:\\Projects\\sjms 2.5 New Build\\client  
+   npm run dev
+   ```
+3. **Open browser to** `http://localhost:5173`
+4. **Run the Comet smoke test** (see Part 3 below)
+5. **Bring results back to Perplexity** for Phase 3 readiness check
+
+---
+
+## Part 3: Comet Browser Smoke Test — Post Phase 2.5
+
+Paste this into Comet browser after the dev server is running:
+
+```
+SJMS 2.5 Post-Phase 2.5 Smoke Test
+
+IMPORTANT: The app uses VITE_AUTH_BYPASS=true for dev mode. 
+There is NO password login — the app should load directly into the 
+admin portal. If you see a Keycloak login screen, something is wrong.
+Use ONLY the URLs listed below. Do NOT guess URLs.
+
+ENVIRONMENT:
+- URL: http://localhost:5173
+- Auth: Bypass mode (no login required)
+- Server: Express on port 5001
+
+TEST 1 — APP LOADS WITHOUT ERRORS
+1. Navigate to http://localhost:5173
+2. Does the app load? What page do you see?
+3. Open DevTools Console (F12) — are there ANY red errors?
+4. Specifically check: is there a "[auth] logout() called" error loop? (Should be NONE)
+5. Check Network tab: are API calls succeeding (200) or failing (connection refused)?
+6. PASS criteria: App loads, no console error loops, API calls return 200
+
+TEST 2 — NAVIGATION WORKS (verifies routing)
+1. From the dashboard, click "Students" in the left sidebar
+2. Does the URL change? What does it change to?
+3. Does the Students page render with data?
+4. Click "Programmes" in the sidebar — does it navigate?
+5. Click "Finance" > "Invoicing" — does it navigate and show content?
+6. Click "Compliance" > "UKVI Dashboard" — does it navigate?
+7. Try at least 5 different sidebar items — do they ALL navigate correctly?
+8. PASS criteria: All sidebar links navigate and render page content
+
+TEST 3 — ERROR BOUNDARY (verifies PR #14)
+1. Navigate to http://localhost:5173/this-page-does-not-exist
+2. EXPECTED: A 404 page with the unmatched path shown
+3. Does it show "Back" and "Go to Dashboard" buttons?
+4. Click "Go to Dashboard" — does it take you to the dashboard?
+5. PASS criteria: 404 page renders (not blank white screen)
+
+TEST 4 — MOBILE SIDEBAR (verifies PR #14)
+1. Resize browser to 375px width
+2. Tap the hamburger menu (three lines icon)
+3. Does the sidebar open?
+4. Tap the hamburger AGAIN — does the sidebar CLOSE?
+5. Open sidebar, click any nav link — does sidebar close AND page change?
+6. Open sidebar, press Escape key — does sidebar close?
+7. PASS criteria: Hamburger toggles, nav links close sidebar, Escape works
+
+TEST 5 — DATA PERSISTENCE
+1. Navigate to Students
+2. Note the first student's name and ID
+3. Navigate to Programmes, then back to Students
+4. Is the same student still showing? (React Query cache working)
+5. Refresh the entire browser page (F5)
+6. Does the data reload from the API? (Not blank)
+7. PASS criteria: Data persists across navigation and survives page refresh
+
+TEST 6 — API HEALTH
+1. Open a new browser tab
+2. Navigate to http://localhost:5001/api/health (or whatever port the server runs on)
+3. What does the response show?
+4. Navigate to http://localhost:5001/api/v1/students
+5. Does it return JSON data?
+6. PASS criteria: API health endpoint responds, student data returns
+
+REPORT FORMAT:
+For each test (1-6), state PASS or FAIL.
+For any FAIL, paste:
+- The exact error message or screenshot
+- The URL you were on
+- What you expected vs what happened
+- Any console errors (copy the red text from DevTools)
+```
+
+---
+
+## Part 4: Phase 3 Readiness Checklist
+
+Before starting Phase 3 (API Decomposition), confirm:
+
+| Gate | Check | How |
+|------|-------|-----|
+| Phase 2.5 merged | Branch merged to main, no open PRs | GitHub |
+| TSC clean | `npx tsc --noEmit` = 0 errors on server + client | Terminal |
+| App loads | Comet Test 1 PASS | Comet |
+| Navigation works | Comet Test 2 PASS | Comet |
+| Data persists | Comet Test 5 PASS | Comet |
+| Docker builds | `docker compose build api` succeeds | Terminal |
+| Repository layer | `grep "from.*utils/prisma" server/src/api/**/*.service.ts` = 0 | Terminal |
+| Soft delete | `grep "prisma\\.\\w+\\.delete\\b" server/src` = 0 | Terminal |
+| Typed inputs | `grep "data: any" server/src/api/**/*.service.ts` = 0 | Terminal |
+
+If ALL pass → Phase 3 is GO.
+
+---
+
+## Part 5: Phase 3 Claude Code Prompt (Use AFTER Comet Test Passes)
+
+Save this for the next Claude Code session:
+
+```
+PROJECT: D:\\Projects\\sjms 2.5 New Build
+BRANCH: phase-3/api-decomposition (create from main)
+
+CONTEXT:
+- Phase 1 (Prisma migration) COMPLETE — all 81 pages backed by PostgreSQL
+- Phase 2 (Keycloak auth) COMPLETE — OIDC wired, dev uses VITE_AUTH_BYPASS=true
+- Phase 2.5 (Architecture remediation) COMPLETE — 44 services wired to repos, 
+  all typed, soft-delete confirmed, Docker API builds, Keycloak realm aligned
+- PR #14 (Comet fixes) MERGED — ErrorBoundary, NotFound, mobile sidebar
+- Auth.ts guarded against uninitialised Keycloak logout/login calls
+- Comet smoke test PASSED on [INSERT DATE]
+
+WHAT TO BUILD — Phase 3: API Decomposition
+
+The monolithic server/src/routes.ts must be decomposed into domain modules.
+Each module lives in server/src/api/{domain}/ and has 5 files:
+  router.ts    — Express router, route defs, middleware binding, Zod refs
+  controller.ts — Request handling, input extraction, response formatting
+  service.ts   — Business logic, validation, webhook events
+  repository.ts — Prisma queries ONLY (already exists from Phase 2.5)
+  schemas.ts   — Zod validation schemas for all inputs
+
+PRIORITY ORDER (build in this sequence):
+Week 1: students, programmes, modules (core academic — most pages depend on these)
+Week 1: enrolment, assessment (critical student journey)
+Week 2: admissions, finance, attendance (high-traffic operational)
+Week 2: timetable, rooms, governance (supporting operational)
+Week 3: hesa, ukvi, disability, placements (compliance/specialist)
+Week 3: appeals, plagiarism, tutoring, graduation (process domains)
+Week 3: documents, notifications, audit, config (infrastructure)
+
+RULES:
+1. Do NOT delete routes.ts until ALL endpoints are migrated and tested
+2. Each domain gets ONE commit — atomic, revertible
+3. After each domain: npx tsc --noEmit on both server and client
+4. Every POST/PUT/PATCH endpoint validates with Zod (400 on invalid)
+5. All list endpoints must support cursor-based pagination
+6. Mount all routers under /api/v1/{domain} in a new app.ts
+7. British English in all comments and error messages
+8. Use the existing repository.ts files from Phase 2.5 — do NOT rewrite them
+9. Preserve the existing PortalShell.tsx sidebar link URLs — if routes change,
+   update the frontend links to match
+10. After each 3-domain batch, run the dev server and spot-check 5 pages
+
+BUILD GATE (Phase 3 is done when):
+- routes.ts is deleted — all endpoints served from domain modules
+- All 81+ pages render correctly (full regression)
+- Every POST/PUT/PATCH validates input with Zod (400 on invalid)
+- All list endpoints support cursor-based pagination
+- No endpoint returns more than 100 records without pagination
+- npx tsc --noEmit = 0 on both server and client
+- OpenAPI 3.0 spec generated (can be a follow-up commit)
+
+STOP CONDITIONS:
+- Do NOT touch prisma/schema.prisma
+- Do NOT change the auth layer
+- Do NOT add new npm packages without asking first
+- Do NOT modify seed data
+- If any single domain takes more than 30 minutes, document what's blocking
+  and move to the next domain
+- Maximum 2000 lines changed per commit
+
+SKILLS: Read .claude/skills/ before starting — especially:
+- repository-pattern.md (how repos are structured)
+- soft-delete-contract.md (deletedAt filtering)
+- typed-parameters.md (Prisma types, not any)
+- british-english.md (spelling conventions)
+```
+
+---
+
+## Part 6: How to Hand Off Context to New Perplexity Instance
+
+When you open a new Perplexity thread, paste this as your first message:
+
+```
+CONTEXT — SJMS 2.5 Build Continuation
+
+I'm building SJMS 2.5, a student records system for UK higher education.
+Project is at D:\\Projects\\sjms 2.5 New Build (GitHub: RJK134/SJMS-2.5).
+
+COMPLETED:
+- Phase 1: Prisma/PostgreSQL migration (81 pages, all working)
+- Phase 2: Keycloak OIDC auth (VITE_AUTH_BYPASS=true for dev)
+- Phase 2.5: Architecture remediation (44 repos, typed, soft-delete, Docker)
+- PR #13: TSC cleanup (0 errors)
+- PR #14: Comet fixes (ErrorBoundary, NotFound, mobile sidebar)
+- Auth.ts logout guard (prevents crash when Keycloak down)
+
+CURRENT PHASE: [Phase 3 / Comet testing / etc.]
+
+KEY ARCHITECTURE:
+- React 18 + Vite (client) / Express + Prisma (server) / PostgreSQL 16
+- wouter hash router for SPA routing
+- 5 portals: Admin, Academic, Student, Applicant, Enrolling
+- Auth bypass mode for dev (no Keycloak needed)
+- 44 domain services, each with repository layer
+- .claude/skills/ directory enforces conventions
+
+ATTACHED FILES: [list any files you're sharing]
+
+My role: I'm the project owner/architect, not a developer. I use Claude Code,
+Cursor Bugbot, and Comet browser to build and test. I need clear instructions
+for what to paste into these tools, not code to edit manually.
+```
+
+---
+
+## Part 7: How to Hand Off Context to New Claude Code Instance
+
+When you open a new Claude Code session, it automatically reads:
+- `CLAUDE.md` in the project root (project rules)
+- `.claude/skills/*.md` files (coding conventions)
+- Any `docs/SESSION-HANDOFF-*.md` files if referenced
+
+So the handoff is mostly automatic. But for Phase 3, paste the Phase 3 prompt
+from Part 5 above as your first message. Claude Code will read the project 
+files and pick up from there.
+
+If Claude asks for context, point it to:
+```
+cat docs/SESSION-HANDOFF-2026-04-11-remediation.md
+```
+This is the handoff doc from the Phase 2.5 session with full state.
+"""
+
+with open("SJMS-2.5-Next-Steps-Guide.md", "w") as f:
+    f.write(response_to_claude)

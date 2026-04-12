@@ -34,7 +34,7 @@ export default function TimetableView() {
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
 
-  const { data, isLoading } = useList<TeachingSession>('timetable-sessions', '/v1/timetable/sessions', { limit: 100, sort: 'dayOfWeek', order: 'asc' });
+  const { data, isLoading } = useList<TeachingSession>('timetable-sessions', '/v1/attendance/timetable/sessions', { limit: 100, sort: 'dayOfWeek', order: 'asc' });
   const sessions = data?.data ?? [];
 
   const parseHour = (time?: string) => {

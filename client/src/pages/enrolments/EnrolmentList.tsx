@@ -32,7 +32,7 @@ const filterConfig: FilterConfig[] = [
 
 export default function EnrolmentList() {
   const [, navigate] = useLocation();
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'createdAt', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
   const [filters, setFilters] = useState<Record<string, string>>({});
   const queryParams = { ...params, ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) };
   const { data, isLoading } = useList<Enrolment>('enrolments', '/v1/enrolments', queryParams);
@@ -45,7 +45,7 @@ export default function EnrolmentList() {
       </PageHeader>
       <FilterPanel filters={filterConfig} values={filters} onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />
       <DataTable<Enrolment> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        onPageChange={page => setParams(p => ({ ...p, page }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         onRowClick={row => navigate(`/admin/enrolments/${row.id}`)} currentSort={params.sort} currentOrder={params.order} />
     </div>
   );

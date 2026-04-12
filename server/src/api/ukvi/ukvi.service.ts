@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface UkviListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -17,7 +17,7 @@ export interface UkviListQuery {
 }
 
 export interface ContactPointListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -29,10 +29,10 @@ export interface ContactPointListQuery {
 }
 
 export async function list(query: UkviListQuery) {
-  const { page, limit, sort, order, search, studentId, complianceStatus, tier4Status } = query;
+  const { cursor, limit, sort, order, search, studentId, complianceStatus, tier4Status } = query;
   return repo.list(
     { search, studentId, complianceStatus, tier4Status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 
@@ -67,9 +67,9 @@ export async function remove(id: string, userId: string, req: Request) {
 // ── UKVI Contact Points ─────────────────────────────────────────────────
 
 export async function listContactPoints(query: ContactPointListQuery) {
-  const { page, limit, sort, order, contactType, status, studentId, fromDate, toDate } = query;
+  const { cursor, limit, sort, order, contactType, status, studentId, fromDate, toDate } = query;
   return repo.listContactPoints(
     { contactType, status, studentId, fromDate, toDate },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }

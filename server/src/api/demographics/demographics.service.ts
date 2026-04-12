@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface DemographicListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -14,10 +14,10 @@ export interface DemographicListQuery {
 }
 
 export async function list(query: DemographicListQuery) {
-  const { page, limit, sort, order, personId } = query;
+  const { cursor, limit, sort, order, personId } = query;
   return repo.list(
     { personId },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

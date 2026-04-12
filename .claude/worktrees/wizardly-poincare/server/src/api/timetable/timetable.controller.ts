@@ -1,0 +1,16 @@
+import type { Request, Response, NextFunction } from 'express';
+import * as service from './timetable.service';
+
+export async function listSessions(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await service.listSessions(req.query);
+    res.json({ success: true, ...result });
+  } catch (err) { next(err); }
+}
+
+export async function getSessionById(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await service.getSessionById(req.params.id);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+}

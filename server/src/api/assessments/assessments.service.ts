@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface AssessmentListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -17,10 +17,10 @@ export interface AssessmentListQuery {
 }
 
 export async function list(query: AssessmentListQuery) {
-  const { page, limit, sort, order, search, moduleId, academicYear, assessmentType } = query;
+  const { cursor, limit, sort, order, search, moduleId, academicYear, assessmentType } = query;
   return repo.list(
     { search, moduleId, academicYear, assessmentType },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

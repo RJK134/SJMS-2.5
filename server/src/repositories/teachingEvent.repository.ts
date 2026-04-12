@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 // TeachingEvent has no deletedAt field in the current schema — teaching
 // sessions are state-driven via `status` (scheduled, cancelled, etc).
@@ -16,7 +16,7 @@ export interface TeachingEventFilters {
   status?: string;
 }
 
-export async function listSessions(filters: TeachingEventFilters = {}, pagination: PaginationParams) {
+export async function listSessions(filters: TeachingEventFilters = {}, pagination: CursorPaginationParams) {
   // Merge moduleId and moduleIds into a single clause to avoid key collision.
   // When both are present, intersect: only the direct moduleId IF it's in the
   // student-scoped array. Otherwise one filter wins and the other is silently lost.
@@ -47,8 +47,8 @@ export async function listSessions(filters: TeachingEventFilters = {}, paginatio
   const [data, total] = await Promise.all([
     prisma.teachingEvent.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
       include: {
         module: { select: { id: true, moduleCode: true, title: true, credits: true } },
@@ -58,7 +58,7 @@ export async function listSessions(filters: TeachingEventFilters = {}, paginatio
     prisma.teachingEvent.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getSessionById(id: string) {

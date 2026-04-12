@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 // AcademicCalendar is a reference model with no deletedAt field.
 // Calendar entries remain on the record permanently for audit.
@@ -12,7 +12,7 @@ export interface AcademicCalendarFilters {
   toDate?: string | Date;
 }
 
-export async function list(filters: AcademicCalendarFilters = {}, pagination: PaginationParams) {
+export async function list(filters: AcademicCalendarFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.AcademicCalendarWhereInput = {
     ...(filters.academicYear && { academicYear: filters.academicYear }),
     ...(filters.eventType && { eventType: filters.eventType as any }),
@@ -27,12 +27,12 @@ export async function list(filters: AcademicCalendarFilters = {}, pagination: Pa
   const [data, total] = await Promise.all([
     prisma.academicCalendar.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.academicCalendar.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }

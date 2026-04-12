@@ -16,7 +16,7 @@ const columns: Column<AdmEvent>[] = [
 ];
 
 export default function EventsManagement() {
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'date', order: 'asc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'date', order: 'asc' });
   const { data, isLoading } = useList<AdmEvent>('admissions-events', '/v1/admissions-events', params);
 
   return (
@@ -25,9 +25,9 @@ export default function EventsManagement() {
         <Button><Plus className="h-4 w-4 mr-2" /> New Event</Button>
       </PageHeader>
       <DataTable<AdmEvent> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        onPageChange={page => setParams(p => ({ ...p, page }))} currentSort={params.sort} currentOrder={params.order}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} currentSort={params.sort} currentOrder={params.order}
         onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))} searchPlaceholder="Search events..."
-        onSearch={s => setParams(p => ({ ...p, search: s, page: 1 }))} />
+        onSearch={s => setParams(p => ({ ...p, search: s, cursor: undefined }))} />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const paramsSchema = z.object({ id: z.string().min(1) });
 
 export const querySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
+  cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(25),
   sort: z.string().default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
@@ -20,7 +20,7 @@ export const updateSchema = createSchema.partial();
 export const transactionsParamsSchema = z.object({ studentAccountId: z.string().min(1) });
 
 export const transactionsQuerySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
+  cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(25),
   sort: z.string().default('postedDate'),
   order: z.enum(['asc', 'desc']).default('desc'),

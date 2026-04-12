@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface FinanceListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -17,7 +17,7 @@ export interface FinanceListQuery {
 }
 
 export interface TransactionListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -28,10 +28,10 @@ export interface TransactionListQuery {
 }
 
 export async function list(query: FinanceListQuery) {
-  const { page, limit, sort, order, studentId, academicYear, status } = query;
+  const { cursor, limit, sort, order, studentId, academicYear, status } = query;
   return repo.list(
     { studentId, academicYear, status },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 
@@ -66,10 +66,10 @@ export async function remove(id: string, userId: string, req: Request) {
 // ── Financial Transactions ──────────────────────────────────────────────
 
 export async function listTransactions(studentAccountId: string, query: TransactionListQuery) {
-  const { page, limit, sort, order, transactionType, status, fromDate, toDate } = query;
+  const { cursor, limit, sort, order, transactionType, status, fromDate, toDate } = query;
   return repo.listTransactions(
     studentAccountId,
     { transactionType, status, fromDate, toDate },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }

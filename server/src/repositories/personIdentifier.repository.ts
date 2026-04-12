@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface PersonIdentifierFilters {
   personId?: string;
@@ -8,7 +8,7 @@ export interface PersonIdentifierFilters {
   search?: string;
 }
 
-export async function list(filters: PersonIdentifierFilters = {}, pagination: PaginationParams) {
+export async function list(filters: PersonIdentifierFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.PersonIdentifierWhereInput = {
     deletedAt: null,
     ...(filters.personId && { personId: filters.personId }),
@@ -21,14 +21,14 @@ export async function list(filters: PersonIdentifierFilters = {}, pagination: Pa
   const [data, total] = await Promise.all([
     prisma.personIdentifier.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.personIdentifier.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

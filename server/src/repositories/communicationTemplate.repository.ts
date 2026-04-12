@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface CommunicationTemplateFilters {
   search?: string;
@@ -8,7 +8,7 @@ export interface CommunicationTemplateFilters {
   isActive?: boolean;
 }
 
-export async function list(filters: CommunicationTemplateFilters = {}, pagination: PaginationParams) {
+export async function list(filters: CommunicationTemplateFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.CommunicationTemplateWhereInput = {
     deletedAt: null,
     ...(filters.channel && { channel: filters.channel as any }),
@@ -24,14 +24,14 @@ export async function list(filters: CommunicationTemplateFilters = {}, paginatio
   const [data, total] = await Promise.all([
     prisma.communicationTemplate.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.communicationTemplate.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

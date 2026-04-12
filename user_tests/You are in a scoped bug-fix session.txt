@@ -1,0 +1,5 @@
+You are in a scoped bug-fix session for SJMS 2.5. Fix only the red BugBot findings listed below. Do not refactor unrelated code, rename symbols, reorganise files, or add features. First read all findings, identify shared root causes, and present a short fix plan. Then implement the smallest safe set of changes that resolves the listed bugs without altering working behaviour elsewhere. After coding, run verification and provide a fixed/deferred/cannot-fix summary. Stop when that is complete.
+
+“Do not fix findings one-by-one; batch by root cause.”
+
+

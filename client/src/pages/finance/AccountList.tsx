@@ -17,7 +17,7 @@ const columns: Column<Account>[] = [
 
 export default function AccountList() {
   const [, navigate] = useLocation();
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'createdAt', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
   const { data, isLoading } = useList<Account>('finance-accounts', '/v1/finance', params);
 
   return (
@@ -25,8 +25,8 @@ export default function AccountList() {
       <PageHeader title="Student Accounts" subtitle={`${data?.pagination?.total ?? '—'} accounts`}
         breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Accounts' }]} />
       <DataTable<Account> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        searchPlaceholder="Search by student name..." onSearch={s => setParams(p => ({ ...p, search: s, page: 1 }))}
-        onPageChange={page => setParams(p => ({ ...p, page }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
+        searchPlaceholder="Search by student name..." onSearch={s => setParams(p => ({ ...p, search: s, cursor: undefined }))}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         onRowClick={row => navigate(`/admin/finance/accounts/${row.studentId}`)} currentSort={params.sort} currentOrder={params.order} />
     </div>
   );

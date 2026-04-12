@@ -1,12 +1,10 @@
 // SJMS 2.5 — API Response Types
 
 export interface Pagination {
-  page: number;
   limit: number;
   total: number;
-  totalPages: number;
   hasNext: boolean;
-  hasPrev: boolean;
+  nextCursor: string | null;
 }
 
 export interface PaginatedResponse<T> {

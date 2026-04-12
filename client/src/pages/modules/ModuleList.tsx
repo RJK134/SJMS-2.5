@@ -27,7 +27,7 @@ const filterConfig: FilterConfig[] = [
 
 export default function ModuleList() {
   const [, navigate] = useLocation();
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'moduleCode', order: 'asc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'moduleCode', order: 'asc' });
   const [filters, setFilters] = useState<Record<string, string>>({});
   const queryParams = { ...params, ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) };
   const { data, isLoading } = useList<Module>('modules', '/v1/modules', queryParams);
@@ -38,8 +38,8 @@ export default function ModuleList() {
         breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Modules' }]} />
       <FilterPanel filters={filterConfig} values={filters} onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />
       <DataTable<Module> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        searchPlaceholder="Search by title or code..." onSearch={s => setParams(p => ({ ...p, search: s, page: 1 }))}
-        onPageChange={page => setParams(p => ({ ...p, page }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
+        searchPlaceholder="Search by title or code..." onSearch={s => setParams(p => ({ ...p, search: s, cursor: undefined }))}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         onRowClick={row => navigate(`/admin/modules/${row.id}`)} currentSort={params.sort} currentOrder={params.order} />
     </div>
   );

@@ -1,6 +1,6 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  SJMS 2.5 — OpenAPI 3.0 Specification Generator                        ║
-// ║  Auto-registers all 37 API modules from their Zod schemas               ║
+// ║  Auto-registers all 41 API modules from their Zod schemas               ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import {
@@ -24,7 +24,7 @@ const BearerAuth = registry.registerComponent('securitySchemes', 'BearerJWT', {
 });
 
 const paginationParams = [
-  { name: 'page', in: 'query' as const, schema: { type: 'integer' as const, default: 1, minimum: 1 } },
+  { name: 'cursor', in: 'query' as const, schema: { type: 'string' as const }, required: false },
   { name: 'limit', in: 'query' as const, schema: { type: 'integer' as const, default: 25, minimum: 1, maximum: 100 } },
   { name: 'sort', in: 'query' as const, schema: { type: 'string' as const, default: 'createdAt' } },
   { name: 'order', in: 'query' as const, schema: { type: 'string' as const, enum: ['asc', 'desc'], default: 'desc' } },
@@ -95,6 +95,9 @@ import { createSchema as ecClaimsCreate } from '../api/ec-claims/ec-claims.schem
 import { createSchema as appealsCreate } from '../api/appeals/appeals.schema';
 import { createSchema as documentsCreate } from '../api/documents/documents.schema';
 import { createSchema as communicationsCreate } from '../api/communications/communications.schema';
+import { executeSchema as reportsCreate } from '../api/reports/reports.schema';
+import { createSchema as webhooksCreate } from '../api/webhooks/webhooks.schema';
+import { createSchema as configCreate } from '../api/config/config.schema';
 
 const modules: ApiModule[] = [
   { path: '/students', tag: 'Students', description: 'Student records management', createSchema: studentsCreate, hasDelete: true },
@@ -134,6 +137,10 @@ const modules: ApiModule[] = [
   { path: '/appeals', tag: 'Appeals', description: 'Academic appeals and misconduct', createSchema: appealsCreate, hasDelete: true },
   { path: '/documents', tag: 'Documents', description: 'Document upload and verification', createSchema: documentsCreate, hasDelete: true },
   { path: '/communications', tag: 'Communications', description: 'Templates, logs, bulk messaging', createSchema: communicationsCreate, hasDelete: true },
+  { path: '/reports', tag: 'Reports', description: 'Management reporting, statutory returns, dashboards', createSchema: reportsCreate, hasDelete: false },
+  { path: '/webhooks', tag: 'Webhooks', description: 'Webhook subscription management', createSchema: webhooksCreate, hasDelete: true },
+  { path: '/audit', tag: 'Audit', description: 'Audit log queries', createSchema: configCreate, hasDelete: false },
+  { path: '/config', tag: 'Config', description: 'System settings management', createSchema: configCreate, hasDelete: true },
 ];
 
 // ─── Register All Paths ─────────────────────────────────────────────────────
@@ -234,7 +241,7 @@ export const openApiSpec = generator.generateDocument({
   info: {
     title: 'SJMS 2.5 API',
     version: '2.5.0',
-    description: 'Student Journey Management System — Future Horizons Education. 37 domain modules covering the full student lifecycle from application through graduation.',
+    description: 'Student Journey Management System — Future Horizons Education. 41 domain modules covering the full student lifecycle from application through graduation.',
     contact: { name: 'Future Horizons Education', email: 'it@futurehorizons.ac.uk' },
   },
   servers: [

@@ -38,7 +38,7 @@ const filterConfig: FilterConfig[] = [
 ];
 
 export default function StatusChanges() {
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'requestDate', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'requestDate', order: 'desc' });
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<ChangeRequest | null>(null);
 
@@ -56,7 +56,7 @@ export default function StatusChanges() {
         onChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))} onClear={() => setFilters({})} />
 
       <DataTable<ChangeRequest> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        onRowClick={row => setSelected(row)} onPageChange={page => setParams(p => ({ ...p, page }))}
+        onRowClick={row => setSelected(row)} onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))}
         onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))} currentSort={params.sort} currentOrder={params.order}
         emptyMessage="No status change requests" />
 

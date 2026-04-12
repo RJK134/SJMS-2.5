@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<!-- saved from url=(0158)file:///C:/Users/Richards%20XPS/OneDrive/Documents/RK%20Documents/Projects/Student%20Record%20System%20Build/sjms-v4-integrated/FHE_Enrolment_Process_Map.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHE End-to-End Admissions &amp; Enrolment Process Map</title>
+    <script src="./FHE End-to-End Admissions &amp; Enrolment Process Map_files/mermaid.min.js.download"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #eef2f5 100%);
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .fhe-logo {
+            flex-shrink: 0;
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+            font-weight: 400;
+        }
+
+        .stats-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border-left: 4px solid #14b8a6;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #14b8a6;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .phases-container {
+            display: grid;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .phase-section {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .phase-header {
+            padding: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .phase-header:hover {
+            background: rgba(20, 184, 166, 0.05);
+        }
+
+        .phase-header.expanded {
+            border-bottom: 2px solid #14b8a6;
+        }
+
+        .phase-number {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #14b8a6;
+            color: white;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+
+        .phase-1 { background: #14b8a6; }
+        .phase-2 { background: #0ea5e9; }
+        .phase-3 { background: #8b5cf6; }
+        .phase-4 { background: #ec4899; }
+        .phase-5 { background: #f59e0b; }
+
+        .phase-header.phase1 {
+            background: linear-gradient(90deg, rgba(20, 184, 166, 0.1) 0%, transparent 100%);
+            border-left: 5px solid #14b8a6;
+        }
+
+        .phase-header.phase2 {
+            background: linear-gradient(90deg, rgba(14, 165, 233, 0.1) 0%, transparent 100%);
+            border-left: 5px solid #0ea5e9;
+        }
+
+        .phase-header.phase3 {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+            border-left: 5px solid #8b5cf6;
+        }
+
+        .phase-header.phase4 {
+            background: linear-gradient(90deg, rgba(236, 72, 153, 0.1) 0%, transparent 100%);
+            border-left: 5px solid #ec4899;
+        }
+
+        .phase-header.phase5 {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%);
+            border-left: 5px solid #f59e0b;
+        }
+
+        .toggle-icon {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+            color: #64748b;
+        }
+
+        .phase-header.expanded .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .phase-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding: 0 25px;
+        }
+
+        .phase-content.expanded {
+            max-height: 3000px;
+            padding: 0 25px 25px 25px;
+        }
+
+        .flowchart-wrapper {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            min-width: 100%;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .detail-box {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 3px solid #14b8a6;
+        }
+
+        .detail-box h4 {
+            color: #0f172a;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .detail-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .detail-box li {
+            padding: 6px 0;
+            font-size: 0.9rem;
+            color: #475569;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .detail-box li:before {
+            content: "▹";
+            color: #14b8a6;
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .decision-box {
+            background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+            margin: 20px 0;
+        }
+
+        .decision-box h4 {
+            color: #92400e;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .decision-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .decision-box li {
+            padding: 6px 0;
+            font-size: 0.9rem;
+            color: #b45309;
+            display: flex;
+            align-items: center;
+        }
+
+        .decision-box li:before {
+            content: "◆";
+            color: #f59e0b;
+            margin-right: 10px;
+        }
+
+        .tech-stack {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+
+        .tech-stack h4 {
+            color: #14b8a6;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .tech-item {
+            padding: 12px;
+            background: rgba(20, 184, 166, 0.1);
+            border-left: 3px solid #14b8a6;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .tech-item strong {
+            color: #14b8a6;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        footer {
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1024px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .fhe-logo {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            header {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .stats-panel {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .phase-header {
+                font-size: 1rem;
+                padding: 20px;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            .phase-content {
+                max-height: none !important;
+            }
+
+            .flowchart-wrapper {
+                page-break-inside: avoid;
+            }
+        }
+
+        .workflow-timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .workflow-step {
+            display: flex;
+            margin-bottom: 20px;
+            position: relative;
+            padding-left: 50px;
+        }
+
+        .workflow-step:not(:last-child)::before {
+            content: "";
+            position: absolute;
+            left: 18px;
+            top: 40px;
+            width: 2px;
+            height: calc(100% + 20px);
+            background: #cbd5e1;
+        }
+
+        .workflow-step-number {
+            position: absolute;
+            left: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #14b8a6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            z-index: 1;
+        }
+
+        .workflow-step-content {
+            flex: 1;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 3px solid #14b8a6;
+        }
+
+        .workflow-step-content strong {
+            color: #0f172a;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .workflow-step-content p {
+            font-size: 0.9rem;
+            color: #475569;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="fhe-logo">
+                <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Shield background -->
+                    <path d="M50 5 L85 20 L85 45 C85 70 50 90 50 90 C50 90 15 70 15 45 L15 20 Z" fill="#0f172a" stroke="#14b8a6" stroke-width="2"></path>
+                    <!-- H letter -->
+                    <text x="50" y="65" font-size="48" font-weight="bold" fill="#14b8a6" text-anchor="middle" font-family="Arial, sans-serif">H</text>
+                </svg>
+            </div>
+            <div class="header-content">
+                <h1>FHE End-to-End Admissions &amp; Enrolment Process Map</h1>
+                <p class="subtitle">Student Journey Management System v4 — From Application to Fully Enrolled Student</p>
+            </div>
+        </header>
+
+        <!-- Statistics Panel -->
+        <div class="stats-panel">
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Major Phases</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">28</div>
+                <div class="stat-label">Total Stages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Workflow Steps</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Key Decision Points</div>
+            </div>
+        </div>
+
+        <!-- Phases Container -->
+        <div class="phases-container">
+
+            <!-- PHASE 1: ADMISSIONS -->
+            <div class="phase-section">
+                <div class="phase-header phase1 expanded" onclick="togglePhase(this)">
+                    <div>
+                        <span class="phase-number">1</span>
+                        ADMISSIONS: Application → Offer
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content expanded">
+                    <div class="flowchart-wrapper">
+                        <div class="mermaid" data-processed="true"><svg id="mermaid-1775549268339" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="max-width: 800px;" viewBox="-8 -8 800 1153.6146240234375" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1775549268339{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1775549268339 .error-icon{fill:#552222;}#mermaid-1775549268339 .error-text{fill:#552222;stroke:#552222;}#mermaid-1775549268339 .edge-thickness-normal{stroke-width:2px;}#mermaid-1775549268339 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1775549268339 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1775549268339 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1775549268339 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1775549268339 .marker{fill:#333333;stroke:#333333;}#mermaid-1775549268339 .marker.cross{stroke:#333333;}#mermaid-1775549268339 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1775549268339 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1775549268339 .cluster-label text{fill:#333;}#mermaid-1775549268339 .cluster-label span,#mermaid-1775549268339 p{color:#333;}#mermaid-1775549268339 .label text,#mermaid-1775549268339 span,#mermaid-1775549268339 p{fill:#333;color:#333;}#mermaid-1775549268339 .node rect,#mermaid-1775549268339 .node circle,#mermaid-1775549268339 .node ellipse,#mermaid-1775549268339 .node polygon,#mermaid-1775549268339 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1775549268339 .flowchart-label text{text-anchor:middle;}#mermaid-1775549268339 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1775549268339 .node .label{text-align:center;}#mermaid-1775549268339 .node.clickable{cursor:pointer;}#mermaid-1775549268339 .arrowheadPath{fill:#333333;}#mermaid-1775549268339 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1775549268339 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1775549268339 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mermaid-1775549268339 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mermaid-1775549268339 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1775549268339 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1775549268339 .cluster text{fill:#333;}#mermaid-1775549268339 .cluster span,#mermaid-1775549268339 p{color:#333;}#mermaid-1775549268339 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1775549268339 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1775549268339 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1775549268339_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268339_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268339_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268339_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268339_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268339_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M422,66.188L422,70.354C422,74.521,422,82.854,422,90.304C422,97.754,422,104.321,422,107.604L422,110.888" id="L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M422,182.375L422,186.542C422,190.708,422,199.042,422,206.492C422,213.942,422,220.508,422,223.792L422,227.075" id="L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M422,298.563L422,302.729C422,306.896,422,315.229,422,322.679C422,330.129,422,336.696,422,339.979L422,343.263" id="L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M422,414.75L422,418.917C422,423.083,422,431.417,422.066,438.95C422.132,446.484,422.264,453.217,422.33,456.584L422.396,459.951" id="L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M364.066,563.744L317.194,579.699C270.322,595.654,176.578,627.564,129.706,648.935C82.833,670.306,82.833,681.139,82.833,686.555L82.833,691.971" id="L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M383.568,583.245L370.89,595.95C358.212,608.654,332.856,634.064,320.178,652.185C307.5,670.306,307.5,681.139,307.5,686.555L307.5,691.971" id="L-E-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-G" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M461.432,583.245L473.944,595.949C486.455,608.654,511.477,634.064,523.989,652.185C536.5,670.306,536.5,681.139,536.5,686.555L536.5,691.971" id="L-E-H-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-H" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M479.403,565.274L520.975,580.974C562.546,596.674,645.69,628.074,687.262,649.19C728.833,670.306,728.833,681.139,728.833,686.555L728.833,691.971" id="L-E-I-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-I" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M82.833,763.458L82.833,767.625C82.833,771.792,82.833,780.125,110.339,791.404C137.845,802.683,192.857,816.908,220.363,824.02L247.869,831.133" id="L-F-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M307.5,763.458L307.5,767.625C307.5,771.792,307.5,780.125,307.5,787.575C307.5,795.025,307.5,801.592,307.5,804.875L307.5,808.158" id="L-G-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M536.5,763.458L536.5,767.625C536.5,771.792,536.5,780.125,508.273,791.452C480.046,802.78,423.592,817.101,395.364,824.262L367.137,831.423" id="L-H-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M266.108,879.646L258.229,885.945C250.35,892.245,234.592,904.844,226.712,916.559C218.833,928.275,218.833,939.107,218.833,944.523L218.833,949.94" id="L-J-K-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-J LE-K" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M348.892,879.646L356.771,885.945C364.65,892.245,380.408,904.844,388.288,918.692C396.167,932.541,396.167,947.639,396.167,955.188L396.167,962.736" id="L-J-L-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-J LE-L" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path><path d="M218.833,1021.427L218.833,1025.594C218.833,1029.76,218.833,1038.094,218.833,1045.544C218.833,1052.994,218.833,1059.56,218.833,1062.844L218.833,1066.127" id="L-K-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-K LE-M" style="fill:none;" marker-end="url(#mermaid-1775549268339_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(82.83333587646484, 659.4739685058594)"><g class="label" transform="translate(-41, -12.796875)"><foreignobject width="82" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Conditional</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(307.50000762939453, 659.4739685058594)"><g class="label" transform="translate(-50, -12.796875)"><foreignobject width="100" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Unconditional</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(536.5000076293945, 659.4739685058594)"><g class="label" transform="translate(-40.333335876464844, -12.796875)"><foreignobject width="80.66667175292969" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Alternative</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(728.8333396911621, 659.4739685058594)"><g class="label" transform="translate(-23.33333396911621, -12.796875)"><foreignobject width="46.66666793823242" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Reject</span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(218.8333396911621, 917.4427185058594)"><g class="label" transform="translate(-55, -12.796875)"><foreignobject width="110" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Firm/Insurance</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(396.16667556762695, 917.4427185058594)"><g class="label" transform="translate(-26.666667938232422, -12.796875)"><foreignobject width="53.333335876464844" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Decline</span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-A-0" data-node="true" data-id="A" transform="translate(422.00000762939453, 33.09375)"><rect class="basic label-container" style="fill:#14b8a6;stroke:#0f172a;" rx="0" ry="0" x="-85.16667175292969" y="-33.09375" width="170.33334350585938" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-77.66667175292969, -25.59375)"><rect></rect><foreignobject width="155.33334350585938" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">📋 Applicant Submits<br>Application</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-B-1" data-node="true" data-id="B" transform="translate(422.00000762939453, 149.28125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-61.833335876464844" y="-33.09375" width="123.66667175292969" height="66.1875"></rect><g class="label" style="" transform="translate(-54.333335876464844, -25.59375)"><rect></rect><foreignobject width="108.66667175292969" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🔄 Auto-Triage<br>by Type</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-C-3" data-node="true" data-id="C" transform="translate(422.00000762939453, 265.46875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-85.5" y="-33.09375" width="171" height="66.1875"></rect><g class="label" style="" transform="translate(-78, -25.59375)"><rect></rect><foreignobject width="156" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">✓ Qualification<br>Verification &amp; Scoring</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-D-5" data-node="true" data-id="D" transform="translate(422.00000762939453, 381.65625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-82.83333587646484" y="-33.09375" width="165.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-75.33333587646484, -25.59375)"><rect></rect><foreignobject width="150.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">👤 Academic Review<br>Assigned</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-E-7" data-node="true" data-id="E" transform="translate(422.00000762939453, 543.2135467529297)"><polygon points="78.46354293823242,0 156.92708587646484,-78.46354293823242 78.46354293823242,-156.92708587646484 0,-78.46354293823242" class="label-container" transform="translate(-78.46354293823242,78.46354293823242)" style="fill:#fff7ed;stroke:#f59e0b;"></polygon><g class="label" style="color:#000;" transform="translate(-50.66666793823242, -12.796875)"><rect></rect><foreignobject width="101.33333587646484" height="25.59375"><div style="color: rgb(0, 0, 0); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#000;">Decision Point</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-F-9" data-node="true" data-id="F" transform="translate(82.83333587646484, 730.3645935058594)"><rect class="basic label-container" style="" rx="0" ry="0" x="-82.83333587646484" y="-33.09375" width="165.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-75.33333587646484, -25.59375)"><rect></rect><foreignobject width="150.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📧 Conditional Offer<br>Issued</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-G-11" data-node="true" data-id="G" transform="translate(307.50000762939453, 730.3645935058594)"><rect class="basic label-container" style="" rx="0" ry="0" x="-91.83333587646484" y="-33.09375" width="183.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-84.33333587646484, -25.59375)"><rect></rect><foreignobject width="168.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📧 Unconditional Offer<br>Issued</span></div></foreignobject></g></g><g class="node default flowchart-label" id="flowchart-H-13" data-node="true" data-id="H" transform="translate(536.5000076293945, 730.3645935058594)"><rect class="basic label-container" style="" rx="0" ry="0" x="-87.16667175292969" y="-33.09375" width="174.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-79.66667175292969, -25.59375)"><rect></rect><foreignobject width="159.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📧 Alternative Course<br>Offered</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-I-15" data-node="true" data-id="I" transform="translate(728.8333396911621, 730.3645935058594)"><rect class="basic label-container" style="" rx="0" ry="0" x="-55.16666793823242" y="-33.09375" width="110.33333587646484" height="66.1875"></rect><g class="label" style="" transform="translate(-47.66666793823242, -25.59375)"><rect></rect><foreignobject width="95.33333587646484" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📧 Rejection<br>Issued</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-J-17" data-node="true" data-id="J" transform="translate(307.50000762939453, 846.5520935058594)"><rect class="basic label-container" style="" rx="0" ry="0" x="-54.5" y="-33.09375" width="109" height="66.1875"></rect><g class="label" style="" transform="translate(-47, -25.59375)"><rect></rect><foreignobject width="94" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">💬 Applicant<br>Responds</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-K-23" data-node="true" data-id="K" transform="translate(218.8333396911621, 988.3333435058594)"><rect class="basic label-container" style="fill:#14b8a6;stroke:#0f172a;" rx="0" ry="0" x="-79.83333587646484" y="-33.09375" width="159.6666717529297" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-72.33333587646484, -25.59375)"><rect></rect><foreignobject width="144.6666717529297" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">✓ OFFER_ACCEPTED<br>Status</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-L-25" data-node="true" data-id="L" transform="translate(396.16667556762695, 988.3333435058594)"><rect class="basic label-container" style="" rx="0" ry="0" x="-47.5" y="-20.296875" width="95" height="40.59375"></rect><g class="label" style="" transform="translate(-40, -12.796875)"><rect></rect><foreignobject width="80" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">✗ Declined</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-M-27" data-node="true" data-id="M" transform="translate(218.8333396911621, 1104.5208435058594)"><rect class="basic label-container" style="fill:#0ea5e9;stroke:#0f172a;" rx="0" ry="0" x="-72.16667175292969" y="-33.09375" width="144.33334350585938" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-64.66667175292969, -25.59375)"><rect></rect><foreignobject width="129.33334350585938" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">🚀 Pre-Enrolment<br>Triggered</span></div></foreignobject></g></g></g></g></g></svg></div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-box">
+                            <h4>📊 Key Activities</h4>
+                            <ul>
+                                <li>UCAS application submission (UG)</li>
+                                <li>Direct application intake (PG/International)</li>
+                                <li>Document verification &amp; authenticity checks</li>
+                                <li>Academic scoring against programme criteria</li>
+                                <li>Department-level academic review</li>
+                                <li>Admissions decision recorded in system</li>
+                            </ul>
+                        </div>
+                        <div class="detail-box">
+                            <h4>🗄️ System Integration</h4>
+                            <ul>
+                                <li>PostgreSQL: `applications` table</li>
+                                <li>Status tracking: NEW → REVIEWED → OFFERED → ACCEPTED</li>
+                                <li>Staff portal: Applications dashboard</li>
+                                <li>n8n: Auto-notification workflows</li>
+                                <li>MinIO: Document storage for evidence</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="decision-box">
+                        <h4>🎯 Key Decision Point: Offer Type</h4>
+                        <ul>
+                            <li>Conditional Offer: Results day confirmation required</li>
+                            <li>Unconditional Offer: Immediate acceptance valid</li>
+                            <li>Alternative Programme: Different course offer</li>
+                            <li>Rejection: Ends application journey</li>
+                        </ul>
+                    </div>
+
+                    <div class="tech-stack">
+                        <h4>⚙️ Technical Architecture</h4>
+                        <div class="tech-grid">
+                            <div class="tech-item"><strong>PostgreSQL</strong>Applications table, applicant records</div>
+                            <div class="tech-item"><strong>Redis</strong>Session cache for application state</div>
+                            <div class="tech-item"><strong>MinIO</strong>Document evidence storage</div>
+                            <div class="tech-item"><strong>n8n</strong>Auto-notification on status changes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 2: PRE-ENROLMENT -->
+            <div class="phase-section">
+                <div class="phase-header phase2 expanded" onclick="togglePhase(this)">
+                    <div>
+                        <span class="phase-number">2</span>
+                        PRE-ENROLMENT: Offer Accepted → Ready to Enrol
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content expanded">
+                    <div class="flowchart-wrapper">
+                        <div class="mermaid" data-processed="true"><svg id="mermaid-1775549268751" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="max-width: 259.6770935058594px;" viewBox="-8 -8 259.6770935058594 1642.7708740234375" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1775549268751{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1775549268751 .error-icon{fill:#552222;}#mermaid-1775549268751 .error-text{fill:#552222;stroke:#552222;}#mermaid-1775549268751 .edge-thickness-normal{stroke-width:2px;}#mermaid-1775549268751 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1775549268751 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1775549268751 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1775549268751 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1775549268751 .marker{fill:#333333;stroke:#333333;}#mermaid-1775549268751 .marker.cross{stroke:#333333;}#mermaid-1775549268751 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1775549268751 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1775549268751 .cluster-label text{fill:#333;}#mermaid-1775549268751 .cluster-label span,#mermaid-1775549268751 p{color:#333;}#mermaid-1775549268751 .label text,#mermaid-1775549268751 span,#mermaid-1775549268751 p{fill:#333;color:#333;}#mermaid-1775549268751 .node rect,#mermaid-1775549268751 .node circle,#mermaid-1775549268751 .node ellipse,#mermaid-1775549268751 .node polygon,#mermaid-1775549268751 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1775549268751 .flowchart-label text{text-anchor:middle;}#mermaid-1775549268751 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1775549268751 .node .label{text-align:center;}#mermaid-1775549268751 .node.clickable{cursor:pointer;}#mermaid-1775549268751 .arrowheadPath{fill:#333333;}#mermaid-1775549268751 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1775549268751 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1775549268751 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mermaid-1775549268751 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mermaid-1775549268751 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1775549268751 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1775549268751 .cluster text{fill:#333;}#mermaid-1775549268751 .cluster span,#mermaid-1775549268751 p{color:#333;}#mermaid-1775549268751 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1775549268751 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1775549268751 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1775549268751_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268751_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268751_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268751_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268751_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268751_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M94.26,66.188L94.26,70.354C94.26,74.521,94.26,82.854,94.26,90.304C94.26,97.754,94.26,104.321,94.26,107.604L94.26,110.888" id="L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M94.26,182.375L94.26,186.542C94.26,190.708,94.26,199.042,94.326,206.575C94.392,214.109,94.524,220.842,94.59,224.209L94.657,227.576" id="L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M121.663,381.159L126.36,391.859C131.057,402.559,140.45,423.959,145.147,440.076C149.844,456.192,149.844,467.024,149.844,472.44L149.844,477.856" id="L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M67.857,381.159L62.994,391.859C58.131,402.559,48.404,423.959,43.54,446.474C38.677,468.99,38.677,492.62,38.677,514.117C38.677,535.615,38.677,554.979,42.053,568.19C45.429,581.401,52.181,588.457,55.557,591.986L58.933,595.514" id="L-C-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-E" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M149.844,549.344L149.844,553.51C149.844,557.677,149.844,566.01,146.468,573.706C143.092,581.401,136.34,588.457,132.964,591.986L129.588,595.514" id="L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M94.26,665.531L94.26,669.698C94.26,673.865,94.26,682.198,94.26,689.648C94.26,697.098,94.26,703.665,94.26,706.948L94.26,710.231" id="L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M94.26,781.719L94.26,785.885C94.26,790.052,94.26,798.385,94.26,805.835C94.26,813.285,94.26,819.852,94.26,823.135L94.26,826.419" id="L-F-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-G" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M94.26,897.906L94.26,902.073C94.26,906.24,94.26,914.573,94.326,922.106C94.392,929.64,94.524,936.374,94.59,939.74L94.657,943.107" id="L-G-H-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G LE-H" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M125.719,1105.969L131.24,1117.345C136.76,1128.721,147.802,1151.472,153.323,1168.264C158.844,1185.056,158.844,1195.889,158.844,1201.305L158.844,1206.721" id="L-H-I-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-I" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M63.802,1105.969L58.115,1117.345C52.427,1128.721,41.052,1151.472,35.365,1174.663C29.677,1197.854,29.677,1221.484,29.677,1242.982C29.677,1264.479,29.677,1283.844,33.652,1297.102C37.628,1310.36,45.579,1317.512,49.554,1321.088L53.529,1324.664" id="L-H-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M158.844,1278.208L158.844,1282.375C158.844,1286.542,158.844,1294.875,154.868,1302.618C150.893,1310.36,142.942,1317.512,138.967,1321.088L134.991,1324.664" id="L-I-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-I LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M94.26,1394.396L94.26,1398.562C94.26,1402.729,94.26,1411.062,94.26,1418.512C94.26,1425.962,94.26,1432.529,94.26,1435.812L94.26,1439.096" id="L-J-K-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-J LE-K" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path><path d="M94.26,1510.583L94.26,1514.75C94.26,1518.917,94.26,1527.25,94.26,1534.7C94.26,1542.15,94.26,1548.717,94.26,1552L94.26,1555.283" id="L-K-L-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-K LE-L" style="fill:none;" marker-end="url(#mermaid-1775549268751_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(149.84374904632568, 445.359375)"><g class="label" transform="translate(-11.333333969116211, -12.796875)"><foreignobject width="22.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Yes</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(38.67707920074463, 516.25)"><g class="label" transform="translate(-9.333333969116211, -12.796875)"><foreignobject width="18.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">No</span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(158.84374904632568, 1174.2239532470703)"><g class="label" transform="translate(-11.333333969116211, -12.796875)"><foreignobject width="22.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Yes</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(29.67707920074463, 1245.1145782470703)"><g class="label" transform="translate(-9.333333969116211, -12.796875)"><foreignobject width="18.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">No</span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-A-32" data-node="true" data-id="A" transform="translate(94.26041412353516, 33.09375)"><rect class="basic label-container" style="fill:#0ea5e9;stroke:#0f172a;" rx="0" ry="0" x="-79.83333587646484" y="-33.09375" width="159.6666717529297" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-72.33333587646484, -25.59375)"><rect></rect><foreignobject width="144.6666717529297" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">✓ OFFER_ACCEPTED<br>Status</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-B-33" data-node="true" data-id="B" transform="translate(94.26041412353516, 149.28125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-80.83333587646484" y="-33.09375" width="161.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-73.33333587646484, -25.59375)"><rect></rect><foreignobject width="146.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🔗 Create Applicant<br>Transfer Record</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-C-35" data-node="true" data-id="C" transform="translate(94.26041412353516, 319.96875)"><polygon points="87.59375,0 175.1875,-87.59375 87.59375,-175.1875 0,-87.59375" class="label-container" transform="translate(-87.59375,87.59375)" style="fill:#fff7ed;stroke:#f59e0b;"></polygon><g class="label" style="color:#000;" transform="translate(-47, -25.59375)"><rect></rect><foreignobject width="94" height="51.1875"><div style="color: rgb(0, 0, 0); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#000;">International<br>Student?</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-D-37" data-node="true" data-id="D" transform="translate(149.84374904632568, 516.25)"><rect class="basic label-container" style="" rx="0" ry="0" x="-66.83333587646484" y="-33.09375" width="133.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-59.333335876464844, -25.59375)"><rect></rect><foreignobject width="118.66667175292969" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🌍 CAS Issuance<br>Process</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-E-39" data-node="true" data-id="E" transform="translate(94.26041412353516, 632.4375)"><rect class="basic label-container" style="" rx="0" ry="0" x="-59.5" y="-33.09375" width="119" height="66.1875"></rect><g class="label" style="" transform="translate(-52, -25.59375)"><rect></rect><foreignobject width="104" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">💷 Fee Status<br>Determination</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-F-43" data-node="true" data-id="F" transform="translate(94.26041412353516, 748.625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-86.5" y="-33.09375" width="173" height="66.1875"></rect><g class="label" style="" transform="translate(-79, -25.59375)"><rect></rect><foreignobject width="158" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">💰 Deposit Collection<br>if Applicable</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-G-45" data-node="true" data-id="G" transform="translate(94.26041412353516, 864.8125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-66.83333587646484" y="-33.09375" width="133.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-59.333335876464844, -25.59375)"><rect></rect><foreignobject width="118.66667175292969" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📧 Pre-Arrival<br>Communications</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-H-47" data-node="true" data-id="H" transform="translate(94.26041412353516, 1042.1666641235352)"><polygon points="94.26041793823242,0 188.52083587646484,-94.26041793823242 94.26041793823242,-188.52083587646484 0,-94.26041793823242" class="label-container" transform="translate(-94.26041793823242,94.26041793823242)" style="fill:#fff7ed;stroke:#f59e0b;"></polygon><g class="label" style="color:#000;" transform="translate(-53.66666793823242, -25.59375)"><rect></rect><foreignobject width="107.33333587646484" height="51.1875"><div style="color: rgb(0, 0, 0); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#000;">DBS/Clearance<br>Required?</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-I-49" data-node="true" data-id="I" transform="translate(158.84374904632568, 1245.1145782470703)"><rect class="basic label-container" style="" rx="0" ry="0" x="-84.83333587646484" y="-33.09375" width="169.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-77.33333587646484, -25.59375)"><rect></rect><foreignobject width="154.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🔐 Trigger DBS Check<br>for Nursing/Teaching</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-J-51" data-node="true" data-id="J" transform="translate(94.26041412353516, 1361.3020782470703)"><rect class="basic label-container" style="" rx="0" ry="0" x="-78.16667175292969" y="-33.09375" width="156.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-70.66667175292969, -25.59375)"><rect></rect><foreignobject width="141.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🏠 Accommodation<br>Allocation</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-K-55" data-node="true" data-id="K" transform="translate(94.26041412353516, 1477.4895782470703)"><rect class="basic label-container" style="" rx="0" ry="0" x="-75.5" y="-33.09375" width="151" height="66.1875"></rect><g class="label" style="" transform="translate(-68, -25.59375)"><rect></rect><foreignobject width="136" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📋 Enrolment Task<br>Created - PENDING</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-L-57" data-node="true" data-id="L" transform="translate(94.26041412353516, 1593.6770782470703)"><rect class="basic label-container" style="fill:#8b5cf6;stroke:#0f172a;" rx="0" ry="0" x="-85.83333587646484" y="-33.09375" width="171.6666717529297" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-78.33333587646484, -25.59375)"><rect></rect><foreignobject width="156.6666717529297" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">🎯 READY_TO_ENROL<br>Status</span></div></foreignobject></g></g></g></g></g></svg></div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-box">
+                            <h4>🔧 Pre-Enrolment Tasks</h4>
+                            <ul>
+                                <li>ATR creation linking offer to programme</li>
+                                <li>Fee band determination (Home/EU/International)</li>
+                                <li>CAS (Confirmation of Acceptance) generation</li>
+                                <li>Deposit payment processing</li>
+                                <li>Welcome pack distribution</li>
+                                <li>DBS clearance initiation where required</li>
+                            </ul>
+                        </div>
+                        <div class="detail-box">
+                            <h4>📬 Communications</h4>
+                            <ul>
+                                <li>Welcome email with next steps</li>
+                                <li>Accommodation information pack</li>
+                                <li>CAS letter (international only)</li>
+                                <li>Deposit payment instructions</li>
+                                <li>Health &amp; safety pre-arrival info</li>
+                                <li>Timetable preview materials</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="decision-box">
+                        <h4>🎯 Key Decision Points</h4>
+                        <ul>
+                            <li>Home/EU vs International Student: Different CAS &amp; fee pathways</li>
+                            <li>DBS Required: Nursing, Teaching, Healthcare programmes</li>
+                            <li>Residential vs Commuter: Accommodation allocation</li>
+                            <li>SLC Funded vs Self-Funded: Fee assessment routes</li>
+                        </ul>
+                    </div>
+
+                    <div class="tech-stack">
+                        <h4>⚙️ Technical Architecture</h4>
+                        <div class="tech-grid">
+                            <div class="tech-item"><strong>PostgreSQL</strong>ATR creation, enrolments table</div>
+                            <div class="tech-item"><strong>n8n</strong>Auto-email sequences, deposit reminders</div>
+                            <div class="tech-item"><strong>External API</strong>DBS check integration</div>
+                            <div class="tech-item"><strong>Redis</strong>Pre-enrolment pipeline status tracking</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 3: ONLINE ENROLMENT -->
+            <div class="phase-section">
+                <div class="phase-header phase3 expanded" onclick="togglePhase(this)">
+                    <div>
+                        <span class="phase-number">3</span>
+                        ONLINE ENROLMENT: 13-Step Registration Form
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content expanded">
+                    <div class="flowchart-wrapper">
+                        <div class="mermaid" data-processed="true"><svg id="mermaid-1775549268800" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="max-width: 203px;" viewBox="-8 -8 203 1825" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1775549268800{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1775549268800 .error-icon{fill:#552222;}#mermaid-1775549268800 .error-text{fill:#552222;stroke:#552222;}#mermaid-1775549268800 .edge-thickness-normal{stroke-width:2px;}#mermaid-1775549268800 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1775549268800 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1775549268800 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1775549268800 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1775549268800 .marker{fill:#333333;stroke:#333333;}#mermaid-1775549268800 .marker.cross{stroke:#333333;}#mermaid-1775549268800 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1775549268800 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1775549268800 .cluster-label text{fill:#333;}#mermaid-1775549268800 .cluster-label span,#mermaid-1775549268800 p{color:#333;}#mermaid-1775549268800 .label text,#mermaid-1775549268800 span,#mermaid-1775549268800 p{fill:#333;color:#333;}#mermaid-1775549268800 .node rect,#mermaid-1775549268800 .node circle,#mermaid-1775549268800 .node ellipse,#mermaid-1775549268800 .node polygon,#mermaid-1775549268800 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1775549268800 .flowchart-label text{text-anchor:middle;}#mermaid-1775549268800 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1775549268800 .node .label{text-align:center;}#mermaid-1775549268800 .node.clickable{cursor:pointer;}#mermaid-1775549268800 .arrowheadPath{fill:#333333;}#mermaid-1775549268800 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1775549268800 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1775549268800 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mermaid-1775549268800 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mermaid-1775549268800 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1775549268800 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1775549268800 .cluster text{fill:#333;}#mermaid-1775549268800 .cluster span,#mermaid-1775549268800 p{color:#333;}#mermaid-1775549268800 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1775549268800 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1775549268800 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1775549268800_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268800_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268800_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268800_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268800_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268800_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M93.5,66.188L93.5,70.354C93.5,74.521,93.5,82.854,93.5,90.304C93.5,97.754,93.5,104.321,93.5,107.604L93.5,110.888" id="L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,182.375L93.5,186.542C93.5,190.708,93.5,199.042,93.5,206.492C93.5,213.942,93.5,220.508,93.5,223.792L93.5,227.075" id="L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,298.563L93.5,302.729C93.5,306.896,93.5,315.229,93.5,322.679C93.5,330.129,93.5,336.696,93.5,339.979L93.5,343.263" id="L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,414.75L93.5,418.917C93.5,423.083,93.5,431.417,93.5,438.867C93.5,446.317,93.5,452.883,93.5,456.167L93.5,459.45" id="L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,530.938L93.5,535.104C93.5,539.271,93.5,547.604,93.5,555.054C93.5,562.504,93.5,569.071,93.5,572.354L93.5,575.638" id="L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,647.125L93.5,651.292C93.5,655.458,93.5,663.792,93.5,671.242C93.5,678.692,93.5,685.258,93.5,688.542L93.5,691.825" id="L-F-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-G" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,763.313L93.5,767.479C93.5,771.646,93.5,779.979,93.5,787.429C93.5,794.879,93.5,801.446,93.5,804.729L93.5,808.013" id="L-G-H-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G LE-H" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,879.5L93.5,883.667C93.5,887.833,93.5,896.167,93.5,903.617C93.5,911.067,93.5,917.633,93.5,920.917L93.5,924.2" id="L-H-I-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-I" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,995.688L93.5,999.854C93.5,1004.021,93.5,1012.354,93.5,1019.804C93.5,1027.254,93.5,1033.821,93.5,1037.104L93.5,1040.388" id="L-I-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-I LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,1111.875L93.5,1116.042C93.5,1120.208,93.5,1128.542,93.5,1135.992C93.5,1143.442,93.5,1150.008,93.5,1153.292L93.5,1156.575" id="L-J-K-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-J LE-K" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,1228.063L93.5,1232.229C93.5,1236.396,93.5,1244.729,93.5,1252.179C93.5,1259.629,93.5,1266.196,93.5,1269.479L93.5,1272.763" id="L-K-L-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-K LE-L" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,1344.25L93.5,1348.417C93.5,1352.583,93.5,1360.917,93.5,1368.367C93.5,1375.817,93.5,1382.383,93.5,1385.667L93.5,1388.95" id="L-L-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-L LE-M" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,1460.438L93.5,1464.604C93.5,1468.771,93.5,1477.104,93.5,1484.554C93.5,1492.004,93.5,1498.571,93.5,1501.854L93.5,1505.138" id="L-M-N-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-M LE-N" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,1576.625L93.5,1580.792C93.5,1584.958,93.5,1593.292,93.5,1600.742C93.5,1608.192,93.5,1614.758,93.5,1618.042L93.5,1621.325" id="L-N-O-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-N LE-O" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path><path d="M93.5,1692.813L93.5,1696.979C93.5,1701.146,93.5,1709.479,93.5,1716.929C93.5,1724.379,93.5,1730.946,93.5,1734.229L93.5,1737.513" id="L-O-P-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-O LE-P" style="fill:none;" marker-end="url(#mermaid-1775549268800_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-A-62" data-node="true" data-id="A" transform="translate(93.5, 33.09375)"><rect class="basic label-container" style="" rx="0" ry="0" x="-78.16667175292969" y="-33.09375" width="156.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-70.66667175292969, -25.59375)"><rect></rect><foreignobject width="141.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🚀 Start Enrolment<br>Form</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-B-63" data-node="true" data-id="B" transform="translate(93.5, 149.28125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-82.5" y="-33.09375" width="165" height="66.1875"></rect><g class="label" style="" transform="translate(-75, -25.59375)"><rect></rect><foreignobject width="150" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🔐 Account Creation<br>Email + Password</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-C-65" data-node="true" data-id="C" transform="translate(93.5, 265.46875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-89.83333587646484" y="-33.09375" width="179.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-82.33333587646484, -25.59375)"><rect></rect><foreignobject width="164.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🔑 SSO Authentication<br>Keycloak</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-D-67" data-node="true" data-id="D" transform="translate(93.5, 381.65625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-80.83333587646484" y="-33.09375" width="161.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-73.33333587646484, -25.59375)"><rect></rect><foreignobject width="146.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">👋 Welcome &amp;<br>Course Confirmation</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-E-69" data-node="true" data-id="E" transform="translate(93.5, 497.84375)"><rect class="basic label-container" style="" rx="0" ry="0" x="-93.5" y="-33.09375" width="187" height="66.1875"></rect><g class="label" style="" transform="translate(-86, -25.59375)"><rect></rect><foreignobject width="172" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">👤 Personal Details<br>Name, DOB, Nationality</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-F-71" data-node="true" data-id="F" transform="translate(93.5, 614.03125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-76.5" y="-33.09375" width="153" height="66.1875"></rect><g class="label" style="" transform="translate(-69, -25.59375)"><rect></rect><foreignobject width="138" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📞 Contact Details<br>Email, Phone</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-G-73" data-node="true" data-id="G" transform="translate(93.5, 730.21875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-59.5" y="-33.09375" width="119" height="66.1875"></rect><g class="label" style="" transform="translate(-52, -25.59375)"><rect></rect><foreignobject width="104" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📍 Permanent<br>Address</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-H-75" data-node="true" data-id="H" transform="translate(93.5, 846.40625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-58.16666793823242" y="-33.09375" width="116.33333587646484" height="66.1875"></rect><g class="label" style="" transform="translate(-50.66666793823242, -25.59375)"><rect></rect><foreignobject width="101.33333587646484" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🏢 Term-time<br>Address</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-I-77" data-node="true" data-id="I" transform="translate(93.5, 962.59375)"><rect class="basic label-container" style="" rx="0" ry="0" x="-59.833335876464844" y="-33.09375" width="119.66667175292969" height="66.1875"></rect><g class="label" style="" transform="translate(-52.333335876464844, -25.59375)"><rect></rect><foreignobject width="104.66667175292969" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🆘 Emergency<br>Contact</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-J-79" data-node="true" data-id="J" transform="translate(93.5, 1078.78125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-60.16666793823242" y="-33.09375" width="120.33333587646484" height="66.1875"></rect><g class="label" style="" transform="translate(-52.66666793823242, -25.59375)"><rect></rect><foreignobject width="105.33333587646484" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📋 Other Info<br>Disability, Visa</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-K-81" data-node="true" data-id="K" transform="translate(93.5, 1194.96875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-80.83333587646484" y="-33.09375" width="161.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-73.33333587646484, -25.59375)"><rect></rect><foreignobject width="146.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🎓 Previous Study &amp;<br>Qualifications</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-L-83" data-node="true" data-id="L" transform="translate(93.5, 1311.15625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-58.833335876464844" y="-33.09375" width="117.66667175292969" height="66.1875"></rect><g class="label" style="" transform="translate(-51.333335876464844, -25.59375)"><rect></rect><foreignobject width="102.66667175292969" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">💳 Fee Status<br>Declaration</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-M-85" data-node="true" data-id="M" transform="translate(93.5, 1427.34375)"><rect class="basic label-container" style="fill:#fbbf24;stroke:#0f172a;" rx="0" ry="0" x="-84.5" y="-33.09375" width="169" height="66.1875"></rect><g class="label" style="color:#000;" transform="translate(-77, -25.59375)"><rect></rect><foreignobject width="154" height="51.1875"><div style="color: rgb(0, 0, 0); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#000;">📄 Document Upload<br>ID, Quals, Visa Docs</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-N-87" data-node="true" data-id="N" transform="translate(93.5, 1543.53125)"><rect class="basic label-container" style="fill:#fbbf24;stroke:#0f172a;" rx="0" ry="0" x="-76.83333587646484" y="-33.09375" width="153.6666717529297" height="66.1875"></rect><g class="label" style="color:#000;" transform="translate(-69.33333587646484, -25.59375)"><rect></rect><foreignobject width="138.6666717529297" height="51.1875"><div style="color: rgb(0, 0, 0); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#000;">✓ UKVI Compliance<br>International Only</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-O-89" data-node="true" data-id="O" transform="translate(93.5, 1659.71875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-70.5" y="-33.09375" width="141" height="66.1875"></rect><g class="label" style="" transform="translate(-63, -25.59375)"><rect></rect><foreignobject width="126" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📝 Declaration &amp;<br>Submission</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-P-91" data-node="true" data-id="P" transform="translate(93.5, 1775.90625)"><rect class="basic label-container" style="fill:#8b5cf6;stroke:#0f172a;" rx="0" ry="0" x="-85.16667175292969" y="-33.09375" width="170.33334350585938" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-77.66667175292969, -25.59375)"><rect></rect><foreignobject width="155.33334350585938" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">🎉 Form Submitted<br>Student ID Generated</span></div></foreignobject></g></g></g></g></g></svg></div>
+                    </div>
+
+                    <div class="workflow-timeline">
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">1</div>
+                            <div class="workflow-step-content">
+                                <strong>Account Creation</strong>
+                                <p>Email-based account with secure password setup. Verification email sent to confirm identity.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">2</div>
+                            <div class="workflow-step-content">
+                                <strong>SSO Authentication</strong>
+                                <p>Keycloak integration for single sign-on. Role-based access control provisioning.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">3</div>
+                            <div class="workflow-step-content">
+                                <strong>Personal Details</strong>
+                                <p>Full name, date of birth, nationality, gender. Validation against identity documents.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">4</div>
+                            <div class="workflow-step-content">
+                                <strong>Contact Information</strong>
+                                <p>Primary email (often existing applicant email), phone number. Used for all future communications.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">5</div>
+                            <div class="workflow-step-content">
+                                <strong>Permanent Address</strong>
+                                <p>Home address for student records. Required for council tax, voting register, local authority enquiries.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">6</div>
+                            <div class="workflow-step-content">
+                                <strong>Term-time Address</strong>
+                                <p>Campus/accommodation address or family address during study. Can be same as permanent.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">7</div>
+                            <div class="workflow-step-content">
+                                <strong>Emergency Contact</strong>
+                                <p>Name, relationship, phone number. First contact for emergencies during study.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">8</div>
+                            <div class="workflow-step-content">
+                                <strong>Additional Information</strong>
+                                <p>Disability disclosure (ACCES), visa status for international, care experienced status.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">9</div>
+                            <div class="workflow-step-content">
+                                <strong>Previous Education</strong>
+                                <p>Schools attended, qualifications obtained (GCSEs, A-levels, degrees, professional certs).</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">10</div>
+                            <div class="workflow-step-content">
+                                <strong>Fee Status Declaration</strong>
+                                <p>Confirmation of Home/EU/International status. Self-funded vs SLC-funded indication.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">11</div>
+                            <div class="workflow-step-content">
+                                <strong>Document Upload</strong>
+                                <p>ID copy, qualification certificates, passport scan (intl), visa documentation. Stored in MinIO.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">12</div>
+                            <div class="workflow-step-content">
+                                <strong>UKVI Compliance Check</strong>
+                                <p>International students: Right to study verification, visa type validation, point scoring review.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">13</div>
+                            <div class="workflow-step-content">
+                                <strong>Declaration &amp; Submission</strong>
+                                <p>Signature of T&amp;Cs, data accuracy confirmation. Form locked after submission. Student ID generated (STU-2026-XXXX).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="decision-box">
+                        <h4>🎯 Key Decision Points</h4>
+                        <ul>
+                            <li>Document Sufficiency: All docs must be clear and valid before progression</li>
+                            <li>UKVI Compliance: International students cannot progress without passing checks</li>
+                            <li>Fee Status Accuracy: Determines funding pathway and fee band calculation</li>
+                        </ul>
+                    </div>
+
+                    <div class="tech-stack">
+                        <h4>⚙️ Technical Architecture</h4>
+                        <div class="tech-grid">
+                            <div class="tech-item"><strong>React Frontend</strong>Multi-step form with validation</div>
+                            <div class="tech-item"><strong>Express.js API</strong>Form data processing &amp; storage</div>
+                            <div class="tech-item"><strong>Keycloak</strong>SSO authentication &amp; account creation</div>
+                            <div class="tech-item"><strong>MinIO</strong>Document upload storage buckets</div>
+                            <div class="tech-item"><strong>PostgreSQL</strong>Enrolment form data persistence</div>
+                            <div class="tech-item"><strong>Redis</strong>Form session state caching</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 4: POST-ENROLMENT PROCESSING -->
+            <div class="phase-section">
+                <div class="phase-header phase4 expanded" onclick="togglePhase(this)">
+                    <div>
+                        <span class="phase-number">4</span>
+                        POST-ENROLMENT PROCESSING: 12-Stage Workflow Engine
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content expanded">
+                    <div class="flowchart-wrapper">
+                        <div class="mermaid" data-processed="true"><svg id="mermaid-1775549268859" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="max-width: 310.0833740234375px;" viewBox="-8 -8 310.0833740234375 2127.447998046875" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1775549268859{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1775549268859 .error-icon{fill:#552222;}#mermaid-1775549268859 .error-text{fill:#552222;stroke:#552222;}#mermaid-1775549268859 .edge-thickness-normal{stroke-width:2px;}#mermaid-1775549268859 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1775549268859 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1775549268859 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1775549268859 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1775549268859 .marker{fill:#333333;stroke:#333333;}#mermaid-1775549268859 .marker.cross{stroke:#333333;}#mermaid-1775549268859 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1775549268859 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1775549268859 .cluster-label text{fill:#333;}#mermaid-1775549268859 .cluster-label span,#mermaid-1775549268859 p{color:#333;}#mermaid-1775549268859 .label text,#mermaid-1775549268859 span,#mermaid-1775549268859 p{fill:#333;color:#333;}#mermaid-1775549268859 .node rect,#mermaid-1775549268859 .node circle,#mermaid-1775549268859 .node ellipse,#mermaid-1775549268859 .node polygon,#mermaid-1775549268859 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1775549268859 .flowchart-label text{text-anchor:middle;}#mermaid-1775549268859 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1775549268859 .node .label{text-align:center;}#mermaid-1775549268859 .node.clickable{cursor:pointer;}#mermaid-1775549268859 .arrowheadPath{fill:#333333;}#mermaid-1775549268859 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1775549268859 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1775549268859 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mermaid-1775549268859 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mermaid-1775549268859 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1775549268859 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1775549268859 .cluster text{fill:#333;}#mermaid-1775549268859 .cluster span,#mermaid-1775549268859 p{color:#333;}#mermaid-1775549268859 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1775549268859 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1775549268859 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1775549268859_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268859_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268859_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268859_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268859_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268859_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M132.167,40.594L132.167,44.76C132.167,48.927,132.167,57.26,132.167,64.71C132.167,72.16,132.167,78.727,132.167,82.01L132.167,85.294" id="L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,156.781L132.167,160.948C132.167,165.115,132.167,173.448,132.167,180.898C132.167,188.348,132.167,194.915,132.167,198.198L132.167,201.481" id="L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,272.969L132.167,277.135C132.167,281.302,132.167,289.635,132.233,297.169C132.299,304.702,132.431,311.436,132.497,314.803L132.563,318.17" id="L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M159.49,450.5L165.172,461.187C170.854,471.873,182.219,493.247,187.901,509.349C193.583,525.452,193.583,536.284,193.583,541.701L193.583,547.117" id="L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M105.844,450.5L99.995,461.187C94.146,471.873,82.448,493.247,76.599,515.748C70.75,538.25,70.75,561.88,70.75,583.378C70.75,604.875,70.75,624.24,74.513,637.482C78.277,650.723,85.803,657.843,89.566,661.402L93.33,664.962" id="L-D-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-F" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M193.583,618.604L193.583,622.771C193.583,626.938,193.583,635.271,189.82,642.997C186.057,650.723,178.53,657.843,174.767,661.402L171.004,664.962" id="L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,734.792L132.167,738.958C132.167,743.125,132.167,751.458,132.233,758.992C132.299,766.525,132.431,773.259,132.497,776.626L132.563,779.993" id="L-F-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-G" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M159.83,897.316L166.678,908.059C173.526,918.803,187.221,940.289,194.069,956.449C200.917,972.608,200.917,983.441,200.917,988.857L200.917,994.273" id="L-G-H-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G LE-H" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M105.503,897.316L98.489,908.059C91.474,918.803,77.446,940.289,70.431,962.848C63.417,985.406,63.417,1009.036,63.417,1030.534C63.417,1052.031,63.417,1071.396,67.673,1084.675C71.929,1097.953,80.442,1105.147,84.698,1108.743L88.954,1112.34" id="L-G-I-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G LE-I" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M200.917,1065.76L200.917,1069.927C200.917,1074.094,200.917,1082.427,196.66,1090.19C192.404,1097.953,183.892,1105.147,179.635,1108.743L175.379,1112.34" id="L-H-I-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-I" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1181.948L132.167,1186.115C132.167,1190.281,132.167,1198.615,132.167,1206.065C132.167,1213.515,132.167,1220.081,132.167,1223.365L132.167,1226.648" id="L-I-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-I LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1298.135L132.167,1302.302C132.167,1306.469,132.167,1314.802,132.167,1322.252C132.167,1329.702,132.167,1336.269,132.167,1339.552L132.167,1342.835" id="L-J-K-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-J LE-K" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1414.323L132.167,1418.49C132.167,1422.656,132.167,1430.99,132.167,1438.44C132.167,1445.89,132.167,1452.456,132.167,1455.74L132.167,1459.023" id="L-K-L-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-K LE-L" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1530.51L132.167,1534.677C132.167,1538.844,132.167,1547.177,132.167,1554.627C132.167,1562.077,132.167,1568.644,132.167,1571.927L132.167,1575.21" id="L-L-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-L LE-M" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1646.698L132.167,1650.865C132.167,1655.031,132.167,1663.365,132.167,1670.815C132.167,1678.265,132.167,1684.831,132.167,1688.115L132.167,1691.398" id="L-M-N-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-M LE-N" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1762.885L132.167,1767.052C132.167,1771.219,132.167,1779.552,132.167,1787.002C132.167,1794.452,132.167,1801.019,132.167,1804.302L132.167,1807.585" id="L-N-O-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-N LE-O" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1879.073L132.167,1883.24C132.167,1887.406,132.167,1895.74,132.167,1903.19C132.167,1910.64,132.167,1917.206,132.167,1920.49L132.167,1923.773" id="L-O-P-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-O LE-P" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path><path d="M132.167,1995.26L132.167,1999.427C132.167,2003.594,132.167,2011.927,132.167,2019.377C132.167,2026.827,132.167,2033.394,132.167,2036.677L132.167,2039.96" id="L-P-Q-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-P LE-Q" style="fill:none;" marker-end="url(#mermaid-1775549268859_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(193.5833387374878, 514.6197967529297)"><g class="label" transform="translate(-9.333333969116211, -12.796875)"><foreignobject width="18.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">No</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(70.75000476837158, 585.5104217529297)"><g class="label" transform="translate(-11.333333969116211, -12.796875)"><foreignobject width="22.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Yes</span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(200.91667079925537, 961.7760467529297)"><g class="label" transform="translate(-11.333333969116211, -12.796875)"><foreignobject width="22.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Yes</span></div></foreignobject></g></g><g class="edgeLabel" transform="translate(63.416672706604004, 1032.6666717529297)"><g class="label" transform="translate(-9.333333969116211, -12.796875)"><foreignobject width="18.666667938232422" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">No</span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-A-95" data-node="true" data-id="A" transform="translate(132.1666717529297, 20.296875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-78.5" y="-20.296875" width="157" height="40.59375"></rect><g class="label" style="" transform="translate(-71, -12.796875)"><rect></rect><foreignobject width="142" height="25.59375"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📝 Form Submitted</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-B-96" data-node="true" data-id="B" transform="translate(132.1666717529297, 123.6875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-84.83333587646484" y="-33.09375" width="169.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-77.33333587646484, -25.59375)"><rect></rect><foreignobject width="154.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">✓ ELIGIBILITY_CHECK<br>Verify Qualifications</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-C-98" data-node="true" data-id="C" transform="translate(132.1666717529297, 239.875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-106.83333587646484" y="-33.09375" width="213.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-99.33333587646484, -25.59375)"><rect></rect><foreignobject width="198.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🆔 IDENTITY_VERIFICATION<br>ID Document Check</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-D-100" data-node="true" data-id="D" transform="translate(132.1666717529297, 399.89583587646484)"><polygon points="76.92708587646484,0 153.8541717529297,-76.92708587646484 76.92708587646484,-153.8541717529297 0,-76.92708587646484" class="label-container" transform="translate(-76.92708587646484,76.92708587646484)" style="fill:#fff7ed;stroke:#f59e0b;"></polygon><g class="label" style="color:#000;" transform="translate(-36.333335876464844, -25.59375)"><rect></rect><foreignobject width="72.66667175292969" height="51.1875"><div style="color: rgb(0, 0, 0); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#000;">All Checks<br>Pass?</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-E-102" data-node="true" data-id="E" transform="translate(193.5833387374878, 585.5104217529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-76.5" y="-33.09375" width="153" height="66.1875"></rect><g class="label" style="" transform="translate(-69, -25.59375)"><rect></rect><foreignobject width="138" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">⚠️ Hold Enrolment<br>Notify Student</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-F-104" data-node="true" data-id="F" transform="translate(132.1666717529297, 701.6979217529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-82.83333587646484" y="-33.09375" width="165.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-75.33333587646484, -25.59375)"><rect></rect><foreignobject width="150.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">💳 FEE_ASSESSMENT<br>Calculate Fee Band</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-G-108" data-node="true" data-id="G" transform="translate(132.1666717529297, 854.3854217529297)"><polygon points="69.59375,0 139.1875,-69.59375 69.59375,-139.1875 0,-69.59375" class="label-container" transform="translate(-69.59375,69.59375)" style="fill:#fff7ed;stroke:#f59e0b;"></polygon><g class="label" style="color:#000;" transform="translate(-29, -25.59375)"><rect></rect><foreignobject width="58" height="51.1875"><div style="color: rgb(0, 0, 0); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#000;">SLC<br>Funded?</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-H-110" data-node="true" data-id="H" transform="translate(200.91667079925537, 1032.6666717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-93.16667175292969" y="-33.09375" width="186.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-85.66667175292969, -25.59375)"><rect></rect><foreignobject width="171.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">✓ SLC_CONFIRMATION<br>Student Loans Company</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-I-112" data-node="true" data-id="I" transform="translate(132.1666717529297, 1148.8541717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-93.83333587646484" y="-33.09375" width="187.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-86.33333587646484, -25.59375)"><rect></rect><foreignobject width="172.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📄 DOCUMENT_UPLOAD<br>Verify All Docs</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-J-116" data-node="true" data-id="J" transform="translate(132.1666717529297, 1265.0416717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-108.5" y="-33.09375" width="217" height="66.1875"></rect><g class="label" style="" transform="translate(-101, -25.59375)"><rect></rect><foreignobject width="202" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🎓 PROGRAMME_SELECTION<br>Confirm Enrolment</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-K-118" data-node="true" data-id="K" transform="translate(132.1666717529297, 1381.2291717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-115.5" y="-33.09375" width="231" height="66.1875"></rect><g class="label" style="" transform="translate(-108, -25.59375)"><rect></rect><foreignobject width="216" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📚 MODULE_REGISTRATION<br>Select Modules 60-240 Credits</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-L-120" data-node="true" data-id="L" transform="translate(132.1666717529297, 1497.4166717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-132.1666717529297" y="-33.09375" width="264.3333435058594" height="66.1875"></rect><g class="label" style="" transform="translate(-124.66667175292969, -25.59375)"><rect></rect><foreignobject width="249.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🏠 ACCOMMODATION_PREFERENCE<br>Halls or Private</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-M-122" data-node="true" data-id="M" transform="translate(132.1666717529297, 1613.6041717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-121.5" y="-33.09375" width="243" height="66.1875"></rect><g class="label" style="" transform="translate(-114, -25.59375)"><rect></rect><foreignobject width="228" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">💻 IT_ACCOUNT_PROVISIONING<br>Moodle, Email, Teams</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-N-124" data-node="true" data-id="N" transform="translate(132.1666717529297, 1729.7916717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-105.5" y="-33.09375" width="211" height="66.1875"></rect><g class="label" style="" transform="translate(-98, -25.59375)"><rect></rect><foreignobject width="196" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📖 LIBRARY_REGISTRATION<br>Access Provisioned</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-O-126" data-node="true" data-id="O" transform="translate(132.1666717529297, 1845.9791717529297)"><rect class="basic label-container" style="" rx="0" ry="0" x="-77.16667175292969" y="-33.09375" width="154.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-69.66667175292969, -25.59375)"><rect></rect><foreignobject width="139.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🎫 STUDENT_CARD<br>Request ID Card</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-P-128" data-node="true" data-id="P" transform="translate(132.1666717529297, 1962.1666717529297)"><rect class="basic label-container" style="fill:#ec4899;stroke:#0f172a;" rx="0" ry="0" x="-105.5" y="-33.09375" width="211" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-98, -25.59375)"><rect></rect><foreignobject width="196" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">✅ ENROLMENT_COMPLETE<br>All Checks Passed</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-Q-130" data-node="true" data-id="Q" transform="translate(132.1666717529297, 2078.3541717529297)"><rect class="basic label-container" style="fill:#f59e0b;stroke:#0f172a;" rx="0" ry="0" x="-69.5" y="-33.09375" width="139" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-62, -25.59375)"><rect></rect><foreignobject width="124" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">🎉 Student Fully<br>Enrolled &amp; Active</span></div></foreignobject></g></g></g></g></g></svg></div>
+                    </div>
+
+                    <div class="workflow-timeline">
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">1</div>
+                            <div class="workflow-step-content">
+                                <strong>Eligibility Check</strong>
+                                <p>Validate qualifications meet programme entry requirements. Check for gaps or missing evidence.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">2</div>
+                            <div class="workflow-step-content">
+                                <strong>Identity Verification</strong>
+                                <p>ID document authenticity check. Match submitted personal data against government ID.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">3</div>
+                            <div class="workflow-step-content">
+                                <strong>Fee Assessment</strong>
+                                <p>Determine fee band (Home £9,250, International rate-specific). Create student record with fee liability.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">4</div>
+                            <div class="workflow-step-content">
+                                <strong>SLC Confirmation (Optional)</strong>
+                                <p>For students eligible: Send to Student Loans Company for means-testing &amp; loan approval. Skipped for international/self-funded.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">5</div>
+                            <div class="workflow-step-content">
+                                <strong>Document Upload Verification</strong>
+                                <p>Final check all required documents received and stored. Flag any missing items for student remediation.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">6</div>
+                            <div class="workflow-step-content">
+                                <strong>Programme Selection Confirmation</strong>
+                                <p>Lock-in student's programme enrolment. Create `student_programmes` record linking student to course.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">7</div>
+                            <div class="workflow-step-content">
+                                <strong>Module Registration</strong>
+                                <p>Student selects individual modules. System validates credit range (60-240 for fulltime, 30-120 for part-time).</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">8</div>
+                            <div class="workflow-step-content">
+                                <strong>Accommodation Preference (Optional)</strong>
+                            <p>Student indicates halls vs private housing preference. Allocation managed by accommodation team if applicable.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">9</div>
+                            <div class="workflow-step-content">
+                                <strong>IT Account Provisioning</strong>
+                                <p>VLE (Moodle) account creation, university email provisioning, Microsoft Teams enrolment. SSO integrated.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">10</div>
+                            <div class="workflow-step-content">
+                                <strong>Library Registration</strong>
+                                <p>Library system provisioning. Physical &amp; digital resource access enabled. Borrowing privileges activated.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">11</div>
+                            <div class="workflow-step-content">
+                                <strong>Student Card Request</strong>
+                            <p>Trigger ID card design/printing. Campus access &amp; library integration. Delivery before Welcome Week.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="workflow-step-number">12</div>
+                            <div class="workflow-step-content">
+                                <strong>Enrolment Complete</strong>
+                                <p>All workflow stages passed. Status set to FULLY_ENROLLED. Student now visible in all system portals.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="decision-box">
+                        <h4>🎯 Key Decision Points</h4>
+                        <ul>
+                            <li>Eligibility Failure: Hold enrolment, contact student for missing qualifications or evidence</li>
+                            <li>Identity Mismatch: Manual review required before progression</li>
+                            <li>SLC Eligibility: Different pathway for international &amp; self-funded students</li>
+                            <li>Module Credits: System rejects out-of-range selections automatically</li>
+                        </ul>
+                    </div>
+
+                    <div class="tech-stack">
+                        <h4>⚙️ Technical Architecture</h4>
+                        <div class="tech-grid">
+                            <div class="tech-item"><strong>n8n</strong>Workflow automation engine orchestrates all 12 stages</div>
+                            <div class="tech-item"><strong>PostgreSQL</strong>`enrolment_workflows` table tracks stage completion</div>
+                            <div class="tech-item"><strong>Express.js API</strong>REST endpoints for each workflow trigger</div>
+                            <div class="tech-item"><strong>Redis</strong>Workflow state caching &amp; lock management</div>
+                            <div class="tech-item"><strong>External APIs</strong>SLC integration, library system, IT provisioning</div>
+                            <div class="tech-item"><strong>Nginx</strong>Reverse proxy routing workflow webhooks</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 5: INDUCTION & ACTIVE STUDY -->
+            <div class="phase-section">
+                <div class="phase-header phase5 expanded" onclick="togglePhase(this)">
+                    <div>
+                        <span class="phase-number">5</span>
+                        INDUCTION &amp; ACTIVE STUDY: Welcome Week → Ongoing Engagement
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="phase-content expanded">
+                    <div class="flowchart-wrapper">
+                        <div class="mermaid" data-processed="true"><svg id="mermaid-1775549268918" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="max-width: 303.66668701171875px;" viewBox="-8 -8 303.66668701171875 1476.4375" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1775549268918{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1775549268918 .error-icon{fill:#552222;}#mermaid-1775549268918 .error-text{fill:#552222;stroke:#552222;}#mermaid-1775549268918 .edge-thickness-normal{stroke-width:2px;}#mermaid-1775549268918 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1775549268918 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1775549268918 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1775549268918 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1775549268918 .marker{fill:#333333;stroke:#333333;}#mermaid-1775549268918 .marker.cross{stroke:#333333;}#mermaid-1775549268918 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1775549268918 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1775549268918 .cluster-label text{fill:#333;}#mermaid-1775549268918 .cluster-label span,#mermaid-1775549268918 p{color:#333;}#mermaid-1775549268918 .label text,#mermaid-1775549268918 span,#mermaid-1775549268918 p{fill:#333;color:#333;}#mermaid-1775549268918 .node rect,#mermaid-1775549268918 .node circle,#mermaid-1775549268918 .node ellipse,#mermaid-1775549268918 .node polygon,#mermaid-1775549268918 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1775549268918 .flowchart-label text{text-anchor:middle;}#mermaid-1775549268918 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1775549268918 .node .label{text-align:center;}#mermaid-1775549268918 .node.clickable{cursor:pointer;}#mermaid-1775549268918 .arrowheadPath{fill:#333333;}#mermaid-1775549268918 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1775549268918 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1775549268918 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mermaid-1775549268918 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mermaid-1775549268918 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1775549268918 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1775549268918 .cluster text{fill:#333;}#mermaid-1775549268918 .cluster span,#mermaid-1775549268918 p{color:#333;}#mermaid-1775549268918 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1775549268918 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1775549268918 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1775549268918_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268918_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268918_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268918_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1775549268918_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1775549268918_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M143.833,66.188L143.833,70.354C143.833,74.521,143.833,82.854,143.833,90.304C143.833,97.754,143.833,104.321,143.833,107.604L143.833,110.888" id="L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,182.375L143.833,186.542C143.833,190.708,143.833,199.042,143.833,206.492C143.833,213.942,143.833,220.508,143.833,223.792L143.833,227.075" id="L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,298.563L143.833,302.729C143.833,306.896,143.833,315.229,143.833,322.679C143.833,330.129,143.833,336.696,143.833,339.979L143.833,343.263" id="L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,414.75L143.833,418.917C143.833,423.083,143.833,431.417,143.833,438.867C143.833,446.317,143.833,452.883,143.833,456.167L143.833,459.45" id="L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,530.938L143.833,535.104C143.833,539.271,143.833,547.604,143.833,555.054C143.833,562.504,143.833,569.071,143.833,572.354L143.833,575.638" id="L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,647.125L143.833,651.292C143.833,655.458,143.833,663.792,143.833,671.242C143.833,678.692,143.833,685.258,143.833,688.542L143.833,691.825" id="L-F-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-G" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,763.313L143.833,767.479C143.833,771.646,143.833,779.979,143.833,787.429C143.833,794.879,143.833,801.446,143.833,804.729L143.833,808.013" id="L-G-H-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-G LE-H" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,879.5L143.833,883.667C143.833,887.833,143.833,896.167,143.833,903.617C143.833,911.067,143.833,917.633,143.833,920.917L143.833,924.2" id="L-H-I-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-H LE-I" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,995.688L143.833,999.854C143.833,1004.021,143.833,1012.354,143.833,1019.804C143.833,1027.254,143.833,1033.821,143.833,1037.104L143.833,1040.388" id="L-I-J-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-I LE-J" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,1111.875L143.833,1116.042C143.833,1120.208,143.833,1128.542,143.833,1135.992C143.833,1143.442,143.833,1150.008,143.833,1153.292L143.833,1156.575" id="L-J-K-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-J LE-K" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,1228.063L143.833,1232.229C143.833,1236.396,143.833,1244.729,143.833,1252.179C143.833,1259.629,143.833,1266.196,143.833,1269.479L143.833,1272.763" id="L-K-L-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-K LE-L" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path><path d="M143.833,1344.25L143.833,1348.417C143.833,1352.583,143.833,1360.917,143.833,1368.367C143.833,1375.817,143.833,1382.383,143.833,1385.667L143.833,1388.95" id="L-L-M-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-L LE-M" style="fill:none;" marker-end="url(#mermaid-1775549268918_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignobject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel"></span></div></foreignobject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-A-135" data-node="true" data-id="A" transform="translate(143.83334350585938, 33.09375)"><rect class="basic label-container" style="" rx="0" ry="0" x="-83.16667175292969" y="-33.09375" width="166.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-75.66667175292969, -25.59375)"><rect></rect><foreignobject width="151.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">✅ FULLY_ENROLLED<br>Status</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-B-136" data-node="true" data-id="B" transform="translate(143.83334350585938, 149.28125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-80.16667175292969" y="-33.09375" width="160.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-72.66667175292969, -25.59375)"><rect></rect><foreignobject width="145.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📅 Welcome Week<br>Timetable Published</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-C-138" data-node="true" data-id="C" transform="translate(143.83334350585938, 265.46875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-71.83333587646484" y="-33.09375" width="143.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-64.33333587646484, -25.59375)"><rect></rect><foreignobject width="128.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">👨‍🏫 Personal Tutor<br>Assignment</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-D-140" data-node="true" data-id="D" transform="translate(143.83334350585938, 381.65625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-70.83333587646484" y="-33.09375" width="141.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-63.333335876464844, -25.59375)"><rect></rect><foreignobject width="126.66667175292969" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">✓ Induction Tasks<br>Checklist Created</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-E-142" data-node="true" data-id="E" transform="translate(143.83334350585938, 497.84375)"><rect class="basic label-container" style="" rx="0" ry="0" x="-78.16667175292969" y="-33.09375" width="156.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-70.66667175292969, -25.59375)"><rect></rect><foreignobject width="141.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📝 Health &amp; Safety<br>Completion</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-F-144" data-node="true" data-id="F" transform="translate(143.83334350585938, 614.03125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-105.16667175292969" y="-33.09375" width="210.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-97.66667175292969, -25.59375)"><rect></rect><foreignobject width="195.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📋 Professional Behaviours<br>Code Signed</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-G-146" data-node="true" data-id="G" transform="translate(143.83334350585938, 730.21875)"><rect class="basic label-container" style="" rx="0" ry="0" x="-90.83333587646484" y="-33.09375" width="181.6666717529297" height="66.1875"></rect><g class="label" style="" transform="translate(-83.33333587646484, -25.59375)"><rect></rect><foreignobject width="166.6666717529297" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">⚖️ T&amp;Cs &amp; Regulations<br>Accepted</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-H-148" data-node="true" data-id="H" transform="translate(143.83334350585938, 846.40625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-101.16667175292969" y="-33.09375" width="202.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-93.66667175292969, -25.59375)"><rect></rect><foreignobject width="187.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">🗓️ Timetable Generated<br>from Module Registrations</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-I-150" data-node="true" data-id="I" transform="translate(143.83334350585938, 962.59375)"><rect class="basic label-container" style="" rx="0" ry="0" x="-102.16667175292969" y="-33.09375" width="204.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-94.66667175292969, -25.59375)"><rect></rect><foreignobject width="189.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📊 Attendance Monitoring<br>Begins</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-J-152" data-node="true" data-id="J" transform="translate(143.83334350585938, 1078.78125)"><rect class="basic label-container" style="" rx="0" ry="0" x="-93.16667175292969" y="-33.09375" width="186.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-85.66667175292969, -25.59375)"><rect></rect><foreignobject width="171.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">⭐ Engagement Scoring<br>Active</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-K-154" data-node="true" data-id="K" transform="translate(143.83334350585938, 1194.96875)"><rect class="basic label-container" style="fill:#f59e0b;stroke:#0f172a;" rx="0" ry="0" x="-74.83333587646484" y="-33.09375" width="149.6666717529297" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-67.33333587646484, -25.59375)"><rect></rect><foreignobject width="134.6666717529297" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">🎓 Student Visible<br>Across All Portals</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-L-156" data-node="true" data-id="L" transform="translate(143.83334350585938, 1311.15625)"><rect class="basic label-container" style="" rx="0" ry="0" x="-93.16667175292969" y="-33.09375" width="186.33334350585938" height="66.1875"></rect><g class="label" style="" transform="translate(-85.66667175292969, -25.59375)"><rect></rect><foreignobject width="171.33334350585938" height="51.1875"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">📚 Teaching &amp; Learning<br>Commences</span></div></foreignobject></g></g><g class="node default default flowchart-label" id="flowchart-M-158" data-node="true" data-id="M" transform="translate(143.83334350585938, 1427.34375)"><rect class="basic label-container" style="fill:#f59e0b;stroke:#0f172a;" rx="0" ry="0" x="-143.83334350585938" y="-33.09375" width="287.66668701171875" height="66.1875"></rect><g class="label" style="color:#fff;" transform="translate(-136.33334350585938, -25.59375)"><rect></rect><foreignobject width="272.66668701171875" height="51.1875"><div style="color: rgb(255, 255, 255); display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel" style="color:#fff;">🔄 Continuous Monitoring<br>Attendance, Engagement, Progression</span></div></foreignobject></g></g></g></g></g></svg></div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-box">
+                            <h4>📋 Induction Checklist</h4>
+                            <ul>
+                                <li>Welcome Week sessions attendance</li>
+                                <li>Health &amp; safety training completion</li>
+                                <li>Professional behaviours code review</li>
+                                <li>Terms &amp; conditions signed</li>
+                                <li>Library induction &amp; card activation</li>
+                                <li>IT systems training (Moodle, email, VPN)</li>
+                                <li>Societies &amp; clubs introduction</li>
+                            </ul>
+                        </div>
+                        <div class="detail-box">
+                            <h4>👁️ Active Monitoring</h4>
+                            <ul>
+                                <li>Attendance tracking across all modules</li>
+                                <li>Engagement scoring by personal tutor</li>
+                                <li>Academic progression monitoring</li>
+                                <li>Mental health &amp; wellbeing alerts</li>
+                                <li>Financial status (SLC, fee payments)</li>
+                                <li>Module completion rates</li>
+                                <li>Academic support referrals</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-box">
+                            <h4>📊 Data Visibility</h4>
+                            <ul>
+                                <li>Student Portal: Dashboard, timetable, grades, transcript</li>
+                                <li>Staff Portal: Student journey view, attendance reports</li>
+                                <li>Personal Tutor: Engagement dashboards, support tracking</li>
+                                <li>Module Leaders: Attendance, submission tracking, marks</li>
+                                <li>Admissions: Final confirmation in system</li>
+                            </ul>
+                        </div>
+                        <div class="detail-box">
+                            <h4>🎯 Key Responsibilities</h4>
+                            <ul>
+                                <li>Student: Attend induction, engage in modules, maintain attendance</li>
+                                <li>Personal Tutor: Monitor progression, provide pastoral support</li>
+                                <li>Module Leaders: Deliver teaching, track engagement</li>
+                                <li>Admissions: Respond to queries, manage withdrawals</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="tech-stack">
+                        <h4>⚙️ Technical Architecture</h4>
+                        <div class="tech-grid">
+                            <div class="tech-item"><strong>PostgreSQL</strong>Student records, attendance, engagement scores</div>
+                            <div class="tech-item"><strong>Moodle VLE</strong>Module delivery, assignment submission, marks</div>
+                            <div class="tech-item"><strong>React Frontend</strong>Student dashboard, personal tutor portals</div>
+                            <div class="tech-item"><strong>Analytics Engine</strong>Attendance reports, engagement dashboards</div>
+                            <div class="tech-item"><strong>n8n</strong>Automated alerts for engagement/attendance issues</div>
+                            <div class="tech-item"><strong>Redis</strong>Real-time dashboard state caching</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- System Architecture Overview -->
+        <div class="phase-section">
+            <div class="phase-header expanded" style="background: linear-gradient(90deg, rgba(15, 23, 42, 0.1) 0%, transparent 100%); border-left: 5px solid #0f172a;" onclick="togglePhase(this)">
+                <div>
+                    <span class="phase-number" style="background: #0f172a;">⚙️</span>
+                    Complete Technical Architecture &amp; Data Flow
+                </div>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="phase-content expanded">
+                <div class="tech-stack" style="background: #f8fafc; color: #0f172a; border-left: 4px solid #14b8a6;">
+                    <h4 style="color: #0f172a; margin-bottom: 20px;">System Components &amp; Integration</h4>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">Database Layer (PostgreSQL)</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #e0f2fe; border-left: 3px solid #0ea5e9; color: #0f172a;">
+                                <strong style="color: #0f172a;">`applications`</strong>
+                                Applicant records, application status, qualification evidence
+                            </div>
+                            <div class="tech-item" style="background: #e0f2fe; border-left: 3px solid #0ea5e9; color: #0f172a;">
+                                <strong style="color: #0f172a;">`applicant_transfer_records`</strong>
+                                Links applicants to programmes, fee status, offer details
+                            </div>
+                            <div class="tech-item" style="background: #e0f2fe; border-left: 3px solid #0ea5e9; color: #0f172a;">
+                                <strong style="color: #0f172a;">`enrolments`</strong>
+                                Student enrolment records, status tracking, onboarding progress
+                            </div>
+                            <div class="tech-item" style="background: #e0f2fe; border-left: 3px solid #0ea5e9; color: #0f172a;">
+                                <strong style="color: #0f172a;">`students`</strong>
+                                Active student records, personal details, contact information
+                            </div>
+                            <div class="tech-item" style="background: #e0f2fe; border-left: 3px solid #0ea5e9; color: #0f172a;">
+                                <strong style="color: #0f172a;">`student_programmes`</strong>
+                                Programme enrolments, module registrations, study mode
+                            </div>
+                            <div class="tech-item" style="background: #e0f2fe; border-left: 3px solid #0ea5e9; color: #0f172a;">
+                                <strong style="color: #0f172a;">`enrolment_workflows`</strong>
+                                Workflow stage tracking, completion status, audit trail
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">Frontend Layer (React + Nginx)</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #d1fae5; border-left: 3px solid #14b8a6; color: #0f172a;">
+                                <strong style="color: #0f172a;">Student Portal</strong>
+                                Enrolment form, dashboard, timetable, grades, transcripts
+                            </div>
+                            <div class="tech-item" style="background: #d1fae5; border-left: 3px solid #14b8a6; color: #0f172a;">
+                                <strong style="color: #0f172a;">Staff Portal</strong>
+                                Applications, admissions decisions, enrolment management
+                            </div>
+                            <div class="tech-item" style="background: #d1fae5; border-left: 3px solid #14b8a6; color: #0f172a;">
+                                <strong style="color: #0f172a;">Admin Dashboard</strong>
+                                System health, user management, audit logs, reports
+                            </div>
+                            <div class="tech-item" style="background: #d1fae5; border-left: 3px solid #14b8a6; color: #0f172a;">
+                                <strong style="color: #0f172a;">Reports &amp; Analytics</strong>
+                                Admissions funnels, enrolment pipelines, attendance trends
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">Authentication &amp; Security (Keycloak)</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #fecaca; border-left: 3px solid #ef4444; color: #0f172a;">
+                                <strong style="color: #0f172a;">SSO Authentication</strong>
+                                Single sign-on for all portals, multi-factor option
+                            </div>
+                            <div class="tech-item" style="background: #fecaca; border-left: 3px solid #ef4444; color: #0f172a;">
+                                <strong style="color: #0f172a;">Role-Based Access</strong>
+                                Student, Admissions Staff, Academic Staff, Admin roles
+                            </div>
+                            <div class="tech-item" style="background: #fecaca; border-left: 3px solid #ef4444; color: #0f172a;">
+                                <strong style="color: #0f172a;">Session Management</strong>
+                                Token-based auth, automatic logout, session timeout
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">Document Management (MinIO)</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #fcd34d; border-left: 3px solid #f59e0b; color: #0f172a;">
+                                <strong style="color: #0f172a;">MinIO Buckets</strong>
+                                `applications-docs`, `enrolment-docs`, `student-records`, `transcripts`
+                            </div>
+                            <div class="tech-item" style="background: #fcd34d; border-left: 3px solid #f59e0b; color: #0f172a;">
+                                <strong style="color: #0f172a;">Document Types</strong>
+                                ID copies, qualifications, visa papers, study permits, SLC evidence
+                            </div>
+                            <div class="tech-item" style="background: #fcd34d; border-left: 3px solid #f59e0b; color: #0f172a;">
+                                <strong style="color: #0f172a;">Access Control</strong>
+                                Role-based access, audit logging, expiry management
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">Automation &amp; Workflows (n8n)</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #c7d2fe; border-left: 3px solid #6366f1; color: #0f172a;">
+                                <strong style="color: #0f172a;">Application Workflows</strong>
+                                Auto-triage, decision notifications, offer generation
+                            </div>
+                            <div class="tech-item" style="background: #c7d2fe; border-left: 3px solid #6366f1; color: #0f172a;">
+                                <strong style="color: #0f172a;">Pre-Enrolment Workflows</strong>
+                                Deposit reminders, CAS issuance, welcome packs, DBS checks
+                            </div>
+                            <div class="tech-item" style="background: #c7d2fe; border-left: 3px solid #6366f1; color: #0f172a;">
+                                <strong style="color: #0f172a;">Enrolment Workflows</strong>
+                                Post-enrolment processing, IT provisioning, status transitions
+                            </div>
+                            <div class="tech-item" style="background: #c7d2fe; border-left: 3px solid #6366f1; color: #0f172a;">
+                                <strong style="color: #0f172a;">Communication Workflows</strong>
+                                Email sequences, portal notifications, SMS alerts
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">Caching &amp; Performance (Redis)</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #ddd6fe; border-left: 3px solid #a78bfa; color: #0f172a;">
+                                <strong style="color: #0f172a;">Session Cache</strong>
+                                User sessions, authentication tokens, real-time status
+                            </div>
+                            <div class="tech-item" style="background: #ddd6fe; border-left: 3px solid #a78bfa; color: #0f172a;">
+                                <strong style="color: #0f172a;">Data Cache</strong>
+                                Frequently accessed student records, programme data, timetables
+                            </div>
+                            <div class="tech-item" style="background: #ddd6fe; border-left: 3px solid #a78bfa; color: #0f172a;">
+                                <strong style="color: #0f172a;">Queue Management</strong>
+                                Background job queues for document processing, email dispatch
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">External Integrations</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #f3e8ff; border-left: 3px solid #d946ef; color: #0f172a;">
+                                <strong style="color: #0f172a;">UCAS</strong>
+                                Application submissions, offer tracking, track status
+                            </div>
+                            <div class="tech-item" style="background: #f3e8ff; border-left: 3px solid #d946ef; color: #0f172a;">
+                                <strong style="color: #0f172a;">Student Loans Company</strong>
+                                Fee assessment, loan eligibility, means-testing
+                            </div>
+                            <div class="tech-item" style="background: #f3e8ff; border-left: 3px solid #d946ef; color: #0f172a;">
+                                <strong style="color: #0f172a;">DBS (Disclosure)</strong>
+                                Background checks for regulated professions
+                            </div>
+                            <div class="tech-item" style="background: #f3e8ff; border-left: 3px solid #d946ef; color: #0f172a;">
+                                <strong style="color: #0f172a;">Moodle VLE</strong>
+                                Module delivery, assignment submission, marks entry
+                            </div>
+                            <div class="tech-item" style="background: #f3e8ff; border-left: 3px solid #d946ef; color: #0f172a;">
+                                <strong style="color: #0f172a;">Microsoft 365</strong>
+                                Email, Teams integration, office tools provision
+                            </div>
+                            <div class="tech-item" style="background: #f3e8ff; border-left: 3px solid #d946ef; color: #0f172a;">
+                                <strong style="color: #0f172a;">Library System</strong>
+                                Borrowing, resource access, library card linkage
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h5 style="color: #14b8a6; font-size: 1.05rem; margin-bottom: 15px; font-weight: 600;">API Layer (Express.js REST)</h5>
+                        <div class="tech-grid">
+                            <div class="tech-item" style="background: #fee2e2; border-left: 3px solid #dc2626; color: #0f172a;">
+                                <strong style="color: #0f172a;">`/api/applications`</strong>
+                                CRUD operations for applications, status tracking
+                            </div>
+                            <div class="tech-item" style="background: #fee2e2; border-left: 3px solid #dc2626; color: #0f172a;">
+                                <strong style="color: #0f172a;">`/api/enrolments`</strong>
+                                Enrolment form submission, workflow progression
+                            </div>
+                            <div class="tech-item" style="background: #fee2e2; border-left: 3px solid #dc2626; color: #0f172a;">
+                                <strong style="color: #0f172a;">`/api/students`</strong>
+                                Student records, portal data, real-time dashboards
+                            </div>
+                            <div class="tech-item" style="background: #fee2e2; border-left: 3px solid #dc2626; color: #0f172a;">
+                                <strong style="color: #0f172a;">`/api/workflows`</strong>
+                                Workflow management, stage progression, pause/resume
+                            </div>
+                            <div class="tech-item" style="background: #fee2e2; border-left: 3px solid #dc2626; color: #0f172a;">
+                                <strong style="color: #0f172a;">`/api/documents`</strong>
+                                Document upload, retrieval, verification, expiry
+                            </div>
+                            <div class="tech-item" style="background: #fee2e2; border-left: 3px solid #dc2626; color: #0f172a;">
+                                <strong style="color: #0f172a;">`/api/reports`</strong>
+                                Analytics, dashboard data, audit logs, exports
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0284c7;">
+                        <h5 style="color: #0284c7; font-size: 1rem; margin-bottom: 10px; font-weight: 600;">Data Flow Overview</h5>
+                        <p style="color: #0f172a; margin-bottom: 10px;">
+                            <strong>Application → Admission:</strong> Applicant submits form → PostgreSQL stores data → n8n triggers auto-triage → Staff review via portal → Offer decision stored → n8n sends email notification
+                        </p>
+                        <p style="color: #0f172a; margin-bottom: 10px;">
+                            <strong>Pre-Enrolment:</strong> Offer accepted → ATR created → n8n auto-comms triggered → Documents uploaded to MinIO → Pre-enrolment pipeline tracked in Redis → Status updates stored in PostgreSQL
+                        </p>
+                        <p style="color: #0f172a; margin-bottom: 10px;">
+                            <strong>Online Enrolment:</strong> Student form submission → React frontend → Express.js API → PostgreSQL persistence → Documents to MinIO → Student ID generated → Redis caching for real-time progress
+                        </p>
+                        <p style="color: #0f172a; margin-bottom: 10px;">
+                            <strong>Post-Enrolment:</strong> Form complete → n8n orchestrates 12-stage workflow → Each stage validates &amp; updates PostgreSQL → External integrations triggered (SLC, IT, library) → Final status set to FULLY_ENROLLED
+                        </p>
+                        <p style="color: #0f172a;">
+                            <strong>Active Study:</strong> Student portals consume API endpoints → Real-time dashboard from Redis cache → Moodle VLE delivers teaching → Attendance/engagement data feeds back to PostgreSQL → Analytics dashboards for staff decision-making
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Decision Points Summary -->
+        <div class="phase-section">
+            <div class="phase-header expanded" style="background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%); border-left: 5px solid #f59e0b;" onclick="togglePhase(this)">
+                <div>
+                    <span class="phase-number" style="background: #f59e0b;">🎯</span>
+                    Critical Decision Points &amp; Branching Logic
+                </div>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="phase-content expanded">
+                <div class="details-grid">
+                    <div class="detail-box" style="border-left: 4px solid #ec4899; background: #fff1f5;">
+                        <h4 style="color: #831843;">Decision 1: Home/EU vs International Student</h4>
+                        <ul>
+                            <li><strong>Determined:</strong> Phase 2 (Pre-Enrolment)</li>
+                            <li><strong>Impact:</strong> Affects CAS issuance, fee band, visa pathway</li>
+                            <li><strong>Home/EU Path:</strong> Skip CAS, standard fee £9,250/year</li>
+                            <li><strong>International Path:</strong> CAS letter, international fee rate, UKVI compliance</li>
+                        </ul>
+                    </div>
+                    <div class="detail-box" style="border-left: 4px solid #8b5cf6; background: #faf5ff;">
+                        <h4 style="color: #581c87;">Decision 2: Offer Type (Conditional vs Unconditional)</h4>
+                        <ul>
+                            <li><strong>Determined:</strong> Phase 1 (Admissions)</li>
+                            <li><strong>Impact:</strong> Acceptance conditions, results day action required</li>
+                            <li><strong>Conditional:</strong> Student must achieve grades before acceptance valid</li>
+                            <li><strong>Unconditional:</strong> Immediate acceptance, no grade dependency</li>
+                        </ul>
+                    </div>
+                    <div class="detail-box" style="border-left: 4px solid #0ea5e9; background: #f0f9ff;">
+                        <h4 style="color: #003d82;">Decision 3: DBS/Clearance Required?</h4>
+                        <ul>
+                            <li><strong>Programmes Affected:</strong> Nursing, teaching, healthcare, social work</li>
+                            <li><strong>Timing:</strong> Initiated Phase 2, completes before full enrolment</li>
+                            <li><strong>If Fail:</strong> Offer withdrawn, student notified, enrolment blocked</li>
+                            <li><strong>If Pass:</strong> Clearance noted, full enrolment proceeds</li>
+                        </ul>
+                    </div>
+                    <div class="detail-box" style="border-left: 4px solid #14b8a6; background: #f0fdfa;">
+                        <h4 style="color: #134e4a;">Decision 4: Fee Funding (SLC vs Self-Funded vs Sponsored)</h4>
+                        <ul>
+                            <li><strong>Determined:</strong> Phase 3 (Online Enrolment) &amp; Phase 4</li>
+                            <li><strong>SLC Path:</strong> Student loans company assessment, means-testing</li>
+                            <li><strong>Self-Funded:</strong> Student/family payment, skip SLC</li>
+                            <li><strong>Sponsored:</strong> Employer/scholarship funding, special terms</li>
+                        </ul>
+                    </div>
+                    <div class="detail-box" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
+                        <h4 style="color: #78350f;">Decision 5: Full-Time vs Part-Time Study Mode</h4>
+                        <ul>
+                            <li><strong>Credit Range:</strong> Full-time 120 credits/year, part-time 30-60</li>
+                            <li><strong>Impact:</strong> Fee calculation, student status, assessment timetable</li>
+                            <li><strong>Module Selection:</strong> System enforces minimum/maximum credit validation</li>
+                            <li><strong>SLC Eligibility:</strong> Part-time may affect loan eligibility</li>
+                        </ul>
+                    </div>
+                    <div class="detail-box" style="border-left: 4px solid #ec4899; background: #ffe4f5;">
+                        <h4 style="color: #831843;">Decision 6: Accommodation (Residential vs Commuter)</h4>
+                        <ul>
+                            <li><strong>Timing:</strong> Collected Phase 2, allocated Phase 4</li>
+                            <li><strong>Halls of Residence:</strong> University-managed accommodation</li>
+                            <li><strong>Private Housing:</strong> Off-campus arrangements, student sourced</li>
+                            <li><strong>Commuter:</strong> No accommodation required, home-based study</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #16a34a; margin-top: 20px;">
+                    <h4 style="color: #15803d; margin-bottom: 15px;">🔄 Exception Handling &amp; Hold States</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 10px 0; border-bottom: 1px solid #dcfce7; display: flex; align-items: flex-start;">
+                            <span style="color: #16a34a; font-weight: bold; margin-right: 15px;">→</span>
+                            <span><strong>Missing Qualifications:</strong> Enrolment held until student provides evidence or completes qualification.</span>
+                        </li>
+                        <li style="padding: 10px 0; border-bottom: 1px solid #dcfce7; display: flex; align-items: flex-start;">
+                            <span style="color: #16a34a; font-weight: bold; margin-right: 15px;">→</span>
+                            <span><strong>Failed Identity Check:</strong> Manual review triggered. Student may need to resubmit documents or attend verification appointment.</span>
+                        </li>
+                        <li style="padding: 10px 0; border-bottom: 1px solid #dcfce7; display: flex; align-items: flex-start;">
+                            <span style="color: #16a34a; font-weight: bold; margin-right: 15px;">→</span>
+                            <span><strong>UKVI Compliance Failure:</strong> International student cannot progress. Immigration services notified, offer may be withdrawn.</span>
+                        </li>
+                        <li style="padding: 10px 0; border-bottom: 1px solid #dcfce7; display: flex; align-items: flex-start;">
+                            <span style="color: #16a34a; font-weight: bold; margin-right: 15px;">→</span>
+                            <span><strong>DBS Failure:</strong> Conditional offer withdrawn for regulated programmes. Student notified and offered alternative if available.</span>
+                        </li>
+                        <li style="padding: 10px 0; border-bottom: 1px solid #dcfce7; display: flex; align-items: flex-start;">
+                            <span style="color: #16a34a; font-weight: bold; margin-right: 15px;">→</span>
+                            <span><strong>SLC Ineligibility:</strong> Student must self-fund or seek sponsorship. Fee payment plan adjusted accordingly.</span>
+                        </li>
+                        <li style="padding: 10px 0; display: flex; align-items: flex-start;">
+                            <span style="color: #16a34a; font-weight: bold; margin-right: 15px;">→</span>
+                            <span><strong>Withdrawal During Enrolment:</strong> Student can withdraw at any phase. Status set to WITHDRAWN, offer cancelled, communications sent.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p style="margin-bottom: 10px;">
+            <strong>Future Horizons University — Student Journey Management System v4</strong>
+        </p>
+        <p style="margin-bottom: 10px;">
+            This process map represents the complete end-to-end enrolment pipeline from initial application through active student status. For detailed technical specifications, refer to the SJMS v4 API documentation and database schema.
+        </p>
+        <p style="margin-bottom: 15px; font-size: 0.85rem;">
+            Last Updated: March 24, 2026 | Confidential — Internal Use Only
+        </p>
+        <p style="font-size: 0.8rem; color: #64748b;">
+            © Future Horizons University. All rights reserved.
+        </p>
+    </footer>
+
+    
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.contentLoaded();
+
+        // Toggle phase sections
+        function togglePhase(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+
+            content.classList.toggle('expanded');
+            header.classList.toggle('expanded');
+
+            // Mermaid re-render on expand
+            if (content.classList.contains('expanded')) {
+                setTimeout(() => {
+                    mermaid.contentLoaded();
+                }, 300);
+            }
+        }
+
+        // Expand first phase by default
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstPhaseContent = document.querySelector('.phase-content');
+            const firstPhaseHeader = document.querySelector('.phase-header');
+            if (firstPhaseContent && firstPhaseHeader) {
+                firstPhaseContent.classList.add('expanded');
+                firstPhaseHeader.classList.add('expanded');
+                setTimeout(() => {
+                    mermaid.contentLoaded();
+                }, 100);
+            }
+        });
+    </script><div class="mermaidTooltip" style="opacity: 0;"></div>
+
+</body></html>

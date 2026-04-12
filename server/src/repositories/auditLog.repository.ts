@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 // AuditLog is append-only and intentionally has NO softDelete, update,
 // or remove operations — audit trails must never be mutated or removed.
@@ -14,7 +14,7 @@ export interface AuditLogFilters {
   toDate?: string | Date;
 }
 
-export async function list(filters: AuditLogFilters = {}, pagination: PaginationParams) {
+export async function list(filters: AuditLogFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.AuditLogWhereInput = {
     ...(filters.entityType && { entityType: filters.entityType }),
     ...(filters.entityId && { entityId: filters.entityId }),
@@ -31,8 +31,8 @@ export async function list(filters: AuditLogFilters = {}, pagination: Pagination
   const [data, total] = await Promise.all([
     prisma.auditLog.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
       select: {
         id: true,
@@ -50,5 +50,5 @@ export async function list(filters: AuditLogFilters = {}, pagination: Pagination
     prisma.auditLog.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }

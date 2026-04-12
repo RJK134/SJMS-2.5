@@ -20,7 +20,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   searchPlaceholder?: string;
   onSearch?: (search: string) => void;
-  onPageChange?: (page: number) => void;
+  onPageChange?: (cursor: string | null) => void;
   onSort?: (sort: string, order: 'asc' | 'desc') => void;
   onRowClick?: (row: T) => void;
   currentSort?: string;
@@ -145,15 +145,16 @@ export default function DataTable<T extends object>({
       {pagination && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Showing {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} records
+            Showing {Math.min(pagination.limit, pagination.total)} of {pagination.total} records
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled={!pagination.hasPrev} onClick={() => onPageChange?.(pagination.page - 1)}>
-              Previous
-            </Button>
-            <span className="px-2">Page {pagination.page} of {pagination.totalPages}</span>
-            <Button variant="outline" size="sm" disabled={!pagination.hasNext} onClick={() => onPageChange?.(pagination.page + 1)}>
-              Next
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination.hasNext}
+              onClick={() => onPageChange?.(pagination.nextCursor)}
+            >
+              Load more
             </Button>
           </div>
         </div>

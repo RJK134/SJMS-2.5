@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface AssessmentFilters {
@@ -9,7 +9,7 @@ export interface AssessmentFilters {
   search?: string;
 }
 
-export async function list(filters: AssessmentFilters = {}, pagination: PaginationParams) {
+export async function list(filters: AssessmentFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.AssessmentWhereInput = {
     deletedAt: null,
     ...(filters.moduleId && { moduleId: filters.moduleId }),
@@ -26,14 +26,14 @@ export async function list(filters: AssessmentFilters = {}, pagination: Paginati
     prisma.assessment.findMany({
       where,
       include: { module: true },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.assessment.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

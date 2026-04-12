@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface ClearanceCheckListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -16,10 +16,10 @@ export interface ClearanceCheckListQuery {
 }
 
 export async function list(query: ClearanceCheckListQuery) {
-  const { page, limit, sort, order, applicationId, status, checkType } = query;
+  const { cursor, limit, sort, order, applicationId, status, checkType } = query;
   return repo.list(
     { applicationId, status, checkType },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface ProgrammeApprovalListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -16,10 +16,10 @@ export interface ProgrammeApprovalListQuery {
 }
 
 export async function list(query: ProgrammeApprovalListQuery) {
-  const { page, limit, sort, order, programmeId, status, approvalType } = query;
+  const { cursor, limit, sort, order, programmeId, status, approvalType } = query;
   return repo.list(
     { programmeId, status, approvalType },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

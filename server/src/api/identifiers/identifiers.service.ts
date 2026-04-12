@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface IdentifierListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -16,10 +16,10 @@ export interface IdentifierListQuery {
 }
 
 export async function list(query: IdentifierListQuery) {
-  const { page, limit, sort, order, search, personId, identifierType } = query;
+  const { cursor, limit, sort, order, search, personId, identifierType } = query;
   return repo.list(
     { search, personId, identifierType },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

@@ -12,7 +12,7 @@ export default function TicketList() {
       <PageHeader title="Support Tickets" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Support'},{label:'Tickets'}]} />
       {(() => {
         const [, navigate] = useLocation();
-        const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'createdAt', order: 'desc' });
+        const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
         const { data, isLoading } = useList<any>('tickets', '/v1/support', params);
         const columns: Column<any>[] = [
           { key: 'subject', label: 'Subject', sortable: true },
@@ -22,8 +22,8 @@ export default function TicketList() {
           { key: 'createdAt', label: 'Created', render: (r: any) => new Date(r.createdAt).toLocaleDateString('en-GB') },
         ];
         return <DataTable columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-          onRowClick={(row: any) => navigate('/admin/support/tickets/' + row.id)} onPageChange={page => setParams(p => ({...p, page}))}
-          searchPlaceholder="Search tickets..." onSearch={s => setParams(p => ({...p, search: s, page: 1}))}
+          onRowClick={(row: any) => navigate('/admin/support/tickets/' + row.id)} onPageChange={cursor => setParams(p => ({...p, cursor: cursor ?? undefined}))}
+          searchPlaceholder="Search tickets..." onSearch={s => setParams(p => ({...p, search: s, cursor: undefined}))}
           currentSort={params.sort} currentOrder={params.order} />;
       })()}
     </div>

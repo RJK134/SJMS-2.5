@@ -6,7 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
 export interface TranscriptListQuery {
-  page: number;
+  cursor?: string;
   limit: number;
   sort: string;
   order: 'asc' | 'desc';
@@ -15,10 +15,10 @@ export interface TranscriptListQuery {
 }
 
 export async function list(query: TranscriptListQuery) {
-  const { page, limit, sort, order, studentId, transcriptType } = query;
+  const { cursor, limit, sort, order, studentId, transcriptType } = query;
   return repo.list(
     { studentId, transcriptType },
-    { page, limit, skip: (page - 1) * limit, sort, order },
+    { cursor, limit, sort, order },
   );
 }
 

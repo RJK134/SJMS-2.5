@@ -15,7 +15,7 @@ const columns: Column<Record>[] = [
 ];
 
 export default function AttendanceRecords() {
-  const [params, setParams] = useState<QueryParams>({ page: 1, limit: 25, sort: 'date', order: 'desc' });
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'date', order: 'desc' });
   const { data, isLoading } = useList<Record>('attendance-records', '/v1/attendance', params);
 
   return (
@@ -23,9 +23,9 @@ export default function AttendanceRecords() {
       <PageHeader title="Attendance Records" subtitle={`${data?.pagination?.total ?? '—'} records`}
         breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Attendance' }, { label: 'Records' }]} />
       <DataTable<Record> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-        onPageChange={page => setParams(p => ({ ...p, page }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
+        onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
         currentSort={params.sort} currentOrder={params.order} searchPlaceholder="Search by student..."
-        onSearch={s => setParams(p => ({ ...p, search: s, page: 1 }))} />
+        onSearch={s => setParams(p => ({ ...p, search: s, cursor: undefined }))} />
     </div>
   );
 }

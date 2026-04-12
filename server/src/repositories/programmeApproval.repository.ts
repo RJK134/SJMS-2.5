@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface ProgrammeApprovalFilters {
   programmeId?: string;
@@ -8,7 +8,7 @@ export interface ProgrammeApprovalFilters {
   approvalType?: string;
 }
 
-export async function list(filters: ProgrammeApprovalFilters = {}, pagination: PaginationParams) {
+export async function list(filters: ProgrammeApprovalFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.ProgrammeApprovalWhereInput = {
     deletedAt: null,
     ...(filters.programmeId && { programmeId: filters.programmeId }),
@@ -20,14 +20,14 @@ export async function list(filters: ProgrammeApprovalFilters = {}, pagination: P
     prisma.programmeApproval.findMany({
       where,
       include: { programme: true },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.programmeApproval.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

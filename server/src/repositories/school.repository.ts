@@ -1,13 +1,13 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export interface SchoolFilters {
   search?: string;
   facultyId?: string;
 }
 
-export async function list(filters: SchoolFilters = {}, pagination: PaginationParams) {
+export async function list(filters: SchoolFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.SchoolWhereInput = {
     deletedAt: null,
     ...(filters.facultyId && { facultyId: filters.facultyId }),
@@ -23,14 +23,14 @@ export async function list(filters: SchoolFilters = {}, pagination: PaginationPa
     prisma.school.findMany({
       where,
       include: { faculty: true },
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.school.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

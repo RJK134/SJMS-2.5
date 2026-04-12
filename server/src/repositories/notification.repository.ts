@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type PaginationParams, buildPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 // Notification has no deletedAt field — notifications are state-driven
 // (isRead / expiresAt) and ephemeral. Hard-delete is intentional when called.
@@ -12,7 +12,7 @@ export interface NotificationFilters {
   priority?: string;
 }
 
-export async function list(filters: NotificationFilters = {}, pagination: PaginationParams) {
+export async function list(filters: NotificationFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.NotificationWhereInput = {
     ...(filters.userId && { userId: filters.userId }),
     ...(filters.isRead !== undefined && { isRead: filters.isRead }),
@@ -24,14 +24,14 @@ export async function list(filters: NotificationFilters = {}, pagination: Pagina
   const [data, total] = await Promise.all([
     prisma.notification.findMany({
       where,
-      skip: pagination.skip,
-      take: pagination.limit,
+      
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
     prisma.notification.count({ where }),
   ]);
 
-  return buildPaginatedResponse(data, total, pagination);
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function getById(id: string) {

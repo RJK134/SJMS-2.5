@@ -14,7 +14,7 @@ interface StatReturn {
 }
 
 export default function StatutoryReturns() {
-  const { data, isLoading, isError } = useList<StatReturn>('statutory-returns', '/v1/statutory-returns', { limit: 20, sort: 'dueDate', order: 'asc' });
+  const { data, isLoading, isError } = useList<StatReturn>('statutory-returns', '/v1/reports/statutory-returns', { limit: 20, sort: 'dueDate', order: 'asc' });
 
   const returns = data?.data ?? [];
 
