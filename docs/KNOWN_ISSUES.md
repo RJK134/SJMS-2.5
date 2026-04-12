@@ -13,7 +13,50 @@ Items that should be fixed in the active branch do **not** belong here.
 
 ## Open issues
 
-*(None.)*
+### KI-P3-001: PR #27 merged without Cursor BugBot automated review — OPEN 2026-04-12
+
+**Severity:** Low  
+**Phase introduced:** Phase 3 — API Decomposition  
+**PR:** [#27 feat(phase-3): API Decomposition — 41 domain modules, cursor pagination](https://github.com/RJK134/SJMS-2.5/pull/27)  
+**Merged commit:** `e2848c4`  
+**Raised by:** Perplexity build oversight review, 2026-04-12
+
+**Description:**  
+PR #27 was opened and merged within 37 minutes (20:10–20:48 UTC) without a
+Cursor BugBot automated review pass completing before merge. The PR test plan
+included the BugBot review step but it was not awaited.
+
+**Mitigating factors (why this is LOW severity):**  
+All Phase 3 invariants were verified internally before commit:
+
+| Check | Result |
+|-------|--------|
+| `tsc --noEmit` server | 0 errors ✅ |
+| `tsc --noEmit` client | 0 errors ✅ |
+| Direct prisma imports in services | 0 ✅ |
+| Hard deletes in services | 0 ✅ |
+| `data: any` in services | 0 ✅ |
+| Routers missing `requireRole` | 0 ✅ |
+| Old pagination remnants | 0 ✅ |
+| Module directory count | 41 ✅ |
+
+Phase 3 was entirely mechanical (cursor pagination, module merges, renames,
+new module scaffolding) — no new business logic was introduced.
+
+**Deferral reason:**  
+Work was mechanical with clean internal verification. Blocking Phase 4 to
+retro-run BugBot on a merged branch provides low return for the delay cost.
+
+**Resolution plan:**  
+Run a Cursor BugBot review pass on the `e2848c4` commit (or the Phase 4 PR
+when it includes Phase 3 code) before the Phase 9 QA gate. Any HIGH findings
+must be resolved before Phase 9.
+
+**Detection command:**
+```bash
+# No automated detection — manual BugBot trigger required on GitHub PR
+# Tag the Phase 4 PR description with: @cursor-bugbot please review (includes Phase 3 changes)
+```
 
 ---
 
