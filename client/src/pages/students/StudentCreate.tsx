@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
 import FormField from '@/components/shared/FormField';
 import { useCreate } from '@/hooks/useApi';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const schema = z.object({
   firstName: z.string().min(1, 'Forename is required'),
@@ -25,12 +27,14 @@ type FormData = z.infer<typeof schema>;
 export default function StudentCreate() {
   const [, navigate] = useLocation();
   const createStudent = useCreate('students', '/v1/students');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { feeStatus: 'HOME', entryRoute: 'UCAS' },
   });
 
   const onSubmit = async (data: FormData) => {
+    setSubmitError(null);
     try {
       await createStudent.mutateAsync({
         personId: 'pending',
@@ -39,8 +43,9 @@ export default function StudentCreate() {
         originalEntryDate: new Date().toISOString(),
       });
       navigate('/admin/students');
-    } catch {
-      // Error handled by mutation
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to create student. Please try again.';
+      setSubmitError(msg);
     }
   };
 
@@ -50,6 +55,13 @@ export default function StudentCreate() {
         title="New Student"
         breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Students', href: '/admin/students' }, { label: 'New Student' }]}
       />
+
+      {submitError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
