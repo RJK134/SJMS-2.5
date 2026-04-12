@@ -2,9 +2,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 import StaffLayout from "@/components/layout/StaffLayout";
-import AcademicLayout from "@/components/layout/AcademicLayout";
-import StudentLayout from "@/components/layout/StudentLayout";
-import ApplicantLayout from "@/components/layout/ApplicantLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/shared/StatCard";
@@ -203,33 +200,30 @@ export default function Dashboard() {
     }
   }, [isLoading, isAuthenticated, navigate]);
 
+  // Redirect non-staff roles to their portal-specific dashboards so they
+  // never see institution-wide KPIs (Total Students, Active Programmes, etc.)
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
+    const hasStudentRole = roles.includes("student") || roles.includes("student_rep");
+    const hasApplicantRole = roles.includes("applicant");
+    const hasAcademicRole = roles.some((r) =>
+      ["dean", "associate_dean", "programme_leader", "module_leader", "lecturer", "personal_tutor"].includes(r)
+    );
+
+    if (hasApplicantRole && !hasStudentRole) {
+      navigate("/applicant/dashboard");
+    } else if (hasStudentRole) {
+      navigate("/student/dashboard");
+    } else if (hasAcademicRole) {
+      navigate("/academic/dashboard");
+    }
+    // Admin/staff stay on this page — they see institutional KPIs
+  }, [isLoading, isAuthenticated, roles, navigate]);
+
   if (isLoading || authError) {
     return <AuthLoadingOrError />;
   }
 
-  // Route to appropriate layout based on roles
-  const hasAdminRole = roles.some((r) =>
-    ["system_admin", "registry_manager", "registry_officer", "admissions_manager", "admissions_officer", "finance_manager", "finance_officer", "qa_manager"].includes(r)
-  );
-  const hasAcademicRole = roles.some((r) =>
-    ["dean", "associate_dean", "programme_leader", "module_leader", "lecturer", "personal_tutor"].includes(r)
-  );
-  const hasStudentRole = roles.includes("student") || roles.includes("student_rep");
-  const hasApplicantRole = roles.includes("applicant");
-
-  if (hasAdminRole) {
-    return <StaffLayout><DashboardContent /></StaffLayout>;
-  }
-  if (hasAcademicRole) {
-    return <AcademicLayout><DashboardContent /></AcademicLayout>;
-  }
-  if (hasStudentRole) {
-    return <StudentLayout><DashboardContent /></StudentLayout>;
-  }
-  if (hasApplicantRole) {
-    return <ApplicantLayout><DashboardContent /></ApplicantLayout>;
-  }
-
-  // Default fallback
+  // Only admin/staff roles reach this point — institutional KPIs are appropriate
   return <StaffLayout><DashboardContent /></StaffLayout>;
 }
