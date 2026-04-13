@@ -95,7 +95,7 @@ export async function remove(id: string, userId: string, req: Request) {
   await repo.softDelete(id);
   await logAudit('SupportTicket', id, 'DELETE', userId, previous, null, req);
   emitEvent({
-    event: 'support.ticket_resolved',
+    event: 'support.ticket_deleted',
     entityType: 'SupportTicket',
     entityId: id,
     actorId: userId,
