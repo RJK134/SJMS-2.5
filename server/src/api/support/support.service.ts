@@ -35,7 +35,18 @@ export async function getById(id: string) {
 export async function create(data: Prisma.SupportTicketUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('SupportTicket', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('support.created', { id: result.id });
+  emitEvent({
+    event: 'support.ticket_created',
+    entityType: 'SupportTicket',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      ticketType: result.category,
+      priority: result.priority,
+      assignedRole: result.assignedTo,
+    },
+  });
   return result;
 }
 
@@ -43,7 +54,39 @@ export async function update(id: string, data: Prisma.SupportTicketUpdateInput, 
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('SupportTicket', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('support.updated', { id });
+
+  // Ticket assigned: assignedTo field changed to a new value
+  if (result.assignedTo !== previous.assignedTo && result.assignedTo != null) {
+    emitEvent({
+      event: 'support.ticket_assigned',
+      entityType: 'SupportTicket',
+      entityId: id,
+      actorId: userId,
+      data: {
+        studentId: result.studentId,
+        ticketType: result.category,
+        priority: result.priority,
+        assignedTo: result.assignedTo,
+        previousAssignedTo: previous.assignedTo,
+      },
+    });
+  }
+
+  // Ticket resolved: status transitions to RESOLVED
+  if (result.status === 'RESOLVED' && previous.status !== 'RESOLVED') {
+    emitEvent({
+      event: 'support.ticket_resolved',
+      entityType: 'SupportTicket',
+      entityId: id,
+      actorId: userId,
+      data: {
+        studentId: result.studentId,
+        ticketType: result.category,
+        resolvedDate: result.resolvedDate?.toISOString() ?? new Date().toISOString(),
+      },
+    });
+  }
+
   return result;
 }
 
@@ -51,5 +94,15 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('SupportTicket', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('support.deleted', { id });
+  emitEvent({
+    event: 'support.ticket_resolved',
+    entityType: 'SupportTicket',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: previous.studentId,
+      ticketType: previous.category,
+      status: 'CLOSED',
+    },
+  });
 }
