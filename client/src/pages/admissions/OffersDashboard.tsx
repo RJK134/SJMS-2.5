@@ -3,13 +3,31 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/shared/StatCard';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { useList } from '@/hooks/useApi';
-import { Gift, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Gift, CheckCircle, XCircle, Clock, Loader2, AlertCircle } from 'lucide-react';
 
 interface Application { id: string; status: string; academicYear: string; applicant?: { person?: { firstName: string; lastName: string } }; programme?: { title: string } }
 
 export default function OffersDashboard() {
-  const { data } = useList<Application>('all-applications', '/v1/applications', { limit: 100 });
+  const { data, isLoading, isError } = useList<Application>('all-applications', '/v1/applications', { limit: 100 });
   const apps = data?.data ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Offer Management" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Offers' }]} />
+        <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Offer Management" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Admissions' }, { label: 'Offers' }]} />
+        <Card><CardContent className="py-12 text-center text-destructive flex items-center justify-center gap-2"><AlertCircle className="h-5 w-5" /> Unable to load offers data</CardContent></Card>
+      </div>
+    );
+  }
   const conditional = apps.filter(a => a.status === 'CONDITIONAL_OFFER').length;
   const unconditional = apps.filter(a => a.status === 'UNCONDITIONAL_OFFER').length;
   const firm = apps.filter(a => a.status === 'FIRM').length;

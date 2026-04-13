@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
 import FormField from '@/components/shared/FormField';
 import { useCreate } from '@/hooks/useApi';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const schema = z.object({
   studentId: z.string().min(1, 'Student is required'),
@@ -25,18 +27,32 @@ type FormData = z.infer<typeof schema>;
 export default function EnrolmentCreate() {
   const [, navigate] = useLocation();
   const create = useCreate('enrolments', '/v1/enrolments');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { academicYear: '2025/26', yearOfStudy: 1, modeOfStudy: 'FULL_TIME', feeStatus: 'HOME' },
   });
 
   const onSubmit = async (data: FormData) => {
-    try { await create.mutateAsync({ ...data, startDate: new Date(data.startDate).toISOString() }); navigate('/admin/enrolments'); } catch { /* handled */ }
+    setSubmitError(null);
+    try {
+      await create.mutateAsync({ ...data, startDate: new Date(data.startDate).toISOString() });
+      navigate('/admin/enrolments');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to create enrolment. Please try again.';
+      setSubmitError(msg);
+    }
   };
 
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader title="New Enrolment" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Enrolments', href: '/admin/enrolments' }, { label: 'New' }]} />
+      {submitError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Enrolment Details</CardTitle></CardHeader>

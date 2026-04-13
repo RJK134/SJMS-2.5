@@ -60,6 +60,72 @@ must be resolved before Phase 9.
 
 ---
 
+### KI-P5-001: TicketDetail interaction timeline — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Route:** `/admin/support/tickets/:id`  
+**Problem:** SupportInteraction relation not included in `/v1/support/:id` response. Timeline shows empty state.  
+**Deferral reason:** Requires server-side `include: { interactions: true }` in `support.repository.ts`. Not a frontend-only fix.  
+**Resolution plan:** Phase 6 or 8 — add include and render timeline.
+
+### KI-P5-002: ModuleDetail Assessment/Students tabs — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Route:** `/admin/modules/:id` (Assessments and Students tabs)  
+**Problem:** Tabs show placeholder text. Require new queries (assessments by module, registrations by module).  
+**Deferral reason:** Backend endpoints exist but no module-scoped query is wired in the UI.  
+**Resolution plan:** Phase 8.
+
+### KI-P5-003: ProgrammeDetail "Submit for Approval" button — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Route:** `/admin/programmes/:id` (Approval tab)  
+**Problem:** Button rendered but not wired to a mutation endpoint.  
+**Deferral reason:** Approval workflow needs form design for stage + comments.  
+**Resolution plan:** Phase 8.
+
+### KI-P5-004: EditApplication applicant page — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Route:** `/applicant/application/edit`  
+**Problem:** Stub placeholder — no form, no edit functionality.  
+**Deferral reason:** Complex state management for post-submission editing.  
+**Resolution plan:** Phase 8.
+
+### KI-P5-005: Applicant stub pages — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Routes:** `/applicant/courses`, `/applicant/events`, `/applicant/contact`, `/applicant/documents`  
+**Problem:** Placeholder stub components — not wired to API endpoints.  
+**Deferral reason:** Lower priority than core application/offers flow.  
+**Resolution plan:** Phase 8.
+
+### KI-P5-006: DataTable cursor pagination does not accumulate — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Routes:** All list pages using DataTable  
+**Problem:** "Load more" button re-fetches with new cursor but loses previous page data. True infinite scroll / append needs `useInfiniteQuery`.  
+**Deferral reason:** Functional for pre-production. UX improvement deferred.  
+**Resolution plan:** Phase 9 (UX hardening).
+
+### KI-P5-007: Accommodation, Governance, Finance advanced stubs — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Routes:** `/admin/accommodation/*`, `/admin/governance/*`, `/admin/finance/invoicing`, `/admin/finance/sponsors`, `/admin/finance/bursaries`, `/admin/finance/refunds`  
+**Problem:** Placeholder stub pages — backend modules incomplete or absent.  
+**Deferral reason:** Not in Phase 5 scope.  
+**Resolution plan:** Phase 8.
+
+### KI-P5-008: EventsManagement "New Event" button — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
+**Route:** `/admin/admissions/events`  
+**Problem:** Button rendered but onClick handler is empty.  
+**Deferral reason:** Needs create form + POST endpoint wiring.  
+**Resolution plan:** Phase 8.
+
+---
+
 ## Closed issues
 
 ### KI-001: 23 pre-existing TypeScript errors in server — CLOSED 2026-04-11
