@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { Redirect } from "wouter";
 import StaffLayout from "@/components/layout/StaffLayout";
+import { ADMIN_STAFF_ROLES, ACADEMIC_STAFF_ROLES } from "@/constants/roles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/shared/StatCard";
@@ -190,71 +190,65 @@ export function DashboardContent() {
   );
 }
 
+/**
+ * Central dashboard entry point — synchronous role-based routing.
+ *
+ * ROLE PRIORITY ORDER (BugBot fixes fc25deae, d4d88bae, f47c14aa):
+ *   1. isLoading         → spinner (no render, no API calls)
+ *   2. !isAuthenticated  → <Redirect to="/login" />
+ *   3. hasAdminRole      → render <StaffLayout><DashboardContent />
+ *   4. hasAcademicRole   → <Redirect to="/academic/dashboard" />
+ *   5. isStudent         → <Redirect to="/student/dashboard" />
+ *   6. isApplicant       → <Redirect to="/applicant/dashboard" />
+ *   7. fallback          → render <StaffLayout><DashboardContent />
+ *
+ * This is a SYNCHRONOUS render-time check — no useEffect. Non-admin users
+ * never render StaffLayout or DashboardContent, so no admin API calls fire
+ * and no institutional KPIs flash on screen.
+ */
 export default function Dashboard() {
   const { roles, isAuthenticated, isLoading, authError } = useAuth();
-  const [, navigate] = useLocation();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isLoading, isAuthenticated, navigate]);
-
-  // Redirect non-staff roles to their portal-specific dashboards so they
-  // never see institution-wide KPIs (Total Students, Active Programmes, etc.)
-  //
-  // PRIORITY ORDER (BugBot fix fc25deae): admin check MUST run first because
-  // the admin persona also holds 'dean' which overlaps with academic roles.
-  // A user who holds ANY admin role stays on the institutional dashboard.
-  useEffect(() => {
-    if (isLoading || !isAuthenticated) return;
-
-    // 1. Admin/staff → stay here (no redirect). Checked first because admin
-    //    personas may also hold academic roles like 'dean'.
-    const hasAdminRole = roles.some((r) =>
-      [
-        "super_admin", "system_admin", "registrar",
-        "senior_registry_officer", "registry_officer",
-        "admissions_manager", "admissions_officer",
-        "assessment_officer", "progression_officer", "graduation_officer",
-        "finance_director", "finance_manager", "finance_officer",
-        "quality_director", "quality_officer", "compliance_officer",
-        "student_support_manager", "student_support_officer",
-        "international_officer", "accommodation_officer",
-      ].includes(r)
-    );
-    if (hasAdminRole) return; // ← institutional KPI dashboard
-
-    // 2. Academic-only (no admin overlap) → academic portal
-    const hasAcademicRole = roles.some((r) =>
-      ["dean", "associate_dean", "head_of_department", "programme_leader", "module_leader", "academic_staff", "lecturer", "senior_lecturer", "professor", "personal_tutor"].includes(r)
-    );
-    if (hasAcademicRole) {
-      navigate("/academic/dashboard");
-      return;
-    }
-
-    // 3. Student → student portal
-    const hasStudentRole = roles.includes("student") || roles.includes("student_rep");
-    if (hasStudentRole) {
-      navigate("/student/dashboard");
-      return;
-    }
-
-    // 4. Applicant → applicant portal
-    const hasApplicantRole = roles.includes("applicant");
-    if (hasApplicantRole) {
-      navigate("/applicant/dashboard");
-      return;
-    }
-
-    // 5. Fallback → stay on default dashboard (no redirect)
-  }, [isLoading, isAuthenticated, roles, navigate]);
-
+  // 1. Loading / auth error → spinner
   if (isLoading || authError) {
     return <AuthLoadingOrError />;
   }
 
-  // Only admin/staff roles reach this point — institutional KPIs are appropriate
+  // 2. Not authenticated → login
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  // 3. Admin/staff → institutional KPI dashboard.
+  //    Checked FIRST because admin personas may also hold overlapping
+  //    academic roles (e.g. 'dean'). Uses the canonical ADMIN_STAFF_ROLES
+  //    constant from constants/roles.ts.
+  const hasAdminRole = roles.some((r) =>
+    (ADMIN_STAFF_ROLES as readonly string[]).includes(r),
+  );
+  if (hasAdminRole) {
+    return <StaffLayout><DashboardContent /></StaffLayout>;
+  }
+
+  // 4. Academic-only (no admin overlap) → academic portal.
+  //    Uses ACADEMIC_STAFF_ROLES which includes personal_tutor (fix d4d88bae).
+  const hasAcademicRole = roles.some((r) =>
+    (ACADEMIC_STAFF_ROLES as readonly string[]).includes(r),
+  );
+  if (hasAcademicRole) {
+    return <Redirect to="/academic/dashboard" />;
+  }
+
+  // 5. Student → student portal
+  if (roles.includes("student") || roles.includes("student_rep")) {
+    return <Redirect to="/student/dashboard" />;
+  }
+
+  // 6. Applicant → applicant portal
+  if (roles.includes("applicant")) {
+    return <Redirect to="/applicant/dashboard" />;
+  }
+
+  // 7. Fallback — unknown role → render admin dashboard
   return <StaffLayout><DashboardContent /></StaffLayout>;
 }
