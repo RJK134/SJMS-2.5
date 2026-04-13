@@ -33,7 +33,18 @@ export async function getById(id: string) {
 export async function create(data: Prisma.DocumentUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('Document', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('documents.created', { id: result.id });
+  emitEvent({
+    event: 'document.uploaded',
+    entityType: 'Document',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      documentType: result.documentType,
+      title: result.title,
+      mimeType: result.mimeType,
+    },
+  });
   return result;
 }
 
@@ -41,7 +52,31 @@ export async function update(id: string, data: Prisma.DocumentUpdateInput, userI
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Document', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('documents.updated', { id });
+  emitEvent({
+    event: 'document.updated',
+    entityType: 'Document',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      documentType: result.documentType,
+      title: result.title,
+    },
+  });
+  if (result.verificationStatus !== previous.verificationStatus) {
+    emitEvent({
+      event: 'document.verification_changed',
+      entityType: 'Document',
+      entityId: id,
+      actorId: userId,
+      data: {
+        studentId: result.studentId,
+        documentType: result.documentType,
+        previousStatus: previous.verificationStatus,
+        newStatus: result.verificationStatus,
+      },
+    });
+  }
   return result;
 }
 
@@ -49,5 +84,14 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Document', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('documents.deleted', { id });
+  emitEvent({
+    event: 'document.deleted',
+    entityType: 'Document',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: previous.studentId,
+      title: previous.title,
+    },
+  });
 }

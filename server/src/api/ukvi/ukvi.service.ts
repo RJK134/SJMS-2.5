@@ -45,7 +45,18 @@ export async function getById(id: string) {
 export async function create(data: Prisma.UKVIRecordUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('UKVIRecord', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('ukvi.created', { id: result.id });
+  emitEvent({
+    event: 'ukvi.record_created',
+    entityType: 'UKVIRecord',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      tier4Status: result.tier4Status,
+      complianceStatus: result.complianceStatus,
+      casNumber: result.casNumber,
+    },
+  });
   return result;
 }
 
@@ -53,7 +64,31 @@ export async function update(id: string, data: Prisma.UKVIRecordUpdateInput, use
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('UKVIRecord', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('ukvi.updated', { id });
+  emitEvent({
+    event: 'ukvi.record_updated',
+    entityType: 'UKVIRecord',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      tier4Status: result.tier4Status,
+      complianceStatus: result.complianceStatus,
+    },
+  });
+  if (result.complianceStatus !== previous.complianceStatus) {
+    emitEvent({
+      event: 'ukvi.compliance_changed',
+      entityType: 'UKVIRecord',
+      entityId: id,
+      actorId: userId,
+      data: {
+        studentId: result.studentId,
+        previousStatus: previous.complianceStatus,
+        newStatus: result.complianceStatus,
+        tier4Status: result.tier4Status,
+      },
+    });
+  }
   return result;
 }
 
@@ -61,7 +96,15 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('UKVIRecord', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('ukvi.deleted', { id });
+  emitEvent({
+    event: 'ukvi.record_deleted',
+    entityType: 'UKVIRecord',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: previous.studentId,
+    },
+  });
 }
 
 // ── UKVI Contact Points ─────────────────────────────────────────────────

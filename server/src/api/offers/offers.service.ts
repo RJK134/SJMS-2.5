@@ -31,7 +31,18 @@ export async function getById(id: string) {
 export async function create(data: Prisma.OfferConditionUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('OfferCondition', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('offers.created', { id: result.id });
+  emitEvent({
+    event: 'offer_condition.created',
+    entityType: 'OfferCondition',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      applicationId: result.applicationId,
+      conditionType: result.conditionType,
+      description: result.description,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -39,7 +50,31 @@ export async function update(id: string, data: Prisma.OfferConditionUpdateInput,
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('OfferCondition', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('offers.updated', { id });
+  emitEvent({
+    event: 'offer_condition.updated',
+    entityType: 'OfferCondition',
+    entityId: id,
+    actorId: userId,
+    data: {
+      applicationId: result.applicationId,
+      conditionType: result.conditionType,
+      status: result.status,
+    },
+  });
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'offer_condition.status_changed',
+      entityType: 'OfferCondition',
+      entityId: id,
+      actorId: userId,
+      data: {
+        applicationId: result.applicationId,
+        conditionType: result.conditionType,
+        previousStatus: previous.status,
+        newStatus: result.status,
+      },
+    });
+  }
   return result;
 }
 
@@ -47,5 +82,13 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('OfferCondition', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('offers.deleted', { id });
+  emitEvent({
+    event: 'offer_condition.deleted',
+    entityType: 'OfferCondition',
+    entityId: id,
+    actorId: userId,
+    data: {
+      applicationId: previous.applicationId,
+    },
+  });
 }
