@@ -556,6 +556,14 @@ enum SupportCategory {
   COMPLAINTS
   IT
   OTHER
+  // Extended categories for n8n workflow automation tasks
+  ADMISSIONS
+  REGISTRY
+  FINANCE
+  IT_SERVICES
+  LIBRARY
+  ASSESSMENT
+  COMPLIANCE
 }
 
 enum SupportPriority {
