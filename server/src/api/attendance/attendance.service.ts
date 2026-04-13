@@ -5,6 +5,9 @@ import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
+/** Statutory UKVI attendance threshold percentage for Tier 4 / Student-route visa holders. */
+const UKVI_ATTENDANCE_THRESHOLD_PERCENT = 70;
+
 export interface AttendanceListQuery {
   cursor?: string;
   limit: number;
@@ -112,6 +115,8 @@ export async function listAlerts(query: AttendanceAlertListQuery) {
 // Called by attendance-monitoring logic (n8n webhook handler or scheduled job)
 // when a student's attendance rate crosses a configured threshold.
 
+// TODO(Phase 7): Wire emitAttendanceAlert into attendance monitoring pipeline
+// once attendance threshold checking is confirmed. Currently unused.
 /**
  * Emit an attendance alert event when a student drops below the
  * institution's attendance threshold.
@@ -132,6 +137,8 @@ export function emitAttendanceAlert(
   });
 }
 
+// TODO(Phase 7): Wire emitUkviBreach into attendance threshold checking.
+// Currently unused — threshold constant defined above.
 /**
  * Emit a UKVI breach-risk event when a Tier 4 / Student-route visa
  * holder's attendance risks falling below the statutory threshold.
@@ -146,6 +153,6 @@ export function emitUkviBreach(
     entityType: 'Student',
     entityId: studentId,
     actorId,
-    data: { studentId, attendanceRate, ukviThreshold: 70 },
+    data: { studentId, attendanceRate, ukviThreshold: UKVI_ATTENDANCE_THRESHOLD_PERCENT },
   });
 }

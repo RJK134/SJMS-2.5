@@ -102,7 +102,7 @@ export async function remove(id: string, userId: string, req: Request) {
     data: {
       studentId: previous.studentId,
       ticketType: previous.category,
-      status: 'CLOSED',
+      status: 'DELETED',
     },
   });
 }

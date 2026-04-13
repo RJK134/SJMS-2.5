@@ -117,13 +117,14 @@ export async function remove(id: string, userId: string, req: Request) {
   await repo.softDelete(id);
   await logAudit('Application', id, 'DELETE', userId, previous, null, req);
   emitEvent({
-    event: 'application.withdrawn',
+    event: 'application.deleted',
     entityType: 'Application',
     entityId: id,
     actorId: userId,
     data: {
       applicantId: previous.applicantId,
       programmeId: previous.programmeId,
+      status: 'DELETED',
     },
   });
 }

@@ -80,7 +80,7 @@ function signPayload(body: string): string {
  * Fire-and-forget webhook event emitter.
  *
  * - Posts to WEBHOOK_BASE_URL with HMAC-SHA256 `x-webhook-signature` header
- * - Exponential-backoff retry: 3 attempts at 1 s, 2 s, 4 s
+ * - Exponential-backoff retry: 3 retries (4 total attempts) with 1 s, 2 s, 4 s backoffs
  * - Logs to AuditLog on final delivery failure only (avoids success log spam)
  *
  * Accepts either:
@@ -150,11 +150,26 @@ async function fireWithRetry(
     });
     if (!res.ok) {
       if (attempt < MAX_RETRIES) {
+        try {
+          await res.body?.cancel();
+        } catch {
+          // Ignore body disposal errors and continue retry flow
+        }
         // Exponential backoff: 2^0=1s, 2^1=2s, 2^2=4s
         await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000));
         return fireWithRetry(payload, attempt + 1);
       }
-      throw new Error(`Webhook returned ${res.status}: ${res.statusText}`);
+      let responseText = '';
+      try {
+        responseText = await res.text();
+      } catch {
+        // Ignore body read errors
+      }
+      throw new Error(
+        responseText
+          ? `Webhook returned ${res.status}: ${res.statusText} - ${responseText}`
+          : `Webhook returned ${res.status}: ${res.statusText}`,
+      );
     }
   } catch (err) {
     if (attempt < MAX_RETRIES) {

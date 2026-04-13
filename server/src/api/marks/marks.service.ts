@@ -34,8 +34,15 @@ export async function getById(id: string) {
 export async function create(data: Prisma.AssessmentAttemptUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('AssessmentAttempt', result.id, 'CREATE', userId, null, result, req);
+  const createEventMap: Record<string, string> = {
+    SUBMITTED: 'marks.submitted',
+    PENDING: 'marks.created',
+    GRADED: 'marks.graded',
+    RATIFIED: 'marks.ratified',
+  };
+  const createEvent = createEventMap[result.status] ?? 'marks.created';
   emitEvent({
-    event: 'marks.submitted',
+    event: createEvent,
     entityType: 'AssessmentAttempt',
     entityId: result.id,
     actorId: userId,
