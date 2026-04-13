@@ -44,7 +44,7 @@ export async function create(data: Prisma.SupportTicketUncheckedCreateInput, use
       studentId: result.studentId,
       ticketType: result.category,
       priority: result.priority,
-      assignedRole: result.assignedTo,
+      assignedTo: result.assignedTo,
     },
   });
   return result;

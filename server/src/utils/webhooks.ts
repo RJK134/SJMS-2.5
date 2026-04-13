@@ -25,7 +25,17 @@ export interface WebhookPayload {
 // WEBHOOK_BASE_URL is preferred; falls back to legacy WEBHOOK_URL for compat.
 const WEBHOOK_BASE_URL =
   process.env.WEBHOOK_BASE_URL || process.env.WEBHOOK_URL || 'http://localhost:5678';
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
+const rawWebhookSecret = process.env.WEBHOOK_SECRET?.trim();
+const isDevelopmentLikeEnv =
+  process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+
+if (!rawWebhookSecret && !isDevelopmentLikeEnv) {
+  throw new Error(
+    'WEBHOOK_SECRET must be configured for webhook signing outside development/test environments'
+  );
+}
+
+const WEBHOOK_SECRET = rawWebhookSecret || '';
 const MAX_RETRIES = 3;
 
 // ── Event routing ───────────────────────────────────────────────────────────
@@ -92,7 +102,7 @@ export function emitEvent(
     resolved = {
       event: eventTypeOrPayload,
       entityType: eventTypeOrPayload.split('.')[0],
-      entityId: (raw.id as string) ?? 'unknown',
+      entityId: String(raw.id ?? 'unknown'),
       actorId: 'system',
       timestamp: new Date().toISOString(),
       data: raw,

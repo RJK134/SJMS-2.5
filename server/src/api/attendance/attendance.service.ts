@@ -125,7 +125,7 @@ export function emitAttendanceAlert(
 ): void {
   emitEvent({
     event: 'attendance.alert_triggered',
-    entityType: 'AttendanceRecord',
+    entityType: 'Student',
     entityId: studentId,
     actorId,
     data: { studentId, attendanceRate, threshold, weekEnding },
@@ -143,7 +143,7 @@ export function emitUkviBreach(
 ): void {
   emitEvent({
     event: 'attendance.ukvi_breach_risk',
-    entityType: 'AttendanceRecord',
+    entityType: 'Student',
     entityId: studentId,
     actorId,
     data: { studentId, attendanceRate, ukviThreshold: 70 },

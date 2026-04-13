@@ -124,6 +124,30 @@ must be resolved before Phase 9.
 **Deferral reason:** Needs create form + POST endpoint wiring.  
 **Resolution plan:** Phase 8.
 
+### KI-P6-002: webhooks.ts response body not consumed before retry — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/utils/webhooks.ts` ~line 147  
+**Problem:** When a webhook POST returns a non-2xx response, the response body is not consumed (`res.body` not drained) before the retry fires. Under high webhook failure rates this degrades HTTP connection reuse.  
+**Deferral reason:** No impact at current webhook volume; requires careful async body drain logic.  
+**Resolution plan:** Phase 8 QA hardening pass.
+
+### KI-P6-003: UKVI attendance threshold (70%) hardcoded magic number — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/api/attendance/attendance.service.ts` `emitUkviBreach()`  
+**Problem:** The 70% UKVI attendance threshold is hardcoded. Cannot be changed without a code deployment; should be configuration-driven via the SystemSetting table.  
+**Deferral reason:** Functional for current use; config-driven thresholds are a Phase 7/8 concern.  
+**Resolution plan:** Phase 7 or 8 — add to system configuration table.
+
+### KI-P6-004: webhooks.ts docstring says "3 retries" but logic performs 4 attempts — OPEN 2026-04-13
+
+**Severity:** INFO | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/utils/webhooks.ts` ~line 73  
+**Problem:** JSDoc comment says "3 attempts at 1 s, 2 s, 4 s" but the retry loop runs attempts 0–3 (initial + 3 retries = 4 total attempts). Documentation-only; no behaviour change needed.  
+**Deferral reason:** Cosmetic — no runtime impact.  
+**Resolution plan:** Fix in next routine maintenance pass.
+
 ---
 
 ## Closed issues
