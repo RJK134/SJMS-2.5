@@ -179,3 +179,25 @@ API modules: 42 (was 41, now includes hesa)
 ---
 GATE: ALL PASS
 ---
+
+=== STOPPED AT: Phase 7C Complete ===
+Timestamp: $(date -u)
+
+Reason: Phase 7C (Batch 7A-7C) complete — all three batches committed and pushed.
+This is stop condition #4: "You have completed Phase 7C".
+
+Last clean commit: caee421 (phase-7/integration-layer)
+PR: https://github.com/RJK134/SJMS-2.5/pull/35
+
+Next steps for Richard:
+1. Review and merge PR #35 (Phase 7)
+2. Tag phase-7-complete after merge
+3. Mark KI-P6-008 as CLOSED in KNOWN_ISSUES.md
+4. Decide on Phase 8 scope (QA, performance, remaining AMBER items)
+
+Items requiring Richard's attention:
+- PR #35 needs review and merge
+- .env must have WORKFLOW_INTERNAL_SECRET set before n8n provisioning
+- Prisma migration 20260413210029 needs to be applied in staging/production
+- SupportCategory enum extended — existing data unaffected (additive change)
+---
