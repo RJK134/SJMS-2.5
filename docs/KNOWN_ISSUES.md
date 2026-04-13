@@ -124,13 +124,10 @@ must be resolved before Phase 9.
 **Deferral reason:** Needs create form + POST endpoint wiring.  
 **Resolution plan:** Phase 8.
 
-### KI-P6-002: webhooks.ts response body not consumed before retry — OPEN 2026-04-13
+### KI-P6-002: webhooks.ts response body not consumed before retry — CLOSED 2026-04-13
 
-**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
-**Location:** `server/src/utils/webhooks.ts` ~line 147  
-**Problem:** When a webhook POST returns a non-2xx response, the response body is not consumed (`res.body` not drained) before the retry fires. Under high webhook failure rates this degrades HTTP connection reuse.  
-**Deferral reason:** No impact at current webhook volume; requires careful async body drain logic.  
-**Resolution plan:** Phase 8 QA hardening pass.
+**Closed by:** Batch 6C — `res.body?.cancel()` added before retry; `res.text()` consumed on final failure.  
+**Verification:** `grep 'res.body?.cancel\|res.text()' server/src/utils/webhooks.ts` shows both calls.
 
 ### KI-P6-003: UKVI attendance threshold (70%) hardcoded magic number — OPEN 2026-04-13
 
@@ -140,13 +137,9 @@ must be resolved before Phase 9.
 **Deferral reason:** Functional for current use; config-driven thresholds are a Phase 7/8 concern.  
 **Resolution plan:** Phase 7 or 8 — add to system configuration table.
 
-### KI-P6-004: webhooks.ts docstring says "3 retries" but logic performs 4 attempts — OPEN 2026-04-13
+### KI-P6-004: webhooks.ts docstring says "3 retries" but logic performs 4 attempts — CLOSED 2026-04-13
 
-**Severity:** INFO | **Phase:** 6 — n8n Workflow Automation  
-**Location:** `server/src/utils/webhooks.ts` ~line 73  
-**Problem:** JSDoc comment says "3 attempts at 1 s, 2 s, 4 s" but the retry loop runs attempts 0–3 (initial + 3 retries = 4 total attempts). Documentation-only; no behaviour change needed.  
-**Deferral reason:** Cosmetic — no runtime impact.  
-**Resolution plan:** Fix in next routine maintenance pass.
+**Closed by:** Batch 6C — docstring corrected to "3 retries (4 total attempts) with 1 s, 2 s, 4 s backoffs".
 
 ### KI-P6-005: Shared webhook paths — n8n single-path-per-workflow constraint — CLOSED 2026-04-13
 
@@ -161,21 +154,17 @@ must be resolved before Phase 9.
 **Deferral reason:** Cannot be validated without a running n8n instance; workflow definitions are version-controlled intent that will be refined during integration testing.  
 **Resolution plan:** Phase 7 integration pass. Options: (a) give each workflow a unique path suffix (e.g. `sjms/applications/created`, `sjms/applications/offer-decision`) and update `EVENT_ROUTES` accordingly, or (b) consolidate related workflows into a single branching workflow per path.
 
-### KI-P6-006: workflow-award-confirmed filters only on data field, not event name — OPEN 2026-04-13
+### KI-P6-006: workflow-award-confirmed filters only on data field, not event name — CLOSED 2026-04-13
+
+**Closed by:** Phase 6.6 — IF node now checks both `event == 'enrolment.status_changed'` AND `data.newStatus == 'COMPLETED'` with `and` combinator.
+
+### KI-P6-007: enquiry-received workflow has no event source — OPEN 2026-04-13
 
 **Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
-**Location:** `server/src/workflows/workflow-award-confirmed.json` (IF node)  
-**Problem:** The workflow filters on `$json.data?.newStatus == 'COMPLETED'` without first verifying `$json.event == 'enrolment.status_changed'`. Any event delivered to `/webhook/sjms/enrolment-changes` that happens to have `data.newStatus == 'COMPLETED'` could incorrectly trigger this workflow.  
-**Deferral reason:** Functional risk is low while workflows are inactive; will be caught during integration testing.  
-**Resolution plan:** Phase 7 — add an explicit event-name check before the data-field check.
-
-### KI-P6-007: enquiry-received and application-submitted both triggered by application.created — OPEN 2026-04-13
-
-**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
-**Location:** `server/src/workflows/workflow-enquiry-received.json`, `server/src/workflows/workflow-application-submitted.json`  
-**Problem:** Both workflows filter on the same event (`application.created`) and listen on the same webhook path (`sjms/applications`). Once the path-sharing issue (KI-P6-005) is resolved, both would fire for every new application, duplicating acknowledgement emails and tasks.  
-**Deferral reason:** Requires a design decision on whether enquiry and application are distinct events or should be handled in one workflow with branching.  
-**Resolution plan:** Phase 7 — either differentiate enquiry from application at the event level or merge into one workflow with conditional branching.
+**Location:** `server/src/workflows/workflow-enquiry-received.json`  
+**Problem:** The enquiry-received workflow now has its own unique path (`sjms/enquiry/created`) after Phase 6.6, but no service currently emits an `enquiry.created` event that would route there. The workflow is correctly defined but inactive pending a dedicated enquiry event.  
+**Deferral reason:** Requires either a new `enquiry.created` event in the applications service or a design decision on how enquiries are distinguished from applications.  
+**Resolution plan:** Phase 8 — add enquiry event or merge enquiry logic into application-submitted workflow.
 
 ### KI-P6-008: Communications API payload shape speculative — OPEN 2026-04-13
 
