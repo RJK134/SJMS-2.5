@@ -3,7 +3,7 @@ import { requireRole } from '../../middleware/auth';
 import { validate, validateParams, validateQuery } from '../../middleware/validate';
 import { ROLE_GROUPS } from '../../constants/roles';
 import * as ctrl from './communications.controller';
-import { createSchema, updateSchema, querySchema, paramsSchema } from './communications.schema';
+import { createSchema, updateSchema, querySchema, paramsSchema, sendSchema } from './communications.schema';
 import * as notifCtrl from './notifications.controller';
 import { querySchema as notifQuerySchema, paramsSchema as notifParamsSchema, createSchema as notifCreateSchema, updateSchema as notifUpdateSchema } from './notifications.schema';
 
@@ -14,6 +14,9 @@ communicationsRouter.get('/notifications', validateQuery(notifQuerySchema), requ
 communicationsRouter.get('/notifications/:id', validateParams(notifParamsSchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), notifCtrl.getById);
 communicationsRouter.post('/notifications', validate(notifCreateSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), notifCtrl.create);
 communicationsRouter.patch('/notifications/:id', validateParams(notifParamsSchema), validate(notifUpdateSchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), notifCtrl.update);
+
+// ─── Send endpoint (used by n8n workflows) ──────────────────────────────────
+communicationsRouter.post('/send', validate(sendSchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), ctrl.send);
 
 // ─── Core communications routes ─────────────────────────────────────────────
 communicationsRouter.get('/', validateQuery(querySchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.list);
