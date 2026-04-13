@@ -88,3 +88,94 @@ KI-P6-009: CLOSED
 KI-P6-010: CLOSED
 Remaining OPEN: KI-P6-003, KI-P6-007, KI-P6-008
 ---
+
+=== Phase 7 Planning ===
+Timestamp: Mon Apr 13 20:55:42 UTC 2026
+
+Existing API modules:
+admissions-events
+appeals
+applications
+assessments
+attendance
+audit
+awards
+clearance-checks
+communications
+config
+demographics
+departments
+documents
+ec-claims
+enrolments
+exam-boards
+faculties
+finance
+identifiers
+index.ts
+interviews
+marks
+module-registrations
+module-results
+modules
+offers
+persons
+programme-approvals
+programme-modules
+programme-routes
+programmes
+progressions
+qualifications
+references
+reports
+schools
+students
+submissions
+support
+transcripts
+ukvi
+webhooks
+
+Integration-related modules to check:
+  communications: 7 files
+  hesa: 0 files
+  support: 4 files
+=== Phase 7 Plan ===
+
+Batch 7A: Communications send endpoint (resolves KI-P6-008)
+  - Add POST /api/v1/communications/send accepting workflow payload
+  - Add communicationLog.repository.ts for delivery logging
+  - CommunicationLog model already exists in Prisma
+
+Batch 7B: HESA notification queue
+  - Add HesaNotification model (Prisma migration)
+  - Add /api/v1/hesa/notifications endpoints
+
+Batch 7C: Support service category alignment
+  - Extend SupportCategory Zod enum to include workflow-used categories
+  - Current: ACADEMIC,FINANCIAL,WELLBEING,ACCOMMODATION,DISABILITY,COMPLAINTS,IT,OTHER
+  - Needed: + ADMISSIONS,REGISTRY,FINANCE,IT_SERVICES,LIBRARY,ASSESSMENT,COMPLIANCE
+---
+
+=== Phase 7 Verification ===
+Timestamp: Mon Apr 13 21:05:50 UTC 2026
+
+tsc exit: 0
+
+Hard deletes (prisma.*.delete): server/src/repositories/systemSetting.repository.ts:51:  return prisma.systemSetting.delete({ where: { id } });
+Secrets in JSON: none
+
+Batch 7A: Communications send endpoint ✓ (7b926fc)
+Batch 7B: HESA notification queue ✓ (b22195b)
+Batch 7C: Support category alignment ✓ (5e094a1)
+
+New files:
+  server/src/repositories/communicationLog.repository.ts
+  server/src/repositories/hesaNotification.repository.ts
+  server/src/api/hesa/ (4 files)
+  prisma/migrations/20260413210029_add_hesa_notification/
+
+API modules: 42 (was 41, now includes hesa)
+---
+GATE: ALL PASS
+---
