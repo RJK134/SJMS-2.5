@@ -202,22 +202,53 @@ export default function Dashboard() {
 
   // Redirect non-staff roles to their portal-specific dashboards so they
   // never see institution-wide KPIs (Total Students, Active Programmes, etc.)
+  //
+  // PRIORITY ORDER (BugBot fix fc25deae): admin check MUST run first because
+  // the admin persona also holds 'dean' which overlaps with academic roles.
+  // A user who holds ANY admin role stays on the institutional dashboard.
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
-    const hasStudentRole = roles.includes("student") || roles.includes("student_rep");
-    const hasApplicantRole = roles.includes("applicant");
-    const hasAcademicRole = roles.some((r) =>
-      ["dean", "associate_dean", "programme_leader", "module_leader", "lecturer", "personal_tutor"].includes(r)
-    );
 
-    if (hasApplicantRole && !hasStudentRole) {
-      navigate("/applicant/dashboard");
-    } else if (hasStudentRole) {
-      navigate("/student/dashboard");
-    } else if (hasAcademicRole) {
+    // 1. Admin/staff → stay here (no redirect). Checked first because admin
+    //    personas may also hold academic roles like 'dean'.
+    const hasAdminRole = roles.some((r) =>
+      [
+        "super_admin", "system_admin", "registrar",
+        "senior_registry_officer", "registry_officer",
+        "admissions_manager", "admissions_officer",
+        "assessment_officer", "progression_officer", "graduation_officer",
+        "finance_director", "finance_manager", "finance_officer",
+        "quality_director", "quality_officer", "compliance_officer",
+        "student_support_manager", "student_support_officer",
+        "international_officer", "accommodation_officer",
+      ].includes(r)
+    );
+    if (hasAdminRole) return; // ← institutional KPI dashboard
+
+    // 2. Academic-only (no admin overlap) → academic portal
+    const hasAcademicRole = roles.some((r) =>
+      ["dean", "associate_dean", "head_of_department", "programme_leader", "module_leader", "academic_staff", "lecturer", "senior_lecturer", "professor", "personal_tutor"].includes(r)
+    );
+    if (hasAcademicRole) {
       navigate("/academic/dashboard");
+      return;
     }
-    // Admin/staff stay on this page — they see institutional KPIs
+
+    // 3. Student → student portal
+    const hasStudentRole = roles.includes("student") || roles.includes("student_rep");
+    if (hasStudentRole) {
+      navigate("/student/dashboard");
+      return;
+    }
+
+    // 4. Applicant → applicant portal
+    const hasApplicantRole = roles.includes("applicant");
+    if (hasApplicantRole) {
+      navigate("/applicant/dashboard");
+      return;
+    }
+
+    // 5. Fallback → stay on default dashboard (no redirect)
   }, [isLoading, isAuthenticated, roles, navigate]);
 
   if (isLoading || authError) {
