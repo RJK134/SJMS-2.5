@@ -50,13 +50,13 @@ const EVENT_ROUTES: Record<string, string> = {
   'attendance':               '/webhook/sjms/attendance',
   'ukvi':                     '/webhook/sjms/ukvi',
   'finance':                  '/webhook/sjms/finance',
-  'ec_claims':                '/webhook/sjms/ec-claims',
-  'documents':                '/webhook/sjms/documents',
-  'exam_boards':              '/webhook/sjms/exam-boards',
-  'offers':                   '/webhook/sjms/offers',
-  'module_registrations':     '/webhook/sjms/module-registrations',
+  'ec_claim':                 '/webhook/sjms/ec-claims',
+  'document':                 '/webhook/sjms/documents',
+  'exam_board':               '/webhook/sjms/exam-boards',
+  'offer_condition':          '/webhook/sjms/offers',
+  'module_registration':      '/webhook/sjms/module-registrations',
   'support':                  '/webhook/sjms/support',
-  'programme_approvals':      '/webhook/sjms/programme-approvals',
+  'programme_approval':       '/webhook/sjms/programme-approvals',
 };
 
 function resolveWebhookPath(eventType: string): string {
