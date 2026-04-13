@@ -139,15 +139,20 @@ async function main(): Promise<void> {
     let action: 'created' | 'updated' = 'created';
     let workflowId: string;
 
+    // Strip read-only fields that the n8n API rejects on create/update
+    const payload = { ...definition };
+    delete payload.active;
+    delete payload.tags;
+
     try {
       if (match) {
         // Update existing workflow
-        const updated = await apiPatch<N8nWorkflow>(`/api/v1/workflows/${match.id}`, definition);
+        const updated = await apiPatch<N8nWorkflow>(`/api/v1/workflows/${match.id}`, payload);
         workflowId = updated.id;
         action = 'updated';
       } else {
         // Create new workflow
-        const created = await apiPost<N8nWorkflow>('/api/v1/workflows', definition);
+        const created = await apiPost<N8nWorkflow>('/api/v1/workflows', payload);
         workflowId = created.id;
         action = 'created';
       }

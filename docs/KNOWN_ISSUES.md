@@ -180,6 +180,24 @@ must be resolved before Phase 9.
 **Deferral reason:** Communication payloads are best-effort placeholders; the exact contract will be finalised when the communications module is fully implemented.  
 **Resolution plan:** Phase 7 or 8 integration pass to align workflow payloads with the finalised communications API schema.
 
+### KI-P6-009: n8n v2 task runner blocks $env access in workflow expressions — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** All 15 workflow JSON files; `docker-compose.yml` n8n service  
+**Problem:** n8n v2's task runner (enabled by default in recent versions) blocks `{{ $env.VAR }}` references in workflow expressions. All HTTP Request nodes that use `$env.API_BASE_URL` or credential nodes referencing `$env.WORKFLOW_INTERNAL_SECRET` fail at runtime with "access to env vars denied". Webhook triggers and event filter nodes execute correctly; only downstream API call nodes are affected. The n8n Variables feature (an alternative to `$env`) requires a paid licence.  
+**Smoke test evidence:** Confirmed in Phase 6.5 smoke test (executions 3–5). Workaround for testing: replace `$env` references with hardcoded URLs via the n8n API.  
+**Deferral reason:** Requires an architectural decision on how to inject runtime configuration into n8n workflows without `$env`.  
+**Resolution plan:** Phase 7 — options include (a) rewriting workflow HTTP Request nodes to use n8n's built-in credential expressions for the base URL, (b) using a Set node at the start of each workflow to inject configuration, or (c) pinning n8n to a v1.x release that permits `$env` access.
+
+### KI-P6-010: Credential template not linked to workflow nodes by provisioning script — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `scripts/provision-n8n-workflows.ts`; all 15 workflow JSON files referencing `"id": "sjms-internal"`  
+**Problem:** The provisioning script creates workflows but does not create or link the SJMS Internal API credential. Workflow HTTP Request nodes reference a credential by the placeholder ID `sjms-internal`, but n8n assigns a random ID when credentials are created. Nodes fail with "Credential with ID 'sjms-internal' does not exist" until the credential is manually created and linked.  
+**Smoke test evidence:** Confirmed in Phase 6.5 smoke test (execution 5). Manual credential creation via the n8n API resolved the issue for individual test runs.  
+**Deferral reason:** Provisioning script scope was limited to workflow import; credential lifecycle is a separate concern.  
+**Resolution plan:** Phase 7 — update provisioning script to (a) create the HTTP Header Auth credential via the n8n API if absent, (b) retrieve its assigned ID, and (c) patch workflow JSON with the real credential ID before importing.
+
 ---
 
 ## Closed issues
