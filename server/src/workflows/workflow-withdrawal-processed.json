@@ -1,0 +1,134 @@
+{
+  "name": "SJMS: Withdrawal Processed",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "sjms/enrolment-changes",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "wdr-00001-trigger",
+      "name": "Webhook — Enrolment Changes",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "sjms-withdrawal-processed"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "wdr-cond-01",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "enrolment.withdrawn",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "wdr-00002-filter",
+      "name": "Filter — Withdrawn",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $json.data.studentId }}" },
+            { "name": "templateKey", "value": "withdrawal_confirmation" },
+            { "name": "channel", "value": "email" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wdr-00003-confirm",
+      "name": "Send Withdrawal Confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 100],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "studentId", "value": "={{ $json.data.studentId }}" },
+            { "name": "category", "value": "FINANCE" },
+            { "name": "subject", "value": "Withdrawal refund assessment" },
+            { "name": "description", "value": "Student has withdrawn — assess refund eligibility and process any credit adjustments." },
+            { "name": "priority", "value": "HIGH" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wdr-00004-finance",
+      "name": "Trigger Finance Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 300],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "studentId", "value": "={{ $json.data.studentId }}" },
+            { "name": "category", "value": "REGISTRY" },
+            { "name": "subject", "value": "HESA/UKVI withdrawal notification" },
+            { "name": "description", "value": "Student withdrawn — update HESA return data and check UKVI reporting obligations." },
+            { "name": "priority", "value": "HIGH" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wdr-00005-hesa",
+      "name": "HESA / UKVI Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 500],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    }
+  ],
+  "connections": {
+    "Webhook — Enrolment Changes": {
+      "main": [[{ "node": "Filter — Withdrawn", "type": "main", "index": 0 }]]
+    },
+    "Filter — Withdrawn": {
+      "main": [
+        [
+          { "node": "Send Withdrawal Confirmation", "type": "main", "index": 0 },
+          { "node": "Trigger Finance Review", "type": "main", "index": 0 },
+          { "node": "HESA / UKVI Follow-up", "type": "main", "index": 0 }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": [{ "name": "sjms" }, { "name": "phase-6" }, { "name": "enrolment" }]
+}

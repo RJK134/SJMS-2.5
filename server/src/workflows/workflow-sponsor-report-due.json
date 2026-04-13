@@ -1,0 +1,117 @@
+{
+  "name": "SJMS: Sponsor Report Due",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 1 * *" }] }
+      },
+      "id": "spr-00001-trigger",
+      "name": "Schedule — 1st of Month 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_BASE_URL }}/api/v1/ukvi?complianceStatus=AT_RISK&limit=200",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "spr-00002-fetch",
+      "name": "Fetch Reportable Events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "spr-cond-01",
+              "leftValue": "={{ $json.data?.length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
+      },
+      "id": "spr-00003-check",
+      "name": "Has Reportable Events?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [710, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "category", "value": "COMPLIANCE" },
+            { "name": "subject", "value": "URGENT: Monthly sponsor report — reportable events found" },
+            { "name": "description", "value": "Reportable events detected during monthly UKVI sponsor review. Compile and submit report urgently." },
+            { "name": "priority", "value": "URGENT" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "spr-00004-urgent",
+      "name": "Create Urgent Report Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 200],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "templateKey", "value": "sponsor_monthly_summary" },
+            { "name": "channel", "value": "email" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "spr-00005-summary",
+      "name": "Send Monthly Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 400],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    }
+  ],
+  "connections": {
+    "Schedule — 1st of Month 08:00": {
+      "main": [[{ "node": "Fetch Reportable Events", "type": "main", "index": 0 }]]
+    },
+    "Fetch Reportable Events": {
+      "main": [[{ "node": "Has Reportable Events?", "type": "main", "index": 0 }]]
+    },
+    "Has Reportable Events?": {
+      "main": [
+        [{ "node": "Create Urgent Report Task", "type": "main", "index": 0 }],
+        [{ "node": "Send Monthly Summary", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": [{ "name": "sjms" }, { "name": "phase-6" }, { "name": "ukvi" }]
+}

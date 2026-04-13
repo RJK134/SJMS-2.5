@@ -99,3 +99,34 @@ complete until BugBot HIGH findings are resolved.
 - HIGH: Must fix before merge. No exceptions.
 - MEDIUM: Fix in same PR if under 10 minutes. Otherwise create an issue.
 - LOW: Note in PR comments. Fix in next cleanup pass.
+
+## Phase 6 — n8n Workflow Automation
+
+### Workflow Definitions
+- 15 version-controlled n8n workflow JSON files live in `server/src/workflows/`
+- Credential template: `server/src/workflows/credentials/sjms-internal-api.json`
+- Naming convention: `workflow-<domain>-<action>.json` (kebab-case, British English)
+
+### Provisioning
+- Script: `scripts/provision-n8n-workflows.ts`
+- Run: `npm run provision:workflows`
+- Requires `N8N_API_URL` and `N8N_API_KEY` environment variables
+- Idempotent: creates new workflows, updates existing (matched by name), activates after provisioning
+
+### Credential Usage
+- n8n workflows authenticate to the SJMS API using an HTTP Header Auth credential
+- Header: `x-internal-key` with value from `WORKFLOW_INTERNAL_SECRET` env var
+- This must match the `INTERNAL_SERVICE_KEY` configured on the Express server
+- **No secrets are embedded in workflow JSON** — all credentials are resolved at runtime via n8n environment variables
+
+### How emitEvent() Connects to n8n
+1. Service mutations call `emitEvent()` in `server/src/utils/webhooks.ts`
+2. `emitEvent()` POSTs the webhook payload to `WEBHOOK_BASE_URL` + the path resolved by `EVENT_ROUTES`
+3. n8n webhook trigger nodes listen on those paths and execute the corresponding workflow
+4. Workflows call back into the SJMS API via HTTP Request nodes authenticated with the internal service key
+
+### Rules
+- **Never hardcode secrets** in workflow JSON — use `{{ $env.VARIABLE }}` expressions
+- **British English** in all workflow names, node names, and task descriptions
+- **One webhook path per workflow** to avoid n8n shared-path conflicts
+- Workflow JSON files are the source of truth — the n8n visual editor may be used for testing but changes must be exported back to version control
