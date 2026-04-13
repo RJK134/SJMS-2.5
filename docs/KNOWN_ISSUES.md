@@ -148,6 +148,38 @@ must be resolved before Phase 9.
 **Deferral reason:** Cosmetic — no runtime impact.  
 **Resolution plan:** Fix in next routine maintenance pass.
 
+### KI-P6-005: Shared webhook paths — n8n single-path-per-workflow constraint — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/workflows/workflow-*.json` (8 of 11 webhook-triggered workflows)  
+**Problem:** Multiple workflows share the same n8n webhook path. `sjms/applications` is used by 3 workflows (enquiry-received, application-submitted, offer-decision). `sjms/enrolment-changes` is used by 3 workflows (withdrawal-processed, progression-decision, award-confirmed). `sjms/marks` is used by 2 workflows (submission-received, marks-ratified). n8n only allows one active webhook per path, so only the last-activated workflow per group would receive events.  
+**Deferral reason:** Cannot be validated without a running n8n instance; workflow definitions are version-controlled intent that will be refined during integration testing.  
+**Resolution plan:** Phase 7 integration pass. Options: (a) give each workflow a unique path suffix (e.g. `sjms/applications/created`, `sjms/applications/offer-decision`) and update `EVENT_ROUTES` accordingly, or (b) consolidate related workflows into a single branching workflow per path.
+
+### KI-P6-006: workflow-award-confirmed filters only on data field, not event name — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/workflows/workflow-award-confirmed.json` (IF node)  
+**Problem:** The workflow filters on `$json.data?.newStatus == 'COMPLETED'` without first verifying `$json.event == 'enrolment.status_changed'`. Any event delivered to `/webhook/sjms/enrolment-changes` that happens to have `data.newStatus == 'COMPLETED'` could incorrectly trigger this workflow.  
+**Deferral reason:** Functional risk is low while workflows are inactive; will be caught during integration testing.  
+**Resolution plan:** Phase 7 — add an explicit event-name check before the data-field check.
+
+### KI-P6-007: enquiry-received and application-submitted both triggered by application.created — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/workflows/workflow-enquiry-received.json`, `server/src/workflows/workflow-application-submitted.json`  
+**Problem:** Both workflows filter on the same event (`application.created`) and listen on the same webhook path (`sjms/applications`). Once the path-sharing issue (KI-P6-005) is resolved, both would fire for every new application, duplicating acknowledgement emails and tasks.  
+**Deferral reason:** Requires a design decision on whether enquiry and application are distinct events or should be handled in one workflow with branching.  
+**Resolution plan:** Phase 7 — either differentiate enquiry from application at the event level or merge into one workflow with conditional branching.
+
+### KI-P6-008: Communications API payload shape speculative — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** All 15 workflow JSON files (HTTP Request nodes POSTing to `/api/v1/communications`)  
+**Problem:** Workflows POST to `/api/v1/communications` with `templateKey`, `channel`, `recipientId`, and optional `data` fields. The communications module exists but its final POST request/response contract has not been validated against these payload shapes.  
+**Deferral reason:** Communication payloads are best-effort placeholders; the exact contract will be finalised when the communications module is fully implemented.  
+**Resolution plan:** Phase 7 or 8 integration pass to align workflow payloads with the finalised communications API schema.
+
 ---
 
 ## Closed issues
