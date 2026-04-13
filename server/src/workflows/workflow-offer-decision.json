@@ -1,0 +1,169 @@
+{
+  "name": "SJMS: Offer Decision",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "sjms/offer/decision-made",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ofd-00001-trigger",
+      "name": "Webhook — Offer Decision",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "sjms-offer-decision"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "ofd-cond-01",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "application.offer_made",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "ofd-00002-filter",
+      "name": "Filter — Status Changed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://api:3001/api/v1/applications/{{ $json.entityId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "ofd-00003-fetch",
+      "name": "Fetch Application",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 200],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "outputIndex": 0, "conditions": { "conditions": [{ "leftValue": "={{ $json.status }}", "rightValue": "CONDITIONAL_OFFER", "operator": { "type": "string", "operation": "equals" } }] } },
+            { "outputIndex": 1, "conditions": { "conditions": [{ "leftValue": "={{ $json.status }}", "rightValue": "UNCONDITIONAL_OFFER", "operator": { "type": "string", "operation": "equals" } }] } },
+            { "outputIndex": 2, "conditions": { "conditions": [{ "leftValue": "={{ $json.status }}", "rightValue": "REJECTED", "operator": { "type": "string", "operation": "equals" } }] } }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "ofd-00004-switch",
+      "name": "Switch — Decision Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [940, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $('Fetch Application').item.json.applicantId }}" },
+            { "name": "templateKey", "value": "conditional_offer" },
+            { "name": "channel", "value": "email" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ofd-00005-conditional",
+      "name": "Notify — Conditional Offer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 100],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $('Fetch Application').item.json.applicantId }}" },
+            { "name": "templateKey", "value": "unconditional_offer" },
+            { "name": "channel", "value": "email" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ofd-00006-unconditional",
+      "name": "Notify — Unconditional Offer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 300],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $('Fetch Application').item.json.applicantId }}" },
+            { "name": "templateKey", "value": "application_rejected" },
+            { "name": "channel", "value": "email" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ofd-00007-rejected",
+      "name": "Notify — Rejected",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 500],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    }
+  ],
+  "connections": {
+    "Webhook — Offer Decision": {
+      "main": [[{ "node": "Filter — Status Changed", "type": "main", "index": 0 }]]
+    },
+    "Filter — Status Changed": {
+      "main": [
+        [{ "node": "Fetch Application", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Fetch Application": {
+      "main": [[{ "node": "Switch — Decision Type", "type": "main", "index": 0 }]]
+    },
+    "Switch — Decision Type": {
+      "main": [
+        [{ "node": "Notify — Conditional Offer", "type": "main", "index": 0 }],
+        [{ "node": "Notify — Unconditional Offer", "type": "main", "index": 0 }],
+        [{ "node": "Notify — Rejected", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": [{ "name": "sjms" }, { "name": "phase-6" }, { "name": "admissions" }]
+}

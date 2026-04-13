@@ -115,6 +115,11 @@ services:
       N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678}
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?INTERNAL_SERVICE_KEY must be set in .env — no default}
+      # Workflow JSON uses http://api:3001 directly (no $env runtime access
+      # needed — resolves KI-P6-009). WORKFLOW_INTERNAL_SECRET is read by the
+      # provisioning script to create the n8n credential at import time.
+      API_BASE_URL: http://api:3001
+      WORKFLOW_INTERNAL_SECRET: ${WORKFLOW_INTERNAL_SECRET:-${INTERNAL_SERVICE_KEY}}
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
       DB_POSTGRESDB_PORT: "5432"

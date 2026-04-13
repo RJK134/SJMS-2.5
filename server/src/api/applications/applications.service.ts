@@ -38,7 +38,18 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ApplicationUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.createApplication(data);
   await logAudit('Application', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('applications.created', { id: result.id });
+  emitEvent({
+    event: 'application.created',
+    entityType: 'Application',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      applicantId: result.applicantId,
+      programmeId: result.programmeId,
+      applicationRoute: result.applicationRoute,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -46,7 +57,58 @@ export async function update(id: string, data: Prisma.ApplicationUpdateInput, us
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Application', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('applications.updated', { id });
+
+  // Detect status transition and emit domain-specific events
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'application.status_changed',
+      entityType: 'Application',
+      entityId: id,
+      actorId: userId,
+      data: {
+        applicantId: result.applicantId,
+        programmeId: result.programmeId,
+        previousStatus: previous.status,
+        newStatus: result.status,
+      },
+    });
+
+    // Offer made: status transitions to a conditional or unconditional offer
+    const isOffer =
+      result.status === 'CONDITIONAL_OFFER' || result.status === 'UNCONDITIONAL_OFFER';
+    const wasOffer =
+      previous.status === 'CONDITIONAL_OFFER' || previous.status === 'UNCONDITIONAL_OFFER';
+    if (isOffer && !wasOffer) {
+      emitEvent({
+        event: 'application.offer_made',
+        entityType: 'Application',
+        entityId: id,
+        actorId: userId,
+        data: {
+          applicantId: result.applicantId,
+          programmeId: result.programmeId,
+          offerType: result.status,
+          conditions: [], // Hydrated by n8n workflow via OfferCondition API
+        },
+      });
+    }
+
+    // Withdrawn via status change
+    if (result.status === 'WITHDRAWN') {
+      emitEvent({
+        event: 'application.withdrawn',
+        entityType: 'Application',
+        entityId: id,
+        actorId: userId,
+        data: {
+          applicantId: result.applicantId,
+          programmeId: result.programmeId,
+          previousStatus: previous.status,
+        },
+      });
+    }
+  }
+
   return result;
 }
 
@@ -54,5 +116,15 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Application', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('applications.deleted', { id });
+  emitEvent({
+    event: 'application.deleted',
+    entityType: 'Application',
+    entityId: id,
+    actorId: userId,
+    data: {
+      applicantId: previous.applicantId,
+      programmeId: previous.programmeId,
+      status: 'DELETED',
+    },
+  });
 }

@@ -32,7 +32,17 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ProgrammeApprovalUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('ProgrammeApproval', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('programme_approvals.created', { id: result.id });
+  emitEvent({
+    event: 'programme_approval.submitted',
+    entityType: 'ProgrammeApproval',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      programmeId: result.programmeId,
+      stage: result.stage,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -40,7 +50,32 @@ export async function update(id: string, data: Prisma.ProgrammeApprovalUpdateInp
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('ProgrammeApproval', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('programme_approvals.updated', { id });
+  emitEvent({
+    event: 'programme_approval.updated',
+    entityType: 'ProgrammeApproval',
+    entityId: id,
+    actorId: userId,
+    data: {
+      programmeId: result.programmeId,
+      stage: result.stage,
+      status: result.status,
+    },
+  });
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'programme_approval.decision_made',
+      entityType: 'ProgrammeApproval',
+      entityId: id,
+      actorId: userId,
+      data: {
+        programmeId: result.programmeId,
+        stage: result.stage,
+        previousStatus: previous.status,
+        newStatus: result.status,
+        comments: result.comments,
+      },
+    });
+  }
   return result;
 }
 
@@ -48,5 +83,14 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('ProgrammeApproval', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('programme_approvals.deleted', { id });
+  emitEvent({
+    event: 'programme_approval.deleted',
+    entityType: 'ProgrammeApproval',
+    entityId: id,
+    actorId: userId,
+    data: {
+      programmeId: previous.programmeId,
+      stage: previous.stage,
+    },
+  });
 }

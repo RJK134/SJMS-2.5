@@ -34,7 +34,18 @@ export async function getById(id: string) {
 export async function create(data: Prisma.EnrolmentUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create({ ...data, createdBy: userId });
   await logAudit('Enrolment', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('enrolments.created', { id: result.id });
+  emitEvent({
+    event: 'enrolment.created',
+    entityType: 'Enrolment',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      programmeId: result.programmeId,
+      academicYear: result.academicYear,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -42,7 +53,31 @@ export async function update(id: string, data: Prisma.EnrolmentUpdateInput, user
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Enrolment', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('enrolments.updated', { id });
+  emitEvent({
+    event: 'enrolment.updated',
+    entityType: 'Enrolment',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      programmeId: result.programmeId,
+    },
+  });
+  // Emit domain-specific event when enrolment status changes
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'enrolment.status_changed',
+      entityType: 'Enrolment',
+      entityId: id,
+      actorId: userId,
+      data: {
+        studentId: result.studentId,
+        programmeId: result.programmeId,
+        previousStatus: previous.status,
+        newStatus: result.status,
+      },
+    });
+  }
   return result;
 }
 
@@ -50,5 +85,14 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Enrolment', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('enrolments.deleted', { id });
+  emitEvent({
+    event: 'enrolment.withdrawn',
+    entityType: 'Enrolment',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: previous.studentId,
+      programmeId: previous.programmeId,
+    },
+  });
 }

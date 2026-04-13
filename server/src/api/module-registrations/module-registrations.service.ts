@@ -38,7 +38,19 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ModuleRegistrationUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('ModuleRegistration', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('module_registrations.created', { id: result.id });
+  emitEvent({
+    event: 'module_registration.created',
+    entityType: 'ModuleRegistration',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      enrolmentId: result.enrolmentId,
+      moduleId: result.moduleId,
+      academicYear: result.academicYear,
+      registrationType: result.registrationType,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -46,7 +58,31 @@ export async function update(id: string, data: Prisma.ModuleRegistrationUpdateIn
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('ModuleRegistration', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('module_registrations.updated', { id });
+  emitEvent({
+    event: 'module_registration.updated',
+    entityType: 'ModuleRegistration',
+    entityId: id,
+    actorId: userId,
+    data: {
+      enrolmentId: result.enrolmentId,
+      moduleId: result.moduleId,
+      status: result.status,
+    },
+  });
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'module_registration.status_changed',
+      entityType: 'ModuleRegistration',
+      entityId: id,
+      actorId: userId,
+      data: {
+        enrolmentId: result.enrolmentId,
+        moduleId: result.moduleId,
+        previousStatus: previous.status,
+        newStatus: result.status,
+      },
+    });
+  }
   return result;
 }
 
@@ -54,5 +90,14 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('ModuleRegistration', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('module_registrations.deleted', { id });
+  emitEvent({
+    event: 'module_registration.deleted',
+    entityType: 'ModuleRegistration',
+    entityId: id,
+    actorId: userId,
+    data: {
+      enrolmentId: previous.enrolmentId,
+      moduleId: previous.moduleId,
+    },
+  });
 }

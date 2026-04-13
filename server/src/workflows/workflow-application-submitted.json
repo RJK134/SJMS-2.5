@@ -1,0 +1,127 @@
+{
+  "name": "SJMS: Application Submitted",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "sjms/application/created",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "app-00001-trigger",
+      "name": "Webhook — Application",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "sjms-application-submitted"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "app-cond-01",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "application.created",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "app-00002-filter",
+      "name": "Filter — Created Only",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://api:3001/api/v1/applications/{{ $json.entityId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "app-00003-fetch",
+      "name": "Fetch Application",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 200],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $json.applicantId }}" },
+            { "name": "templateKey", "value": "application_confirmation" },
+            { "name": "channel", "value": "email" },
+            { "name": "data", "value": "={{ JSON.stringify({ programmeId: $json.programmeId, applicationRoute: $json.applicationRoute }) }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "app-00004-confirm",
+      "name": "Send Confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 200],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/support",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "studentId", "value": "={{ $('Fetch Application').item.json.applicantId }}" },
+            { "name": "category", "value": "ADMISSIONS" },
+            { "name": "subject", "value": "Review application {{ $('Fetch Application').item.json.id }}" },
+            { "name": "description", "value": "New application submitted — please review and process." },
+            { "name": "priority", "value": "HIGH" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "app-00005-task",
+      "name": "Create Admissions Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1170, 200],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    }
+  ],
+  "connections": {
+    "Webhook — Application": {
+      "main": [[{ "node": "Filter — Created Only", "type": "main", "index": 0 }]]
+    },
+    "Filter — Created Only": {
+      "main": [
+        [{ "node": "Fetch Application", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Fetch Application": {
+      "main": [[{ "node": "Send Confirmation", "type": "main", "index": 0 }]]
+    },
+    "Send Confirmation": {
+      "main": [[{ "node": "Create Admissions Task", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": [{ "name": "sjms" }, { "name": "phase-6" }, { "name": "admissions" }]
+}

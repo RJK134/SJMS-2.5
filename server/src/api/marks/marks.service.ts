@@ -34,7 +34,25 @@ export async function getById(id: string) {
 export async function create(data: Prisma.AssessmentAttemptUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('AssessmentAttempt', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('marks.created', { id: result.id });
+  const createEventMap: Record<string, string> = {
+    SUBMITTED: 'marks.submitted',
+    PENDING: 'marks.created',
+    GRADED: 'marks.graded',
+    RATIFIED: 'marks.ratified',
+  };
+  const createEvent = createEventMap[result.status] ?? 'marks.created';
+  emitEvent({
+    event: createEvent,
+    entityType: 'AssessmentAttempt',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      assessmentId: result.assessmentId,
+      moduleRegistrationId: result.moduleRegistrationId,
+      attemptNumber: result.attemptNumber,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -42,7 +60,58 @@ export async function update(id: string, data: Prisma.AssessmentAttemptUpdateInp
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('AssessmentAttempt', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('marks.updated', { id });
+
+  // Map AttemptStatus transitions to domain-specific marks events
+  if (result.status !== previous.status) {
+    const statusEventMap: Record<string, string> = {
+      SUBMITTED: 'marks.submitted',
+      MODERATED: 'marks.moderated',
+      CONFIRMED: 'marks.ratified',
+    };
+    const specificEvent = statusEventMap[result.status];
+    if (specificEvent) {
+      emitEvent({
+        event: specificEvent,
+        entityType: 'AssessmentAttempt',
+        entityId: id,
+        actorId: userId,
+        data: {
+          assessmentId: result.assessmentId,
+          moduleRegistrationId: result.moduleRegistrationId,
+          attemptNumber: result.attemptNumber,
+          rawMark: result.rawMark != null ? Number(result.rawMark) : null,
+          moderatedMark: result.moderatedMark != null ? Number(result.moderatedMark) : null,
+          finalMark: result.finalMark != null ? Number(result.finalMark) : null,
+          grade: result.grade,
+          previousStatus: previous.status,
+          newStatus: result.status,
+        },
+      });
+    }
+  }
+
+  // marks.released: finalMark and grade populated for the first time
+  // (typically after exam board ratification confirms the result)
+  if (
+    result.finalMark != null &&
+    result.grade != null &&
+    (previous.finalMark == null || previous.grade == null)
+  ) {
+    emitEvent({
+      event: 'marks.released',
+      entityType: 'AssessmentAttempt',
+      entityId: id,
+      actorId: userId,
+      data: {
+        assessmentId: result.assessmentId,
+        moduleRegistrationId: result.moduleRegistrationId,
+        finalMark: Number(result.finalMark),
+        grade: result.grade,
+        outcome: result.status,
+      },
+    });
+  }
+
   return result;
 }
 
@@ -50,5 +119,15 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('AssessmentAttempt', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('marks.deleted', { id });
+  emitEvent({
+    event: 'marks.deleted',
+    entityType: 'AssessmentAttempt',
+    entityId: id,
+    actorId: userId,
+    data: {
+      assessmentId: previous.assessmentId,
+      moduleRegistrationId: previous.moduleRegistrationId,
+      status: 'DELETED',
+    },
+  });
 }
