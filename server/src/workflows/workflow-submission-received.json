@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "path": "sjms/marks",
+        "path": "sjms/marks/submitted",
         "httpMethod": "POST",
         "responseMode": "lastNode",
         "options": {}
@@ -38,7 +38,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/marks/{{ $json.entityId }}",
+        "url": "=http://api:3001/api/v1/marks/{{ $json.entityId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
@@ -53,7 +53,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -76,7 +76,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "url": "=http://api:3001/api/v1/support",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,

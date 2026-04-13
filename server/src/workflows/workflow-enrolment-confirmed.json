@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "path": "sjms/enrolments",
+        "path": "sjms/enrolment/created",
         "httpMethod": "POST",
         "responseMode": "lastNode",
         "options": {}
@@ -38,7 +38,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/enrolments/{{ $json.entityId }}",
+        "url": "=http://api:3001/api/v1/enrolments/{{ $json.entityId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
@@ -53,7 +53,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -77,7 +77,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "url": "=http://api:3001/api/v1/support",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -102,7 +102,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "url": "=http://api:3001/api/v1/support",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -127,7 +127,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/ukvi?studentId={{ $('Fetch Enrolment').item.json.studentId }}",
+        "url": "=http://api:3001/api/v1/ukvi?studentId={{ $('Fetch Enrolment').item.json.studentId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}

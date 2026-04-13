@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "path": "sjms/enrolment-changes",
+        "path": "sjms/progression/decision-made",
         "httpMethod": "POST",
         "responseMode": "lastNode",
         "options": {}
@@ -23,7 +23,7 @@
             {
               "id": "prg-cond-01",
               "leftValue": "={{ $json.event }}",
-              "rightValue": "enrolment.status_changed",
+              "rightValue": "progression.decision_made",
               "operator": { "type": "string", "operation": "equals" }
             }
           ]
@@ -56,7 +56,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -79,7 +79,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -102,7 +102,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -125,7 +125,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,

@@ -148,7 +148,12 @@ must be resolved before Phase 9.
 **Deferral reason:** Cosmetic — no runtime impact.  
 **Resolution plan:** Fix in next routine maintenance pass.
 
-### KI-P6-005: Shared webhook paths — n8n single-path-per-workflow constraint — OPEN 2026-04-13
+### KI-P6-005: Shared webhook paths — n8n single-path-per-workflow constraint — CLOSED 2026-04-13
+
+**Closed by:** Phase 6.6 workflow remediation — every webhook-triggered workflow now has a unique path.  
+**Verification:** `grep -oh '"path": "[^"]*"' server/src/workflows/workflow-*.json | sort | uniq -d` returns empty.
+
+~~ORIGINAL ISSUE BELOW~~
 
 **Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
 **Location:** `server/src/workflows/workflow-*.json` (8 of 11 webhook-triggered workflows)  
@@ -180,7 +185,12 @@ must be resolved before Phase 9.
 **Deferral reason:** Communication payloads are best-effort placeholders; the exact contract will be finalised when the communications module is fully implemented.  
 **Resolution plan:** Phase 7 or 8 integration pass to align workflow payloads with the finalised communications API schema.
 
-### KI-P6-009: n8n v2 task runner blocks $env access in workflow expressions — OPEN 2026-04-13
+### KI-P6-009: n8n v2 task runner blocks $env access in workflow expressions — CLOSED 2026-04-13
+
+**Closed by:** Phase 6.6 — replaced `{{ $env.API_BASE_URL }}` with literal `http://api:3001` in all workflow JSON. Credential values use n8n credential store (not $env).  
+**Verification:** `grep '\$env' server/src/workflows/workflow-*.json | wc -l` returns 0.
+
+~~ORIGINAL ISSUE BELOW~~
 
 **Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
 **Location:** All 15 workflow JSON files; `docker-compose.yml` n8n service  
@@ -189,7 +199,12 @@ must be resolved before Phase 9.
 **Deferral reason:** Requires an architectural decision on how to inject runtime configuration into n8n workflows without `$env`.  
 **Resolution plan:** Phase 7 — options include (a) rewriting workflow HTTP Request nodes to use n8n's built-in credential expressions for the base URL, (b) using a Set node at the start of each workflow to inject configuration, or (c) pinning n8n to a v1.x release that permits `$env` access.
 
-### KI-P6-010: Credential template not linked to workflow nodes by provisioning script — OPEN 2026-04-13
+### KI-P6-010: Credential template not linked to workflow nodes by provisioning script — CLOSED 2026-04-13
+
+**Closed by:** Phase 6.6 — provisioning script now creates the credential via n8n API and injects the real ID into workflow JSON before import.  
+**Verification:** Run `npm run provision:workflows` — output shows credential created/found + workflows imported with real ID.
+
+~~ORIGINAL ISSUE BELOW~~
 
 **Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
 **Location:** `scripts/provision-n8n-workflows.ts`; all 15 workflow JSON files referencing `"id": "sjms-internal"`  

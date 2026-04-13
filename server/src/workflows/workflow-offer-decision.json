@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "path": "sjms/applications",
+        "path": "sjms/offer/decision-made",
         "httpMethod": "POST",
         "responseMode": "lastNode",
         "options": {}
@@ -23,7 +23,7 @@
             {
               "id": "ofd-cond-01",
               "leftValue": "={{ $json.event }}",
-              "rightValue": "application.status_changed",
+              "rightValue": "application.offer_made",
               "operator": { "type": "string", "operation": "equals" }
             }
           ]
@@ -38,7 +38,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/applications/{{ $json.entityId }}",
+        "url": "=http://api:3001/api/v1/applications/{{ $json.entityId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
@@ -70,7 +70,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -93,7 +93,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -116,7 +116,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,

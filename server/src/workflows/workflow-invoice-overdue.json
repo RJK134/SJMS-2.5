@@ -14,7 +14,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/finance?status=OVERDUE&limit=200",
+        "url": "=http://api:3001/api/v1/finance?status=OVERDUE&limit=200",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
@@ -49,7 +49,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -72,7 +72,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "url": "=http://api:3001/api/v1/support",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,

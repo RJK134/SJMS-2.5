@@ -39,24 +39,53 @@ const WEBHOOK_SECRET = rawWebhookSecret || '';
 const MAX_RETRIES = 3;
 
 // ── Event routing ───────────────────────────────────────────────────────────
-// Each n8n workflow listens on its own path to avoid shared-path conflicts.
+// Every event maps to a unique n8n webhook path so that each workflow can
+// listen on its own path without shared-path conflicts (resolves KI-P6-005).
+// Exact event name is checked first; prefix-based fallback handles events
+// that do not yet have a dedicated workflow.
 const EVENT_ROUTES: Record<string, string> = {
-  'enrolment.created':        '/webhook/sjms/enrolments',
-  'enrolment.updated':        '/webhook/sjms/enrolment-changes',
-  'enrolment.status_changed': '/webhook/sjms/enrolment-changes',
-  'enrolment.withdrawn':      '/webhook/sjms/enrolment-changes',
-  'application':              '/webhook/sjms/applications',
-  'marks':                    '/webhook/sjms/marks',
-  'attendance':               '/webhook/sjms/attendance',
-  'ukvi':                     '/webhook/sjms/ukvi',
-  'finance':                  '/webhook/sjms/finance',
-  'ec_claim':                 '/webhook/sjms/ec-claims',
-  'document':                 '/webhook/sjms/documents',
-  'exam_board':               '/webhook/sjms/exam-boards',
-  'offer_condition':          '/webhook/sjms/offers',
-  'module_registration':      '/webhook/sjms/module-registrations',
-  'support':                  '/webhook/sjms/support',
-  'programme_approval':       '/webhook/sjms/programme-approvals',
+  // ── Admissions (unique path per workflow) ──────────────────────────────
+  'application.created':              '/webhook/sjms/application/created',
+  'application.status_changed':       '/webhook/sjms/application/status-changed',
+  'application.offer_made':           '/webhook/sjms/offer/decision-made',
+  'application.withdrawn':            '/webhook/sjms/application/withdrawn',
+  'application.deleted':              '/webhook/sjms/application/deleted',
+
+  // ── Enrolment ─────────────────────────────────────────────────────────
+  'enrolment.created':                '/webhook/sjms/enrolment/created',
+  'enrolment.updated':                '/webhook/sjms/enrolment/updated',
+  'enrolment.status_changed':         '/webhook/sjms/enrolment/status-changed',
+  'enrolment.withdrawn':              '/webhook/sjms/enrolment/withdrawn',
+
+  // ── Assessment / Marks ────────────────────────────────────────────────
+  'marks.submitted':                  '/webhook/sjms/marks/submitted',
+  'marks.created':                    '/webhook/sjms/marks/created',
+  'marks.moderated':                  '/webhook/sjms/marks/moderated',
+  'marks.ratified':                   '/webhook/sjms/marks/ratified',
+  'marks.released':                   '/webhook/sjms/marks/released',
+  'marks.deleted':                    '/webhook/sjms/marks/deleted',
+
+  // ── Exam boards ───────────────────────────────────────────────────────
+  'exam_board.scheduled':             '/webhook/sjms/exam-board/scheduled',
+  'exam_board.updated':               '/webhook/sjms/exam-board/updated',
+  'exam_board.status_changed':        '/webhook/sjms/exam-board/status-changed',
+  'exam_board.deleted':               '/webhook/sjms/exam-board/deleted',
+
+  // ── UKVI ──────────────────────────────────────────────────────────────
+  'ukvi.record_created':              '/webhook/sjms/ukvi/record-created',
+  'ukvi.record_updated':              '/webhook/sjms/ukvi/record-updated',
+  'ukvi.compliance_changed':          '/webhook/sjms/ukvi/compliance-changed',
+  'ukvi.record_deleted':              '/webhook/sjms/ukvi/record-deleted',
+
+  // ── Prefix-based fallback for domains without dedicated workflows ─────
+  'finance':                          '/webhook/sjms/finance',
+  'ec_claim':                         '/webhook/sjms/ec-claim',
+  'document':                         '/webhook/sjms/document',
+  'offer_condition':                  '/webhook/sjms/offer-condition',
+  'module_registration':              '/webhook/sjms/module-registration',
+  'support':                          '/webhook/sjms/support',
+  'programme_approval':               '/webhook/sjms/programme-approval',
+  'attendance':                       '/webhook/sjms/attendance',
 };
 
 function resolveWebhookPath(eventType: string): string {

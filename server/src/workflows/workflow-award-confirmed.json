@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "path": "sjms/enrolment-changes",
+        "path": "sjms/enrolment/status-changed",
         "httpMethod": "POST",
         "responseMode": "lastNode",
         "options": {}
@@ -21,12 +21,19 @@
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
+              "id": "awd-cond-00",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "enrolment.status_changed",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
               "id": "awd-cond-01",
               "leftValue": "={{ $json.data?.newStatus }}",
               "rightValue": "COMPLETED",
               "operator": { "type": "string", "operation": "equals" }
             }
-          ]
+          ],
+          "combinator": "and"
         }
       },
       "id": "awd-00002-filter",
@@ -38,7 +45,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/enrolments/{{ $json.entityId }}",
+        "url": "=http://api:3001/api/v1/enrolments/{{ $json.entityId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
@@ -53,7 +60,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -76,7 +83,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "url": "=http://api:3001/api/v1/support",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
@@ -101,7 +108,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/v1/support",
+        "url": "=http://api:3001/api/v1/support",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,
