@@ -166,13 +166,10 @@ must be resolved before Phase 9.
 **Deferral reason:** Requires either a new `enquiry.created` event in the applications service or a design decision on how enquiries are distinguished from applications.  
 **Resolution plan:** Phase 8 — add enquiry event or merge enquiry logic into application-submitted workflow.
 
-### KI-P6-008: Communications API payload shape speculative — OPEN 2026-04-13
+### KI-P6-008: Communications API payload shape speculative — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
-**Location:** All 15 workflow JSON files (HTTP Request nodes POSTing to `/api/v1/communications`)  
-**Problem:** Workflows POST to `/api/v1/communications` with `templateKey`, `channel`, `recipientId`, and optional `data` fields. The communications module exists but its final POST request/response contract has not been validated against these payload shapes.  
-**Deferral reason:** Communication payloads are best-effort placeholders; the exact contract will be finalised when the communications module is fully implemented.  
-**Resolution plan:** Phase 7 or 8 integration pass to align workflow payloads with the finalised communications API schema.
+**Closed by:** Phase 7A — POST `/api/v1/communications/send` endpoint now accepts the workflow payload shape: `{ templateKey, channel, recipientId, data, bulk }`. Zod schema handles case-insensitive channel, optional recipientId for bulk sends, and string-or-object data field. Workflows updated to POST to `/send` sub-route.  
+**Verification:** `grep 'communications/send' server/src/workflows/workflow-*.json | wc -l` shows all 15 workflows use the correct endpoint.
 
 ### KI-P6-009: n8n v2 task runner blocks $env access in workflow expressions — CLOSED 2026-04-13
 
