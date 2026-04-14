@@ -38,6 +38,13 @@ export async function getById(id: string) {
   return prisma.communicationTemplate.findFirst({ where: { id, deletedAt: null } });
 }
 
+/** Exact match by templateCode (used by the workflow send endpoint). */
+export async function getByCode(templateCode: string) {
+  return prisma.communicationTemplate.findFirst({
+    where: { templateCode, deletedAt: null, isActive: true },
+  });
+}
+
 export async function create(data: Prisma.CommunicationTemplateUncheckedCreateInput) {
   return prisma.communicationTemplate.create({ data });
 }

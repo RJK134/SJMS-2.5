@@ -53,7 +53,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://api:3001/api/v1/communications",
+        "url": "=http://api:3001/api/v1/communications/send",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendBody": true,

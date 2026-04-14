@@ -556,6 +556,14 @@ enum SupportCategory {
   COMPLAINTS
   IT
   OTHER
+  // Extended categories for n8n workflow automation tasks
+  ADMISSIONS
+  REGISTRY
+  FINANCE
+  IT_SERVICES
+  LIBRARY
+  ASSESSMENT
+  COMPLIANCE
 }
 
 enum SupportPriority {
@@ -804,6 +812,13 @@ enum HESAReturnStatus {
   VALIDATION
   SUBMITTED
   ACCEPTED
+  REJECTED
+}
+
+enum HESANotificationStatus {
+  PENDING
+  SUBMITTED
+  ACKNOWLEDGED
   REJECTED
 }
 
@@ -4339,6 +4354,27 @@ model HESAReturn {
 
   @@map("hesa_returns")
   @@index([academicYear])
+}
+
+model HESANotification {
+  id              String                @id @default(cuid())
+  entityType      String                @map("entity_type")
+  entityId        String                @map("entity_id")
+  changeType      String                @map("change_type")
+  status          HESANotificationStatus @default(PENDING)
+  submittedAt     DateTime?             @map("submitted_at")
+  acknowledgedAt  DateTime?             @map("acknowledged_at")
+  payload         Json?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdBy String?   @map("created_by")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("hesa_notifications")
+  @@index([entityType, entityId])
+  @@index([status])
 }
 
 model HESASnapshot {

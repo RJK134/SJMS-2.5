@@ -1,9 +1,11 @@
 import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import * as repo from '../../repositories/communicationTemplate.repository';
+import * as logRepo from '../../repositories/communicationLog.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
+import logger from '../../utils/logger';
 
 export interface CommunicationListQuery {
   cursor?: string;
@@ -49,4 +51,67 @@ export async function remove(id: string, userId: string, req: Request) {
   await repo.softDelete(id);
   await logAudit('CommunicationTemplate', id, 'DELETE', userId, previous, null, req);
   await emitEvent('communications.deleted', { id });
+}
+
+// ── Send endpoint (workflow-facing) ─────────────────────────────────────
+
+export interface SendRequest {
+  templateKey: string;
+  channel: 'EMAIL' | 'SMS' | 'PORTAL' | 'LETTER' | 'PUSH';
+  recipientId?: string;
+  data?: Record<string, unknown>;
+  bulk?: boolean;
+}
+
+/**
+ * Queue a communication for delivery. Creates a CommunicationLog record
+ * with status PENDING, then attempts to resolve the template and deliver.
+ *
+ * This is the endpoint n8n workflows call to send notifications.
+ */
+export async function send(input: SendRequest, userId: string, req: Request) {
+  // 1. Resolve template by exact templateCode match (not fuzzy search)
+  const template = await repo.getByCode(input.templateKey);
+
+  // 2. Create delivery log
+  const logEntry = await logRepo.create({
+    recipientId: input.recipientId ?? 'bulk',
+    recipientType: input.recipientId ? 'Person' : 'Bulk',
+    templateId: template?.id ?? null,
+    channel: input.channel,
+    subject: template?.subject ?? `[${input.templateKey}]`,
+    body: template?.body ?? `Template "${input.templateKey}" — placeholder content`,
+    deliveryStatus: 'PENDING',
+    createdBy: userId,
+  });
+
+  await logAudit('CommunicationLog', logEntry.id, 'CREATE', userId, null, logEntry, req);
+
+  // 3. Attempt delivery (placeholder — actual SMTP/SMS integration in Phase 8)
+  let deliveryStatus: 'SENT' | 'FAILED' = 'SENT';
+  try {
+    // TODO(Phase 8): Wire actual email/SMS delivery via SMTP_* env vars
+    logger.info(`Communication queued: ${input.channel} to ${input.recipientId} (template: ${input.templateKey})`);
+    await logRepo.updateStatus(logEntry.id, 'SENT');
+  } catch (err) {
+    deliveryStatus = 'FAILED';
+    logger.error(`Communication delivery failed: ${(err as Error).message}`);
+    await logRepo.updateStatus(logEntry.id, 'FAILED');
+  }
+
+  emitEvent({
+    event: deliveryStatus === 'SENT' ? 'communication.sent' : 'communication.failed',
+    entityType: 'CommunicationLog',
+    entityId: logEntry.id,
+    actorId: userId,
+    data: {
+      templateKey: input.templateKey,
+      channel: input.channel,
+      recipientId: input.recipientId,
+      deliveryStatus,
+    },
+  });
+
+  // Return the log entry with current delivery status
+  return { ...logEntry, deliveryStatus };
 }

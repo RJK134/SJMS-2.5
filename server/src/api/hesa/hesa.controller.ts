@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
-import * as service from './communications.service';
+import * as service from './hesa.service';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.list(req.query as unknown as service.CommunicationListQuery);
+    const result = await service.list(req.query as unknown as service.HesaNotificationListQuery);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 }
@@ -36,12 +36,5 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     const id = req.params.id as string;
     await service.remove(id, req.user?.sub ?? 'system', req);
     res.status(204).send();
-  } catch (err) { next(err); }
-}
-
-export async function send(req: Request, res: Response, next: NextFunction) {
-  try {
-    const data = await service.send(req.body as service.SendRequest, req.user?.sub ?? 'system', req);
-    res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
 }
