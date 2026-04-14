@@ -42,6 +42,16 @@ redisdata/
 miniodata/
 n8ndata/
 
+# TLS certificates and private keys — NEVER commit
+docker/nginx/certs/*.pem
+docker/nginx/certs/*.crt
+docker/nginx/certs/*.key
+docker/nginx/certs/*.bak
+*.pem
+*.crt
+*.key
+!docker/nginx/certs/.gitkeep
+
 # Test coverage
 coverage/
 .nyc_output/
