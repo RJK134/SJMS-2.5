@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save } from 'lucide-react';
-import { useList, useUpdate } from '@/hooks/useApi';
+import { useList, useDetail, useUpdate } from '@/hooks/useApi';
 
 interface Application {
   id: string;
@@ -20,9 +20,13 @@ interface Application {
 }
 
 export default function EditApplication() {
-  const { data: apps, isLoading } = useList<Application>('my-applications', '/v1/applications', { limit: 1 });
-  const app = apps?.data?.[0];
-  const updateApp = useUpdate('my-applications', '/v1/applications');
+  // Step 1: get application ID via scoped list (applicant sees only their own)
+  const { data: apps } = useList<Application>('my-applications', '/v1/applications', { limit: 1 });
+  const appId = apps?.data?.[0]?.id;
+  // Step 2: fetch full detail (includes qualifications, references, conditions)
+  const { data: detail, isLoading } = useDetail<Application>('my-application-detail', '/v1/applications', appId);
+  const app = detail?.data;
+  const updateApp = useUpdate('my-application-detail', '/v1/applications');
   const [, navigate] = useLocation();
 
   const [personalStatement, setPersonalStatement] = useState('');
