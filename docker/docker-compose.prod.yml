@@ -1,7 +1,22 @@
-# docker/docker-compose.prod.yml
-# Production overrides — use with:
+# ─────────────────────────────────────────────────────────────────────────────
+# SJMS 2.5 — Production Docker Compose Overlay
+#
+# Usage:
 #   docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d
-# Never commit secrets — all sensitive values come from .env or Docker secrets
+#
+# TLS Modes (choose ONE):
+#
+#   (a) Let's Encrypt — set TLS_MODE=letsencrypt in .env
+#       Certbot issues and renews certificates automatically.
+#       Certificates are stored in the certbot_conf volume.
+#       Nginx reads from /etc/letsencrypt/live/${DOMAIN}/.
+#
+#   (b) Institutional CA — set TLS_MODE=institutional in .env
+#       Place cert files in docker/nginx/certs/ (or mount a host path).
+#       Nginx reads from /etc/nginx/certs/.
+#
+# Never commit real certificates or private keys to the repository.
+# ─────────────────────────────────────────────────────────────────────────────
 
 services:
   api:
@@ -39,6 +54,9 @@ services:
 
   keycloak:
     restart: unless-stopped
+    environment:
+      KC_PROXY: edge
+      KC_HOSTNAME_STRICT: "false"
     deploy:
       resources:
         limits:
@@ -51,6 +69,8 @@ services:
       N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
       N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
       N8N_SECURE_COOKIE: "true"
+    # Remove public port — n8n is only accessible via nginx reverse proxy
+    ports: !override []
     deploy:
       resources:
         limits:
@@ -58,21 +78,63 @@ services:
 
   minio:
     restart: unless-stopped
+    # Remove public ports — MinIO is only accessible via nginx reverse proxy
+    ports: !override
+      - "9001:9001"
     deploy:
       resources:
         limits:
           memory: 512M
 
+  client:
+    restart: unless-stopped
+    # Remove public port — client is only accessible via nginx reverse proxy
+    ports: !override []
+
   nginx:
     restart: unless-stopped
     volumes:
+      # Production nginx config (TLS-enabled)
       - ./docker/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      # ACME challenge webroot (shared with certbot)
+      - certbot_webroot:/var/www/certbot:ro
+      # TLS certificates — mount path depends on TLS_MODE
+      # For Let's Encrypt: the certbot_conf volume provides /etc/letsencrypt
+      # For Institutional CA: mount host certs to /etc/nginx/certs
+      - certbot_conf:/etc/letsencrypt:ro
       - ./docker/nginx/certs:/etc/nginx/certs:ro
+      # Nginx logs
       - nginx_logs:/var/log/nginx
     ports:
       - "80:80"
       - "443:443"
 
+  # ── Certbot (Let's Encrypt only) ─────────────────────────────────
+  # This service is only needed when TLS_MODE=letsencrypt.
+  # It runs once to issue the certificate, then exits.
+  # Renewal is handled by a cron job or periodic docker compose run.
+  certbot:
+    image: certbot/certbot:latest
+    container_name: sjms-certbot
+    profiles:
+      - letsencrypt
+    volumes:
+      - certbot_webroot:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    # Initial issue (run manually — see OPERATIONS-SSL-RUNBOOK.md):
+    #   docker compose --profile letsencrypt run --rm certbot certonly \
+    #     --webroot -w /var/www/certbot \
+    #     -d ${DOMAIN} --agree-tos --email ${CERTBOT_EMAIL} --non-interactive
+    #
+    # Renewal (cron or manual):
+    #   docker compose --profile letsencrypt run --rm certbot renew --quiet
+    #   docker compose exec nginx nginx -s reload
+    entrypoint: ["echo", "Certbot ready. Run 'docker compose --profile letsencrypt run --rm certbot certonly ...' to issue certificates."]
+    networks:
+      - sjms-network
+
 volumes:
   postgres_data_prod:
   nginx_logs:
+  certbot_webroot:
+  certbot_conf:
