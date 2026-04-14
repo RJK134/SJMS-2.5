@@ -20,9 +20,9 @@ export interface MeetingFilters {
 
 export async function listCommittees(filters: CommitteeFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.CommitteeWhereInput = {
-    status: { not: 'inactive' },
+    // Use requested status filter but never allow 'inactive' (soft-deleted) to leak through
+    status: filters.status && filters.status !== 'inactive' ? filters.status : { not: 'inactive' },
     ...(filters.committeeType && { committeeType: filters.committeeType as any }),
-    ...(filters.status && { status: filters.status }),
     ...(filters.search && {
       OR: [
         { committeeName: { contains: filters.search, mode: 'insensitive' as const } },

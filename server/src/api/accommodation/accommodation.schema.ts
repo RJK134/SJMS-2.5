@@ -17,7 +17,7 @@ export const querySchema = z.object({
 export const blockCreateSchema = z.object({
   blockName: z.string().min(1),
   address: z.string().min(1),
-  totalRooms: z.number().int().min(0).optional(),
+  totalRooms: z.number().int().min(0),
   roomTypes: z.any().optional(),
   facilities: z.any().optional(),
   contactEmail: z.string().email().optional(),

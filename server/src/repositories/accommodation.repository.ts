@@ -26,8 +26,8 @@ export interface BookingFilters {
 
 export async function listBlocks(filters: BlockFilters = {}, pagination: CursorPaginationParams) {
   const where: Prisma.AccommodationBlockWhereInput = {
-    // No deletedAt field — exclude inactive blocks from default listing
-    ...(filters.status && { status: filters.status }),
+    // No deletedAt field — exclude inactive blocks from default listing via status
+    status: filters.status ?? { not: 'inactive' },
     ...(filters.search && {
       OR: [
         { blockName: { contains: filters.search, mode: 'insensitive' as const } },
@@ -51,8 +51,8 @@ export async function listBlocks(filters: BlockFilters = {}, pagination: CursorP
 }
 
 export async function getBlockById(id: string) {
-  return prisma.accommodationBlock.findUnique({
-    where: { id },
+  return prisma.accommodationBlock.findFirst({
+    where: { id, status: { not: 'inactive' } },
     include: {
       rooms: { orderBy: { roomNumber: 'asc' } },
       applications: { include: { student: { include: { person: true } } } },
