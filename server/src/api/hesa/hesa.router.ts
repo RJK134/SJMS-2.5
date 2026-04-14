@@ -12,3 +12,4 @@ hesaRouter.get('/notifications', validateQuery(querySchema), requireRole(...ROLE
 hesaRouter.get('/notifications/:id', validateParams(paramsSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.getById);
 hesaRouter.post('/notifications', validate(createSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.create);
 hesaRouter.patch('/notifications/:id', validateParams(paramsSchema), validate(updateSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.update);
+hesaRouter.delete('/notifications/:id', validateParams(paramsSchema), requireRole(...ROLE_GROUPS.SUPER_ADMIN), ctrl.remove);

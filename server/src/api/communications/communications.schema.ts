@@ -24,8 +24,12 @@ export const updateSchema = createSchema.partial();
 /** Schema for the workflow-facing send endpoint (POST /communications/send). */
 export const sendSchema = z.object({
   templateKey: z.string().min(1),
-  channel: z.enum(['EMAIL', 'SMS', 'PORTAL', 'LETTER', 'PUSH']).default('EMAIL'),
-  recipientId: z.string().min(1),
-  data: z.record(z.unknown()).optional(),
+  channel: z.string().transform((v) => v.toUpperCase()).pipe(
+    z.enum(['EMAIL', 'SMS', 'PORTAL', 'LETTER', 'PUSH']),
+  ).default('EMAIL'),
+  recipientId: z.string().optional(),
+  data: z.union([z.record(z.unknown()), z.string()]).optional().transform((v) =>
+    typeof v === 'string' ? JSON.parse(v) as Record<string, unknown> : v,
+  ),
   bulk: z.coerce.boolean().optional(),
 });

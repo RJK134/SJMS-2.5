@@ -58,7 +58,7 @@ export async function remove(id: string, userId: string, req: Request) {
 export interface SendRequest {
   templateKey: string;
   channel: 'EMAIL' | 'SMS' | 'PORTAL' | 'LETTER' | 'PUSH';
-  recipientId: string;
+  recipientId?: string;
   data?: Record<string, unknown>;
   bulk?: boolean;
 }
@@ -75,8 +75,8 @@ export async function send(input: SendRequest, userId: string, req: Request) {
 
   // 2. Create delivery log
   const logEntry = await logRepo.create({
-    recipientId: input.recipientId,
-    recipientType: 'Person',
+    recipientId: input.recipientId ?? 'bulk',
+    recipientType: input.recipientId ? 'Person' : 'Bulk',
     templateId: template?.id ?? null,
     channel: input.channel,
     subject: template?.subject ?? `[${input.templateKey}]`,
