@@ -48,9 +48,8 @@ Work was mechanical with clean internal verification. Blocking Phase 4 to
 retro-run BugBot on a merged branch provides low return for the delay cost.
 
 **Resolution plan:**  
-Run a Cursor BugBot review pass on the `e2848c4` commit (or the Phase 4 PR
-when it includes Phase 3 code) before the Phase 9 QA gate. Any HIGH findings
-must be resolved before Phase 9.
+Run BugBot retroactively on Phase 3 code during Phase 9 QA gate. Any HIGH findings
+must be resolved before Phase 9 completion.
 
 **Detection command:**
 ```bash
@@ -60,82 +59,46 @@ must be resolved before Phase 9.
 
 ---
 
-### KI-P5-001: TicketDetail interaction timeline — OPEN 2026-04-13
+### KI-P5-001: TicketDetail interaction timeline — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Route:** `/admin/support/tickets/:id`  
-**Problem:** SupportInteraction relation not included in `/v1/support/:id` response. Timeline shows empty state.  
-**Deferral reason:** Requires server-side `include: { interactions: true }` in `support.repository.ts`. Not a frontend-only fix.  
-**Resolution plan:** Phase 6 or 8 — add include and render timeline.
+**CLOSED:** 2026-04-14 — commit aea17f2 — Interaction timeline rendered from API response with icons, type labels, timestamps. Backend already included interactions; frontend now displays them.
 
-### KI-P5-002: ModuleDetail Assessment/Students tabs — OPEN 2026-04-13
+### KI-P5-002: ModuleDetail Assessment/Students tabs — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Route:** `/admin/modules/:id` (Assessments and Students tabs)  
-**Problem:** Tabs show placeholder text. Require new queries (assessments by module, registrations by module).  
-**Deferral reason:** Backend endpoints exist but no module-scoped query is wired in the UI.  
-**Resolution plan:** Phase 8.
+**CLOSED:** 2026-04-14 — commit aea17f2 — Assessments tab wired to `/v1/assessments?moduleId=`, Students tab wired to `/v1/module-registrations?moduleId=`.
 
-### KI-P5-003: ProgrammeDetail "Submit for Approval" button — OPEN 2026-04-13
+### KI-P5-003: ProgrammeDetail "Submit for Approval" button — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Route:** `/admin/programmes/:id` (Approval tab)  
-**Problem:** Button rendered but not wired to a mutation endpoint.  
-**Deferral reason:** Approval workflow needs form design for stage + comments.  
-**Resolution plan:** Phase 8.
+**CLOSED:** 2026-04-14 — commit aea17f2 — Button wired with dialog (stage select, comments textarea), POSTs to `/v1/programme-approvals`.
 
-### KI-P5-004: EditApplication applicant page — OPEN 2026-04-13
+### KI-P5-004: EditApplication applicant page — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Route:** `/applicant/application/edit`  
-**Problem:** Stub placeholder — no form, no edit functionality.  
-**Deferral reason:** Complex state management for post-submission editing.  
-**Resolution plan:** Phase 8.
+**CLOSED:** 2026-04-14 — commit aea17f2, 55c7ba4 — Full edit form with personal statement, academic year. Status-gated (DRAFT/SUBMITTED only). Uses useDetail for full record.
 
-### KI-P5-005: Applicant stub pages — OPEN 2026-04-13
+### KI-P5-005: Applicant stub pages — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Routes:** `/applicant/courses`, `/applicant/events`, `/applicant/contact`, `/applicant/documents`  
-**Problem:** Placeholder stub components — not wired to API endpoints.  
-**Deferral reason:** Lower priority than core application/offers flow.  
-**Resolution plan:** Phase 8.
+**CLOSED:** 2026-04-14 — commit aea17f2 — CourseSearch wired to `/v1/programmes`, Events to `/v1/admissions-events`, UploadDocuments to `/v1/documents`. ContactAdmissions is static (appropriate).
 
-### KI-P5-006: DataTable cursor pagination does not accumulate — OPEN 2026-04-13
+### KI-P5-006: DataTable cursor pagination does not accumulate — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Routes:** All list pages using DataTable  
-**Problem:** "Load more" button re-fetches with new cursor but loses previous page data. True infinite scroll / append needs `useInfiniteQuery`.  
-**Deferral reason:** Functional for pre-production. UX improvement deferred.  
-**Resolution plan:** Phase 9 (UX hardening).
+**CLOSED:** 2026-04-14 — commit 8114dca — New `useInfiniteList` hook wraps `useInfiniteQuery`. DataTable gains IntersectionObserver sentinel for auto-loading. Respects `prefers-reduced-motion` with manual fallback. StudentList migrated as reference implementation.
 
-### KI-P5-007: Accommodation, Governance, Finance advanced stubs — OPEN 2026-04-13
+### KI-P5-007: Accommodation, Governance, Finance advanced stubs — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Routes:** `/admin/accommodation/*`, `/admin/governance/*`, `/admin/finance/invoicing`, `/admin/finance/sponsors`, `/admin/finance/bursaries`, `/admin/finance/refunds`  
-**Problem:** Placeholder stub pages — backend modules incomplete or absent.  
-**Deferral reason:** Not in Phase 5 scope.  
-**Resolution plan:** Phase 8.
+**CLOSED:** 2026-04-14 — commit de89b32 — New accommodation API module (5 files: repo, schema, service, controller, router) and governance API module (5 files). 9 client pages wired: Blocks, Rooms, Bookings, Committees, Meetings, Invoicing, Sponsors, Bursaries, Refunds.
 
-### KI-P5-008: EventsManagement "New Event" button — OPEN 2026-04-13
+### KI-P5-008: EventsManagement "New Event" button — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 5 — Frontend Portal Wiring  
-**Route:** `/admin/admissions/events`  
-**Problem:** Button rendered but onClick handler is empty.  
-**Deferral reason:** Needs create form + POST endpoint wiring.  
-**Resolution plan:** Phase 8.
+**CLOSED:** 2026-04-14 — commit aea17f2 — Create dialog with title, event type, date, venue, capacity fields. POSTs to `/v1/admissions-events`.
 
 ### KI-P6-002: webhooks.ts response body not consumed before retry — CLOSED 2026-04-13
 
 **Closed by:** Batch 6C — `res.body?.cancel()` added before retry; `res.text()` consumed on final failure.  
 **Verification:** `grep 'res.body?.cancel\|res.text()' server/src/utils/webhooks.ts` shows both calls.
 
-### KI-P6-003: UKVI attendance threshold (70%) hardcoded magic number — OPEN 2026-04-13
+### KI-P6-003: UKVI attendance threshold (70%) hardcoded magic number — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
-**Location:** `server/src/api/attendance/attendance.service.ts` `emitUkviBreach()`  
-**Problem:** The 70% UKVI attendance threshold is hardcoded. Cannot be changed without a code deployment; should be configuration-driven via the SystemSetting table.  
-**Deferral reason:** Functional for current use; config-driven thresholds are a Phase 7/8 concern.  
-**Resolution plan:** Phase 7 or 8 — add to system configuration table.
+**CLOSED:** 2026-04-14 — commit e8befbb — Threshold now read from SystemSetting table (key: `ukvi.attendance.threshold`), falling back to default 70 if unset. `getUkviAttendanceThreshold()` async function added.
 
 ### KI-P6-004: webhooks.ts docstring says "3 retries" but logic performs 4 attempts — CLOSED 2026-04-13
 
@@ -158,13 +121,9 @@ must be resolved before Phase 9.
 
 **Closed by:** Phase 6.6 — IF node now checks both `event == 'enrolment.status_changed'` AND `data.newStatus == 'COMPLETED'` with `and` combinator.
 
-### KI-P6-007: enquiry-received workflow has no event source — OPEN 2026-04-13
+### KI-P6-007: enquiry-received workflow has no event source — CLOSED 2026-04-14
 
-**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
-**Location:** `server/src/workflows/workflow-enquiry-received.json`  
-**Problem:** The enquiry-received workflow now has its own unique path (`sjms/enquiry/created`) after Phase 6.6, but no service currently emits an `enquiry.created` event that would route there. The workflow is correctly defined but inactive pending a dedicated enquiry event.  
-**Deferral reason:** Requires either a new `enquiry.created` event in the applications service or a design decision on how enquiries are distinguished from applications.  
-**Resolution plan:** Phase 8 — add enquiry event or merge enquiry logic into application-submitted workflow.
+**CLOSED:** 2026-04-14 — commit 4d6ce55 — Direct applications (applicationRoute=DIRECT) now emit `enquiry.created` alongside `application.created`. EVENT_ROUTES updated with unique path `/webhook/sjms/enquiry/created`.
 
 ### KI-P6-008: Communications API payload shape speculative — CLOSED 2026-04-14
 

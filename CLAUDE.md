@@ -282,18 +282,20 @@ At session end or architectural questions, prepare:
 
 ---
 
-## Phase 8 — AMBER/GREEN Workstreams
+## Phase 8 — AMBER/GREEN Workstreams (COMPLETE)
 
 **Branch:** `phase-8/amber-green-workstreams`
-**Objective:** Resolve 11 open Known Issues from Phases 3–7.
-**Task list:** See `docs/BUILD-QUEUE.md`.
-**Acceptance:** All 11 KIs marked CLOSED or explicitly carried to Phase 9 with justification.
+**PR:** #36
+**Tag:** `phase-8-complete`
 
-| Batch | Focus | KIs Resolved |
-|-------|-------|-------------|
-| 8A | Frontend wiring — 6 UI stubs | KI-P5-001, 002, 003, 004, 005, 008 |
-| 8B | DataTable infinite scroll | KI-P5-006 |
-| 8C | Backend stub completion | KI-P5-007 |
-| 8D | UKVI threshold config | KI-P6-003 |
-| 8E | Enquiry workflow event | KI-P6-007 |
-| 8F | Phase closeout and tag | — |
+| Batch | Focus | Commit | KIs Resolved |
+|-------|-------|--------|-------------|
+| 8A | Frontend wiring — 6 UI stubs | aea17f2 | KI-P5-001, 002, 003, 004, 005, 008 |
+| 8B | DataTable infinite scroll | 8114dca | KI-P5-006 |
+| 8C | Backend stub completion | de89b32 | KI-P5-007 |
+| 8D | UKVI threshold externalisation | e8befbb | KI-P6-003 |
+| 8E | Enquiry workflow event source | 4d6ce55 | KI-P6-007 |
+| 8F | Phase closeout and tag | — | — |
+
+**KIs resolved:** 11 total
+**KIs remaining open:** KI-P3-001 (deferred to Phase 9 QA gate)
