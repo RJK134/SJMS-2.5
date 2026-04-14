@@ -79,8 +79,7 @@ services:
   minio:
     restart: unless-stopped
     # Remove public ports — MinIO is only accessible via nginx reverse proxy
-    ports: !override
-      - "9001:9001"
+    ports: !override []
     deploy:
       resources:
         limits:

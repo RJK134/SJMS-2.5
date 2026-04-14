@@ -13,9 +13,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-# Load env
+# Load env (grep-based to avoid bash syntax issues in .env)
 if [ -f .env ]; then
-  set -a; source .env; set +a
+  DOMAIN=$(grep '^DOMAIN=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+  CERTBOT_EMAIL=$(grep '^CERTBOT_EMAIL=' .env 2>/dev/null | head -1 | cut -d= -f2-)
 fi
 
 DOMAIN="${DOMAIN:?DOMAIN must be set in .env}"
@@ -28,15 +29,23 @@ echo "  Email:  ${EMAIL}"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
 
+# Step 0: Bootstrap — generate temporary self-signed cert if none exists
+# This solves the chicken-and-egg: nginx needs certs to start HTTPS,
+# but certbot needs nginx running to serve ACME challenges.
+echo "[0/5] Running TLS bootstrap..."
+./scripts/nginx-bootstrap.sh
+
 # Step 1: Ensure nginx is running (for ACME challenge)
-echo "[1/4] Checking nginx is running..."
+echo "[1/5] Checking nginx is running..."
 docker compose ps nginx | grep -q "Up" || {
-  echo "ERROR: nginx is not running. Start with: docker compose up -d nginx"
-  exit 1
+  echo "  nginx not running — starting production stack..."
+  docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d nginx
+  echo "  Waiting 5 seconds for nginx to start..."
+  sleep 5
 }
 
 # Step 2: Issue certificate via certbot webroot
-echo "[2/4] Requesting certificate from Let's Encrypt..."
+echo "[2/5] Requesting certificate from Let's Encrypt..."
 docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml \
   --profile letsencrypt run --rm certbot certonly \
   --webroot -w /var/www/certbot \
@@ -45,16 +54,22 @@ docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml \
   --email "${EMAIL}" \
   --non-interactive
 
-# Step 3: Create symlinks so nginx can find the certs at the expected paths
-echo "[3/4] Linking certificates for nginx..."
+# Step 3: Copy LE certs to the nginx cert path (overwriting bootstrap self-signed)
+echo "[3/5] Installing certificates for nginx..."
 docker compose exec nginx sh -c "
   ln -sf /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/nginx/certs/fullchain.pem 2>/dev/null || true
   ln -sf /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/nginx/certs/privkey.pem 2>/dev/null || true
 "
 
-# Step 4: Reload nginx to pick up new certificate
-echo "[4/4] Reloading nginx..."
+# Step 4: Reload nginx to pick up the real certificate
+echo "[4/5] Reloading nginx..."
 docker compose exec nginx nginx -s reload
+
+# Step 5: Verify
+echo "[5/5] Verifying certificate..."
+echo | openssl s_client -connect "${DOMAIN}:443" -servername "${DOMAIN}" 2>/dev/null \
+  | openssl x509 -noout -subject -issuer -dates 2>/dev/null \
+  | sed 's/^/  /' || echo "  (Could not verify — check DNS and connectivity)"
 
 echo ""
 echo "✅ Certificate issued and nginx reloaded."
