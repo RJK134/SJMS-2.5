@@ -138,7 +138,162 @@ Events without a dedicated workflow fall back to prefix-based routing (e.g. `fin
 - **One webhook path per workflow** — enforced by EVENT_ROUTES exact-match routing
 - Workflow JSON files are the source of truth — the n8n visual editor may be used for testing but changes must be exported back to version control
 
-### Remaining AMBER Items (deferred to Phase 7/8)
+### Remaining AMBER Items (deferred to Phase 8)
 - KI-P6-003: UKVI attendance threshold hardcoded (should be config-driven)
 - KI-P6-007: enquiry-received workflow has no event source yet
-- KI-P6-008: Communications API payload shape speculative
+- ~~KI-P6-008: Communications API payload shape speculative~~ — CLOSED 2026-04-14 (Phase 7A)
+
+---
+
+## Autonomous Build Loop
+
+Claude Code follows this 10-step loop for every batch in a phase:
+
+1. **Read** `docs/BUILD-QUEUE.md` → identify current task
+2. **Implement** the task (one batch at a time)
+3. **Run** `docs/VERIFICATION-PROTOCOL.md` gates
+4. **Fix** any RED items
+5. **Commit** with conventional commit format
+6. **Trigger BugBot:** `gh pr comment <PR> --body "@cursor-bugbot please review"`
+7. **Check BugBot:** `gh pr view <PR> --comments | tail -80`
+8. **Fix HIGH findings** → re-trigger BugBot if needed
+9. **Update** `docs/BUILD-QUEUE.md` task status
+10. **Proceed** to next task OR **stop** if STOP condition reached
+
+### Commit Format
+
+```
+<type>(<scope>): <description>
+```
+
+- **Types:** `feat`, `fix`, `refactor`, `chore`, `docs`, `test`
+- **Scope:** module name, phase, or domain (e.g., `admissions`, `phase-8`, `hesa`)
+- **Description:** present tense, British English, ≤72 chars
+
+Examples:
+```
+feat(accommodation): add accommodation module and repository
+fix(support): include interactions in ticket detail response (KI-P5-001)
+chore(docs): mark Phase 8 complete, update BUILD-QUEUE
+```
+
+### PR Format
+
+```
+gh pr create \
+  --title "Phase N: <description>" \
+  --body "$(cat <<'EOF'
+## Summary
+<one paragraph summary>
+
+## Batches completed
+- Batch NA — description (commits: abc1234, def5678)
+
+## Acceptance criteria
+- [ ] npx tsc --noEmit → 0 errors
+- [ ] No hard deletes
+- [ ] No direct Prisma imports in services
+- [ ] British English throughout
+- [ ] BugBot HIGH findings: 0 open
+- [ ] GitGuardian: No secrets detected
+
+## Known Issues resolved
+- KI-XXX-XXX: description
+
+## Known Issues remaining open
+- KI-XXX-XXX: description — deferral reason
+
+🤖 Generated with Claude Code
+EOF
+)"
+```
+
+### BugBot Severity Response
+
+| Finding | Action |
+|---------|--------|
+| HIGH | Fix immediately. Commit `fix(<scope>): address BugBot finding — <description>`. Re-trigger BugBot. |
+| MEDIUM | Fix if < 15 min effort. Otherwise log to KNOWN_ISSUES.md as AMBER. |
+| LOW | Log to KNOWN_ISSUES.md as AMBER. Do not block merge. |
+| False positive | Add comment: "False positive — <reason>". Proceed. |
+
+If BugBot has not responded after 5 minutes, proceed with merge. Note in PR: "BugBot review pending at merge time."
+
+### STOP Conditions
+
+Stop and wait for Richard if ANY of these occur:
+
+1. GitGuardian finds a secret in any commit
+2. A migration SQL contains `DROP TABLE` or `DROP COLUMN`
+3. BugBot raises the same HIGH finding across 3+ rounds
+4. TypeScript errors exceed 10 and cannot be traced to current batch
+5. A Prisma migration fails due to schema/database drift
+6. Any task requires modifying `auth.ts`, `roles.ts`, or established Prisma models with existing data patterns
+7. Any task in Phase 9 scope (production deployment, SSL, live data)
+8. An architectural decision is required
+
+When stopped:
+```
+STOP — [reason]
+Last commit: [hash]
+Branch: [name]
+What was in progress: [description]
+What Richard needs to decide: [specific question]
+```
+
+### KNOWN_ISSUES.md Entry Format
+
+```markdown
+### KI-P<phase>-<seq>: <short description> — OPEN <YYYY-MM-DD>
+
+**Severity:** HIGH / AMBER / LOW
+**Phase introduced:** Phase N — <phase name>
+**File(s):** `path/to/file.ts`
+**Problem:** <one paragraph description>
+**Deferral reason:** <why this is not fixed now>
+**Resolution plan:** Phase N or specific condition.
+
+**Detection command:**
+\```bash
+# command to detect if issue still exists
+\```
+```
+
+When closing: append `**CLOSED:** <YYYY-MM-DD> — <commit hash> — <one line description of fix>`
+
+### Branch Naming
+
+```
+phase-<N>/<short-description>        → main phase branch
+phase-<N>.<sub>/<description>        → sub-phase
+fix/<ki-id>-<short-description>      → targeted KI fix
+chore/<description>                  → documentation, tooling
+```
+
+### Perplexity Handover Protocol
+
+At session end or architectural questions, prepare:
+- Current HEAD — commit hash and branch
+- What was completed — batches, commits, files changed
+- Open KIs — full list with IDs
+- What is NEXT — exact task from BUILD-QUEUE.md
+- Any STOP conditions — with the specific question for Richard
+- Verification state — last tsc result, BugBot status
+
+---
+
+## Phase 8 — AMBER/GREEN Workstreams
+
+**Branch:** `phase-8/amber-green-workstreams`
+**Objective:** Resolve 11 open Known Issues from Phases 3–7.
+**Task list:** See `docs/BUILD-QUEUE.md`.
+**Acceptance:** All 11 KIs marked CLOSED or explicitly carried to Phase 9 with justification.
+
+| Batch | Focus | KIs Resolved |
+|-------|-------|-------------|
+| 8A | Frontend wiring — 6 UI stubs | KI-P5-001, 002, 003, 004, 005, 008 |
+| 8B | DataTable infinite scroll | KI-P5-006 |
+| 8C | Backend stub completion | KI-P5-007 |
+| 8D | UKVI threshold config | KI-P6-003 |
+| 8E | Enquiry workflow event | KI-P6-007 |
+| 8F | Phase closeout and tag | — |
