@@ -179,8 +179,8 @@ services:
   # ── Client (React Frontend) ───────────────────────────────────
   client:
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: client/Dockerfile
     container_name: sjms-client
     restart: unless-stopped
     ports:

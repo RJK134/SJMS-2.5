@@ -302,9 +302,11 @@ At session end or architectural questions, prepare:
 
 ---
 
-## Phase 9 — QA and Production Readiness (PARTIAL)
+## Phase 9 — QA and Production Readiness (COMPLETE)
 
 **Branch:** `phase-9/qa-and-production`
+**PR:** #37
+**Tag:** `phase-9-complete`
 
 | Batch | Focus | Status | Commit |
 |-------|-------|--------|--------|
@@ -313,10 +315,14 @@ At session end or architectural questions, prepare:
 | 9C | Performance audit (N+1, indexes, pagination) | DONE | 5945541 |
 | 9D | Security hardening (CORS, rate limiting, helmet) | DONE | 5945541 |
 | 9E | Production Docker + nginx SSL | DONE | 3c2d024 |
-| 9F | Production DB migration | BLOCKED — requires Richard |
+| 9F | Production DB migration | DONE | 8/8 applied, 0 pending |
 | 9G | Prometheus metrics endpoint | DONE | 5945541 |
 | 9H | API documentation (Swagger UI) | DONE — already existed |
 
 **Test coverage:** 51 unit tests, 11 E2E specs (3 files)
 **Security:** Rate limiting (Redis), helmet, CORS origin restriction, no raw queries
 **Monitoring:** Prometheus /metrics endpoint with HTTP duration + request counter
+**Stack:** All 8 Docker services operational, health checks passing
+**Known Issues:** 0 open (KI-P3-001 closed)
+
+**SJMS 2.5 build complete. Ready for staging UAT.**
