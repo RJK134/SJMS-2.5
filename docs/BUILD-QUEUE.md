@@ -33,7 +33,13 @@
 - No queryRaw/executeRaw usage found
 
 ### Batch 9E — Production Docker Compose + Nginx SSL
-**Status:** BLOCKED — Requires Richard
+**Status:** DONE — commit 3c2d024
+**Scope:**
+- Production compose overlay (docker/docker-compose.prod.yml) with resource limits, Redis auth, log rotation
+- Nginx production config with SSL, HSTS, security headers, internal-only metrics/n8n
+- Client and nginx services uncommented in base docker-compose.yml
+- Staging runbook (docs/STAGING-RUNBOOK.md)
+- axios critical CVE fixed, Prisma config migrated to prisma.config.ts
 
 ### Batch 9F — Production Database Migration
 **Status:** BLOCKED — Requires Richard

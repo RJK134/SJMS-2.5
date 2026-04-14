@@ -312,7 +312,7 @@ At session end or architectural questions, prepare:
 | 9B | Playwright E2E tests (3 journeys) | DONE | a08a7ff |
 | 9C | Performance audit (N+1, indexes, pagination) | DONE | 5945541 |
 | 9D | Security hardening (CORS, rate limiting, helmet) | DONE | 5945541 |
-| 9E | Production Docker + nginx SSL | BLOCKED — requires Richard |
+| 9E | Production Docker + nginx SSL | DONE | 3c2d024 |
 | 9F | Production DB migration | BLOCKED — requires Richard |
 | 9G | Prometheus metrics endpoint | DONE | 5945541 |
 | 9H | API documentation (Swagger UI) | DONE — already existed |
