@@ -9,6 +9,7 @@ import { apiV1Router } from "./api";
 import swaggerUi from "swagger-ui-express";
 import { openApiSpec } from "./utils/openapi";
 import logger from "./utils/logger";
+import { register, httpRequestDuration, httpRequestTotal } from "./utils/metrics";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -18,7 +19,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: process.env.NODE_ENV === "production"
-      ? [process.env.API_BASE_URL || "http://localhost:3001"]
+      ? (process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173"])
       : true,
     credentials: true,
   })
@@ -30,6 +31,22 @@ app.use(
     stream: { write: (msg: string) => logger.info(msg.trim()) },
   })
 );
+
+// ── Prometheus metrics ──────────────────────────────────────────────────
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+  res.on('finish', () => {
+    const route = req.route?.path ?? req.path;
+    end({ method: req.method, route, status_code: res.statusCode });
+    httpRequestTotal.inc({ method: req.method, route, status_code: res.statusCode });
+  });
+  next();
+});
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 // ── Rate limiting ────────────────────────────────────────────────────────
 app.use('/api', apiLimiter);
