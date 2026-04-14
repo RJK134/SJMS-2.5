@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useRoute } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +8,11 @@ import { Loader2, Send } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import StatCard from '@/components/shared/StatCard';
-import { useDetail, useList } from '@/hooks/useApi';
+import { useDetail, useList, useCreate } from '@/hooks/useApi';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Programme, Enrolment } from '@/types/api';
 
 interface Spec { id: string; learningOutcomes?: unknown; teachingMethods?: string; assessmentStrategy?: string; entryRequirements?: string; version: number; approvedDate?: string }
@@ -20,11 +24,23 @@ export default function ProgrammeDetail() {
   const { data, isLoading } = useDetail<Programme>('programmes', '/v1/programmes', pid);
   const { data: enrolments } = useList<Enrolment>('prog-enrolments', '/v1/enrolments', { programmeId: pid, limit: 100 });
   const { data: approvals } = useList<Approval>('prog-approvals', '/v1/programme-approvals', { programmeId: pid, limit: 20 });
+  const submitApproval = useCreate('prog-approvals', '/v1/programme-approvals');
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [approvalStage, setApprovalStage] = useState('INITIAL');
+  const [approvalComments, setApprovalComments] = useState('');
   const prog = data?.data;
   const enrData = enrolments?.data ?? [];
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!prog) return <div className="text-center py-12 text-muted-foreground">Programme not found</div>;
+
+  const handleSubmitApproval = () => {
+    if (!pid) return;
+    submitApproval.mutate(
+      { programmeId: pid, stage: approvalStage, status: 'PENDING', comments: approvalComments || undefined },
+      { onSuccess: () => { setShowApprovalDialog(false); setApprovalComments(''); } },
+    );
+  };
 
   // Stats
   const yearCounts = enrData.reduce<Record<string, number>>((a, e) => { a[e.academicYear] = (a[e.academicYear] ?? 0) + 1; return a; }, {});
@@ -169,7 +185,7 @@ export default function ProgrammeDetail() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Approval Workflow</CardTitle>
-                  <Button size="sm"><Send className="h-4 w-4 mr-2" /> Submit for Approval</Button>
+                  <Button size="sm" onClick={() => setShowApprovalDialog(true)}><Send className="h-4 w-4 mr-2" /> Submit for Approval</Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -237,6 +253,36 @@ export default function ProgrammeDetail() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Submit for Approval</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium">Stage</label>
+              <Select value={approvalStage} onValueChange={setApprovalStage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STAGES.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Comments</label>
+              <textarea className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring mt-1"
+                rows={3} placeholder="Optional comments..." value={approvalComments} onChange={e => setApprovalComments(e.target.value)} />
+            </div>
+            {submitApproval.isError && <Alert variant="destructive"><AlertDescription>Failed to submit approval. Please try again.</AlertDescription></Alert>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>Cancel</Button>
+            <Button onClick={handleSubmitApproval} disabled={submitApproval.isPending}>
+              {submitApproval.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+              Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

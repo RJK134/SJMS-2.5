@@ -43,6 +43,8 @@ import { reportsRouter } from './reports/reports.router';
 import { webhooksRouter } from './webhooks/webhooks.router';
 import { configRouter } from './config/config.router';
 import { hesaRouter } from './hesa/hesa.router';
+import { accommodationRouter } from './accommodation/accommodation.router';
+import { governanceRouter } from './governance/governance.router';
 
 export const apiV1Router = Router();
 apiV1Router.use(authenticateJWT);
@@ -89,3 +91,5 @@ apiV1Router.use('/reports', reportsRouter);
 apiV1Router.use('/webhooks', webhooksRouter);
 apiV1Router.use('/config', configRouter);
 apiV1Router.use('/hesa', hesaRouter);
+apiV1Router.use('/accommodation', accommodationRouter);
+apiV1Router.use('/governance', governanceRouter);

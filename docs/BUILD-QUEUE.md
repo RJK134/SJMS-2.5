@@ -36,7 +36,7 @@ What Richard needs to decide: [specific question]
 ## Task Queue
 
 ### Batch 8A — Frontend wiring: 6 UI stubs
-**Status:** PENDING
+**Status:** DONE — commit aea17f2
 **KIs resolved:** KI-P5-001, KI-P5-002, KI-P5-003, KI-P5-004, KI-P5-005, KI-P5-008
 **Scope:**
 - KI-P5-001: TicketDetail interaction timeline — add `include: { interactions: true }` in `support.repository.ts`, render timeline in UI
@@ -54,7 +54,7 @@ What Richard needs to decide: [specific question]
 ---
 
 ### Batch 8B — DataTable infinite scroll
-**Status:** PENDING
+**Status:** DONE — commit 8114dca
 **KIs resolved:** KI-P5-006
 **Scope:**
 - KI-P5-006: DataTable cursor pagination does not accumulate — implement `useInfiniteQuery` for append-based pagination across all list pages using DataTable
@@ -67,7 +67,7 @@ What Richard needs to decide: [specific question]
 ---
 
 ### Batch 8C — Backend stub completion
-**Status:** PENDING
+**Status:** DONE — commit de89b32
 **KIs resolved:** KI-P5-007
 **Scope:**
 - KI-P5-007: Accommodation, Governance, Finance advanced stubs — wire backend modules and connect frontend pages
@@ -83,7 +83,7 @@ What Richard needs to decide: [specific question]
 ---
 
 ### Batch 8D — UKVI threshold config
-**Status:** PENDING
+**Status:** DONE — commit e8befbb
 **KIs resolved:** KI-P6-003
 **Scope:**
 - KI-P6-003: UKVI attendance threshold (70%) hardcoded in `attendance.service.ts` `emitUkviBreach()`
@@ -98,7 +98,7 @@ What Richard needs to decide: [specific question]
 ---
 
 ### Batch 8E — Enquiry workflow event
-**Status:** PENDING
+**Status:** DONE — commit 4d6ce55
 **KIs resolved:** KI-P6-007
 **Scope:**
 - KI-P6-007: enquiry-received workflow has no event source
@@ -114,7 +114,7 @@ What Richard needs to decide: [specific question]
 ---
 
 ### Batch 8F — Phase closeout and tag
-**Status:** PENDING
+**Status:** DONE
 **KIs resolved:** —
 **Scope:**
 - Update KNOWN_ISSUES.md — close all resolved KIs with commit hashes and dates

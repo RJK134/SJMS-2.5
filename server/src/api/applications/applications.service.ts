@@ -50,6 +50,22 @@ export async function create(data: Prisma.ApplicationUncheckedCreateInput, userI
       status: result.status,
     },
   });
+
+  // Direct applications also trigger the enquiry workflow (KI-P6-007)
+  if (result.applicationRoute === 'DIRECT') {
+    emitEvent({
+      event: 'enquiry.created',
+      entityType: 'Application',
+      entityId: result.id,
+      actorId: userId,
+      data: {
+        applicantId: result.applicantId,
+        programmeId: result.programmeId,
+        createdAt: result.createdAt?.toISOString?.() ?? new Date().toISOString(),
+      },
+    });
+  }
+
   return result;
 }
 

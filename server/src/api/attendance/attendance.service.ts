@@ -1,12 +1,23 @@
 import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import * as repo from '../../repositories/attendance.repository';
+import * as settingsRepo from '../../repositories/systemSetting.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
 
-/** Statutory UKVI attendance threshold percentage for Tier 4 / Student-route visa holders. */
-const UKVI_ATTENDANCE_THRESHOLD_PERCENT = 70;
+/** Default UKVI attendance threshold if not configured in SystemSetting. */
+const UKVI_ATTENDANCE_THRESHOLD_DEFAULT = 70;
+
+/** Reads the UKVI attendance threshold from SystemSetting, falling back to default. */
+async function getUkviAttendanceThreshold(): Promise<number> {
+  const setting = await settingsRepo.getByKey('ukvi.attendance.threshold');
+  if (setting?.settingValue) {
+    const parsed = parseInt(setting.settingValue, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 100) return parsed;
+  }
+  return UKVI_ATTENDANCE_THRESHOLD_DEFAULT;
+}
 
 export interface AttendanceListQuery {
   cursor?: string;
@@ -137,22 +148,22 @@ export function emitAttendanceAlert(
   });
 }
 
-// TODO(Phase 7): Wire emitUkviBreach into attendance threshold checking.
-// Currently unused — threshold constant defined above.
 /**
  * Emit a UKVI breach-risk event when a Tier 4 / Student-route visa
  * holder's attendance risks falling below the statutory threshold.
+ * Threshold is read from SystemSetting (key: ukvi.attendance.threshold).
  */
-export function emitUkviBreach(
+export async function emitUkviBreach(
   studentId: string,
   attendanceRate: number,
   actorId: string,
-): void {
+): Promise<void> {
+  const threshold = await getUkviAttendanceThreshold();
   emitEvent({
     event: 'attendance.ukvi_breach_risk',
     entityType: 'Student',
     entityId: studentId,
     actorId,
-    data: { studentId, attendanceRate, ukviThreshold: UKVI_ATTENDANCE_THRESHOLD_PERCENT },
+    data: { studentId, attendanceRate, ukviThreshold: threshold },
   });
 }

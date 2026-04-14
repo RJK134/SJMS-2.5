@@ -16,6 +16,8 @@ import type { Module } from '@/types/api';
 interface Attempt { id: string; rawMark?: number; moderatedMark?: number; finalMark?: number; grade?: string; status: string; attemptNumber: number; assessment?: { title: string }; moduleRegistration?: { enrolment?: { student?: { studentNumber: string; person?: { firstName: string; lastName: string } } } } }
 interface AttRec { id: string; date: string; status: string; method?: string; student?: { studentNumber: string; person?: { firstName: string; lastName: string } } }
 interface ModSpec { id: string; aims?: string; learningOutcomes?: unknown; indicativeContent?: string; teachingHours?: unknown; assessmentMethods?: unknown; bibliography?: unknown; version: number }
+interface Assessment { id: string; title: string; assessmentType: string; weighting: number; maxMark?: number; passmark?: number; dueDate?: string; status?: string }
+interface ModuleReg { id: string; academicYear: string; attempt: number; registrationType: string; status: string; enrolment?: { student?: { studentNumber: string; person?: { firstName: string; lastName: string } } } }
 
 const renderJson = (data: unknown, fallback = 'Not specified') => {
   if (!data) return <p className="text-muted-foreground">{fallback}</p>;
@@ -42,6 +44,24 @@ const attColumns: Column<AttRec>[] = [
   { key: 'method', label: 'Method', render: r => r.method?.replace(/_/g, ' ') ?? '—' },
 ];
 
+const assessmentColumns: Column<Assessment>[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'assessmentType', label: 'Type', render: r => r.assessmentType.replace(/_/g, ' ') },
+  { key: 'weighting', label: 'Weight', render: r => `${r.weighting}%` },
+  { key: 'maxMark', label: 'Max Mark', render: r => r.maxMark ?? '—' },
+  { key: 'passmark', label: 'Pass Mark', render: r => r.passmark ?? '—' },
+  { key: 'dueDate', label: 'Due Date', render: r => r.dueDate ? new Date(r.dueDate).toLocaleDateString('en-GB') : '—' },
+];
+
+const studentRegColumns: Column<ModuleReg>[] = [
+  { key: 'studentNumber', label: 'Student No.', render: r => r.enrolment?.student?.studentNumber ?? '—' },
+  { key: 'studentName', label: 'Name', render: r => r.enrolment?.student?.person ? `${r.enrolment.student.person.firstName} ${r.enrolment.student.person.lastName}` : '—' },
+  { key: 'academicYear', label: 'Year' },
+  { key: 'registrationType', label: 'Type', render: r => r.registrationType.replace(/_/g, ' ') },
+  { key: 'attempt', label: 'Attempt' },
+  { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
+];
+
 const attFilterConfig: FilterConfig[] = [
   { key: 'status', label: 'Status', options: [
     { value: 'PRESENT', label: 'Present' }, { value: 'ABSENT', label: 'Absent' },
@@ -54,6 +74,8 @@ export default function ModuleDetail() {
   const mid = params?.id;
   const { data, isLoading } = useDetail<Module>('modules', '/v1/modules', mid);
   const { data: marks } = useList<Attempt>('mod-marks', '/v1/marks', { moduleId: mid, limit: 100 });
+  const { data: assessments, isLoading: assessLoading } = useList<Assessment>('mod-assessments', '/v1/assessments', { moduleId: mid, limit: 50 });
+  const { data: registrations, isLoading: regsLoading } = useList<ModuleReg>('mod-regs', '/v1/module-registrations', { moduleId: mid, limit: 100 });
   const [attParams, setAttParams] = useState<QueryParams>({ limit: 25, sort: 'date', order: 'desc' });
   const [attFilters, setAttFilters] = useState<Record<string, string>>({});
   const { data: attendance, isLoading: attLoading } = useList<AttRec>('mod-att', '/v1/attendance', { ...attParams, moduleRegistrationId: mid, ...Object.fromEntries(Object.entries(attFilters).filter(([, v]) => v)) });
@@ -129,9 +151,15 @@ export default function ModuleDetail() {
           ) : <Card><CardContent className="py-8 text-center text-muted-foreground">No module specification available.</CardContent></Card>}
         </TabsContent>
 
-        <TabsContent value="assessments"><Card><CardContent className="py-8 text-center text-muted-foreground">Assessment configuration loads from the assessments API.</CardContent></Card></TabsContent>
+        <TabsContent value="assessments">
+          <DataTable<Assessment> columns={assessmentColumns} data={assessments?.data ?? []} isLoading={assessLoading}
+            emptyMessage="No assessments configured for this module" />
+        </TabsContent>
 
-        <TabsContent value="students"><Card><CardContent className="py-8 text-center text-muted-foreground">Student registrations load from the module-registrations API.</CardContent></Card></TabsContent>
+        <TabsContent value="students">
+          <DataTable<ModuleReg> columns={studentRegColumns} data={registrations?.data ?? []} isLoading={regsLoading}
+            emptyMessage="No students registered for this module" />
+        </TabsContent>
 
         <TabsContent value="marks">
           <DataTable<Attempt> columns={markColumns} data={allMarks} isLoading={!marks}
