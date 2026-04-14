@@ -299,3 +299,30 @@ At session end or architectural questions, prepare:
 
 **KIs resolved:** 11 total
 **KIs remaining open:** KI-P3-001 (deferred to Phase 9 QA gate)
+
+---
+
+## Phase 9 — QA and Production Readiness (COMPLETE)
+
+**Branch:** `phase-9/qa-and-production`
+**PR:** #37
+**Tag:** `phase-9-complete`
+
+| Batch | Focus | Status | Commit |
+|-------|-------|--------|--------|
+| 9A | Vitest unit tests (51 tests) | DONE | f9fc188 |
+| 9B | Playwright E2E tests (3 journeys) | DONE | a08a7ff |
+| 9C | Performance audit (N+1, indexes, pagination) | DONE | 5945541 |
+| 9D | Security hardening (CORS, rate limiting, helmet) | DONE | 5945541 |
+| 9E | Production Docker + nginx SSL | DONE | 3c2d024 |
+| 9F | Production DB migration | DONE | 8/8 applied, 0 pending |
+| 9G | Prometheus metrics endpoint | DONE | 5945541 |
+| 9H | API documentation (Swagger UI) | DONE — already existed |
+
+**Test coverage:** 51 unit tests, 11 E2E specs (3 files)
+**Security:** Rate limiting (Redis), helmet, CORS origin restriction, no raw queries
+**Monitoring:** Prometheus /metrics endpoint with HTTP duration + request counter
+**Stack:** All 8 Docker services operational, health checks passing
+**Known Issues:** 0 open (KI-P3-001 closed)
+
+**SJMS 2.5 build complete. Ready for staging UAT.**

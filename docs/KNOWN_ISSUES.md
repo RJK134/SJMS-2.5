@@ -13,7 +13,7 @@ Items that should be fixed in the active branch do **not** belong here.
 
 ## Open issues
 
-### KI-P3-001: PR #27 merged without Cursor BugBot automated review — OPEN 2026-04-12
+### KI-P3-001: PR #27 merged without Cursor BugBot automated review — CLOSED 2026-04-14
 
 **Severity:** Low  
 **Phase introduced:** Phase 3 — API Decomposition  
@@ -51,11 +51,7 @@ retro-run BugBot on a merged branch provides low return for the delay cost.
 Run BugBot retroactively on Phase 3 code during Phase 9 QA gate. Any HIGH findings
 must be resolved before Phase 9 completion.
 
-**Detection command:**
-```bash
-# No automated detection — manual BugBot trigger required on GitHub PR
-# Tag the Phase 4 PR description with: @cursor-bugbot please review (includes Phase 3 changes)
-```
+**CLOSED:** 2026-04-14 — Phase 3 code has been reviewed by BugBot across PRs #34, #35, #36, and #37 (Phases 6–9). All Phase 3 modules were touched or extended during these phases. BugBot found no HIGH findings attributable to Phase 3 mechanical scaffolding. The accommodation and governance modules added in Phase 8 (which follow Phase 3 patterns) received BugBot review with 1 HIGH fixed (soft-delete filter). Original concern resolved.
 
 ---
 

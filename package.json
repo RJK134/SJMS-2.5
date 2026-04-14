@@ -26,9 +26,6 @@
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
-  "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
-  },
   "author": "Future Horizons Education",
   "license": "UNLICENSED"
 }
