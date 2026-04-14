@@ -16,7 +16,7 @@ communicationsRouter.post('/notifications', validate(notifCreateSchema), require
 communicationsRouter.patch('/notifications/:id', validateParams(notifParamsSchema), validate(notifUpdateSchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), notifCtrl.update);
 
 // ─── Send endpoint (used by n8n workflows) ──────────────────────────────────
-communicationsRouter.post('/send', validate(sendSchema), requireRole(...ROLE_GROUPS.ALL_AUTHENTICATED), ctrl.send);
+communicationsRouter.post('/send', validate(sendSchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.send);
 
 // ─── Core communications routes ─────────────────────────────────────────────
 communicationsRouter.get('/', validateQuery(querySchema), requireRole(...ROLE_GROUPS.ADMIN_STAFF), ctrl.list);

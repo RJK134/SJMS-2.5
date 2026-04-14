@@ -70,12 +70,8 @@ export interface SendRequest {
  * This is the endpoint n8n workflows call to send notifications.
  */
 export async function send(input: SendRequest, userId: string, req: Request) {
-  // 1. Resolve template by templateCode (key)
-  const templates = await repo.list(
-    { search: input.templateKey },
-    { cursor: undefined, limit: 1, sort: 'createdAt', order: 'desc' },
-  );
-  const template = templates.data[0];
+  // 1. Resolve template by exact templateCode match (not fuzzy search)
+  const template = await repo.getByCode(input.templateKey);
 
   // 2. Create delivery log
   const logEntry = await logRepo.create({
@@ -92,17 +88,19 @@ export async function send(input: SendRequest, userId: string, req: Request) {
   await logAudit('CommunicationLog', logEntry.id, 'CREATE', userId, null, logEntry, req);
 
   // 3. Attempt delivery (placeholder — actual SMTP/SMS integration in Phase 8)
+  let deliveryStatus: 'SENT' | 'FAILED' = 'SENT';
   try {
     // TODO(Phase 8): Wire actual email/SMS delivery via SMTP_* env vars
     logger.info(`Communication queued: ${input.channel} to ${input.recipientId} (template: ${input.templateKey})`);
     await logRepo.updateStatus(logEntry.id, 'SENT');
   } catch (err) {
+    deliveryStatus = 'FAILED';
     logger.error(`Communication delivery failed: ${(err as Error).message}`);
     await logRepo.updateStatus(logEntry.id, 'FAILED');
   }
 
   emitEvent({
-    event: 'communication.sent',
+    event: deliveryStatus === 'SENT' ? 'communication.sent' : 'communication.failed',
     entityType: 'CommunicationLog',
     entityId: logEntry.id,
     actorId: userId,
@@ -110,9 +108,10 @@ export async function send(input: SendRequest, userId: string, req: Request) {
       templateKey: input.templateKey,
       channel: input.channel,
       recipientId: input.recipientId,
-      deliveryStatus: 'SENT',
+      deliveryStatus,
     },
   });
 
-  return logEntry;
+  // Return the log entry with current delivery status
+  return { ...logEntry, deliveryStatus };
 }

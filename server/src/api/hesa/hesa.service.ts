@@ -49,7 +49,17 @@ export async function create(data: Prisma.HESANotificationUncheckedCreateInput, 
 
 export async function update(id: string, data: Prisma.HESANotificationUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  const result = await repo.update(id, data);
+
+  // Populate status timestamps on transitions
+  const statusStr = typeof data.status === 'string' ? data.status : undefined;
+  if (statusStr === 'SUBMITTED' && previous.status !== 'SUBMITTED') {
+    data.submittedAt = new Date();
+  }
+  if ((statusStr === 'ACKNOWLEDGED' || statusStr === 'REJECTED') && previous.status !== statusStr) {
+    data.acknowledgedAt = new Date();
+  }
+
+  const result = await repo.update(id, { ...data, updatedBy: userId });
   await logAudit('HESANotification', id, 'UPDATE', userId, previous, result, req);
   emitEvent({
     event: 'hesa.notification_updated',
@@ -60,6 +70,7 @@ export async function update(id: string, data: Prisma.HESANotificationUpdateInpu
       entityType: result.entityType,
       entityId: result.entityId,
       status: result.status,
+      previousStatus: previous.status,
     },
   });
   return result;
