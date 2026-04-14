@@ -55,9 +55,14 @@ echo "[2/4] Certificate details:"
 openssl x509 -noout -subject -issuer -dates -in "$CERT_FILE" | sed 's/^/  /'
 echo ""
 
-# Copy to destination
+# Backup existing certs (if any) before overwriting
 echo "[3/4] Installing to ${DEST_DIR}/..."
 mkdir -p "$DEST_DIR"
+if [ -f "${DEST_DIR}/fullchain.pem" ]; then
+  cp "${DEST_DIR}/fullchain.pem" "${DEST_DIR}/fullchain.pem.bak"
+  cp "${DEST_DIR}/privkey.pem"   "${DEST_DIR}/privkey.pem.bak"
+  echo "  Backed up existing certificates to *.bak"
+fi
 cp "$CERT_FILE" "${DEST_DIR}/fullchain.pem"
 cp "$KEY_FILE"  "${DEST_DIR}/privkey.pem"
 chmod 644 "${DEST_DIR}/fullchain.pem"

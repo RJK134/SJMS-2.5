@@ -54,12 +54,21 @@ docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml \
   --email "${EMAIL}" \
   --non-interactive
 
-# Step 3: Copy LE certs to the nginx cert path (overwriting bootstrap self-signed)
+# Step 3: Copy LE certs to the host-mounted nginx cert directory
+# (The certs volume is read-only inside nginx, so we extract via a temp container)
 echo "[3/5] Installing certificates for nginx..."
-docker compose exec nginx sh -c "
-  ln -sf /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/nginx/certs/fullchain.pem 2>/dev/null || true
-  ln -sf /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/nginx/certs/privkey.pem 2>/dev/null || true
-"
+docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml \
+  --profile letsencrypt run --rm --entrypoint sh certbot -c "
+    cat /etc/letsencrypt/live/${DOMAIN}/fullchain.pem
+  " > docker/nginx/certs/fullchain.pem
+
+docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml \
+  --profile letsencrypt run --rm --entrypoint sh certbot -c "
+    cat /etc/letsencrypt/live/${DOMAIN}/privkey.pem
+  " > docker/nginx/certs/privkey.pem
+
+chmod 644 docker/nginx/certs/fullchain.pem
+chmod 600 docker/nginx/certs/privkey.pem
 
 # Step 4: Reload nginx to pick up the real certificate
 echo "[4/5] Reloading nginx..."

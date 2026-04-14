@@ -46,6 +46,7 @@ n8ndata/
 docker/nginx/certs/*.pem
 docker/nginx/certs/*.crt
 docker/nginx/certs/*.key
+docker/nginx/certs/*.bak
 *.pem
 *.crt
 *.key
