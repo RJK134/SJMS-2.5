@@ -45,6 +45,10 @@ export default function MyMarksEntry() {
 
   const updateMutation = useUpdate('mark-attempts', '/v1/marks');
 
+  // Resolve maxMark from the selected assessment (falls back to 100 if not set)
+  const selectedAssessmentData = (assessments?.data ?? []).find(a => a.id === selectedAssessment);
+  const maxMark = selectedAssessmentData?.maxMark ?? 100;
+
   const rows: MarkRow[] = (attempts?.data ?? []).map(a => {
     const stu = a.moduleRegistration?.enrolment?.student;
     const edited = marks[a.id];
@@ -73,10 +77,6 @@ export default function MyMarksEntry() {
       return next;
     });
   }, []);
-
-  // Resolve maxMark from the selected assessment (falls back to 100 if not set)
-  const selectedAssessmentData = (assessments?.data ?? []).find(a => a.id === selectedAssessment);
-  const maxMark = selectedAssessmentData?.maxMark ?? 100;
 
   // Validate all edited marks — returns true if all valid
   const validateMarks = useCallback((): boolean => {
@@ -155,7 +155,8 @@ export default function MyMarksEntry() {
   }, [hasUnsavedChanges]);
 
   const enteredRows = rows.filter(r => r.rawMark !== null);
-  const avg = enteredRows.reduce((s, r) => s + (r.rawMark ?? 0), 0) / Math.max(enteredRows.length, 1);
+  const rawAvg = enteredRows.reduce((s, r) => s + (r.rawMark ?? 0), 0) / Math.max(enteredRows.length, 1);
+  const avg = maxMark > 0 ? (rawAvg / maxMark) * 100 : 0;
   const passMark = selectedAssessmentData?.passMark ?? 40;
   const passRate = enteredRows.length > 0 ? (enteredRows.filter(r => (r.rawMark ?? 0) >= passMark).length / enteredRows.length * 100) : 0;
 
