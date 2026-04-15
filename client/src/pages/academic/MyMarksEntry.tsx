@@ -73,13 +73,17 @@ export default function MyMarksEntry() {
     });
   }, []);
 
+  // Resolve maxMark from the selected assessment (falls back to 100 if not set)
+  const selectedAssessmentData = (assessments?.data ?? []).find(a => a.id === selectedAssessment);
+  const maxMark = selectedAssessmentData?.maxMark ?? 100;
+
   // Validate all edited marks — returns true if all valid
   const validateMarks = useCallback((): boolean => {
     const errors: Record<string, string> = {};
     for (const [id, val] of Object.entries(marks)) {
       if (val === null) continue;
-      if (val < 0 || val > 100) {
-        errors[id] = 'Mark must be between 0 and 100';
+      if (val < 0 || val > maxMark) {
+        errors[id] = `Mark must be between 0 and ${maxMark}`;
       }
       if (isNaN(val)) {
         errors[id] = 'Mark must be a number';
@@ -87,7 +91,7 @@ export default function MyMarksEntry() {
     }
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [marks]);
+  }, [marks, maxMark]);
 
   // Save Draft — PATCH each edited row with rawMark
   const handleSaveDraft = useCallback(async () => {
@@ -149,8 +153,9 @@ export default function MyMarksEntry() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges]);
 
-  const avg = rows.filter(r => r.rawMark !== null).reduce((s, r) => s + (r.rawMark ?? 0), 0) / Math.max(rows.filter(r => r.rawMark !== null).length, 1);
-  const passRate = rows.length > 0 ? (rows.filter(r => (r.rawMark ?? 0) >= 40).length / rows.length * 100) : 0;
+  const enteredRows = rows.filter(r => r.rawMark !== null);
+  const avg = enteredRows.reduce((s, r) => s + (r.rawMark ?? 0), 0) / Math.max(enteredRows.length, 1);
+  const passRate = enteredRows.length > 0 ? (enteredRows.filter(r => (r.rawMark ?? 0) >= 40).length / enteredRows.length * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -255,7 +260,7 @@ export default function MyMarksEntry() {
                       <TableCell>{row.studentName}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <Input type="number" min={0} max={100} className={`h-8 w-20 text-center ${row.validationError ? 'border-red-500' : ''}`}
+                          <Input type="number" min={0} max={maxMark} className={`h-8 w-20 text-center ${row.validationError ? 'border-red-500' : ''}`}
                             value={row.rawMark ?? ''} onChange={e => updateMark(row.id, e.target.value)}
                             disabled={submitted} />
                           {row.validationError && (

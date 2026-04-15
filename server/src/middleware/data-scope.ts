@@ -191,6 +191,55 @@ export function requireOwnership(getResourceOwnerId: (req: Request) => Promise<s
   };
 }
 
+/**
+ * Injects the authenticated user's identity (studentId or personId) into
+ * req.body on POST/create endpoints. Admin/staff bypass — they may specify
+ * any owner. Students get their own studentId injected automatically.
+ *
+ * Apply AFTER authenticateJWT and BEFORE validate middleware.
+ */
+export function injectOwnerOnCreate(field: 'studentId' | 'personId' = 'studentId') {
+  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) return next();
+
+    const roles = getUserRoles(req.user);
+
+    // Admin and teaching staff may specify any owner
+    if (isAdminStaff(roles) || isTeachingStaff(roles)) {
+      return next();
+    }
+
+    // Students: auto-inject their own studentId
+    if (isStudentRole(roles)) {
+      const identity = await resolveIdentity(req.user);
+      if (field === 'studentId') {
+        if (!identity.studentId) {
+          return next(new ForbiddenError('No student record linked to your account'));
+        }
+        req.body[field] = identity.studentId;
+      } else {
+        if (!identity.personId) {
+          return next(new ForbiddenError('No person record linked to your account'));
+        }
+        req.body[field] = identity.personId;
+      }
+      return next();
+    }
+
+    // Applicants: auto-inject their personId
+    if (isApplicantRole(roles)) {
+      const identity = await resolveIdentity(req.user);
+      if (!identity.personId) {
+        return next(new ForbiddenError('No person record linked to your account'));
+      }
+      req.body.personId = identity.personId;
+      return next();
+    }
+
+    next(new ForbiddenError('Insufficient permissions'));
+  };
+}
+
 // ── Ownership lookup helpers ────────────────────────────────────────────────
 // Single-resource owner resolvers for the routes wired with requireOwnership.
 // Each helper reads `req.params.id` and returns the `studentId` that the
