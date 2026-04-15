@@ -1,11 +1,11 @@
 import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function TemplateManagement() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Communication Templates" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Communications'},{label:'Templates'}]} />
-      <Card><CardHeader><CardTitle>Templates</CardTitle></CardHeader><CardContent><p className="text-muted-foreground">Create and manage email, SMS, portal, and letter templates with variable substitution.</p></CardContent></Card>
+      <PageHeader title="Communication Templates" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Communications' }, { label: 'Templates' }]} />
+      <ComingSoon title="Template Management" description="Communication template management (email, SMS, portal, letter templates with variable substitution) will be enabled alongside the bulk communications engine in Phase 12." />
     </div>
   );
 }
