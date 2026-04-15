@@ -21,11 +21,12 @@ interface Module { id: string; moduleCode: string; title: string }
 interface Assessment { id: string; title: string; assessmentType: string; weighting: number; maxMark: number; passMark: number; module?: { title: string; moduleCode: string } }
 interface Attempt { id: string; rawMark?: number; moderatedMark?: number; finalMark?: number; grade?: string; status: string; moduleRegistration?: { enrolment?: { student?: { studentNumber: string; person?: { firstName: string; lastName: string } } } } }
 
-function gradeFromMark(mark: number): string {
-  if (mark >= 70) return 'A';
-  if (mark >= 60) return 'B';
-  if (mark >= 50) return 'C';
-  if (mark >= 40) return 'D';
+function gradeFromMark(mark: number, maxMark = 100): string {
+  const pct = maxMark > 0 ? (mark / maxMark) * 100 : 0;
+  if (pct >= 70) return 'A';
+  if (pct >= 60) return 'B';
+  if (pct >= 50) return 'C';
+  if (pct >= 40) return 'D';
   return 'F';
 }
 
@@ -55,7 +56,7 @@ export default function MyMarksEntry() {
       rawMark,
       moderatedMark: a.moderatedMark ?? null,
       finalMark: rawMark,
-      grade: rawMark !== null ? gradeFromMark(rawMark) : '—',
+      grade: rawMark !== null ? gradeFromMark(rawMark, maxMark) : '—',
       status: a.status,
       saving: rowStatus[a.id],
       validationError: validationErrors[a.id],
@@ -155,7 +156,8 @@ export default function MyMarksEntry() {
 
   const enteredRows = rows.filter(r => r.rawMark !== null);
   const avg = enteredRows.reduce((s, r) => s + (r.rawMark ?? 0), 0) / Math.max(enteredRows.length, 1);
-  const passRate = enteredRows.length > 0 ? (enteredRows.filter(r => (r.rawMark ?? 0) >= 40).length / enteredRows.length * 100) : 0;
+  const passMark = selectedAssessmentData?.passMark ?? 40;
+  const passRate = enteredRows.length > 0 ? (enteredRows.filter(r => (r.rawMark ?? 0) >= passMark).length / enteredRows.length * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -254,7 +256,7 @@ export default function MyMarksEntry() {
                 </TableHeader>
                 <TableBody>
                   {rows.map((row, i) => (
-                    <TableRow key={row.id} className={row.rawMark !== null && row.rawMark < 40 ? 'bg-red-50' : ''}>
+                    <TableRow key={row.id} className={row.rawMark !== null && row.rawMark < passMark ? 'bg-red-50' : ''}>
                       <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                       <TableCell className="font-mono text-sm">{row.studentNumber}</TableCell>
                       <TableCell>{row.studentName}</TableCell>
