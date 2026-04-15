@@ -19,7 +19,7 @@ export async function list(filters: AwardRecordFilters = {}, pagination: CursorP
   const [data, total] = await Promise.all([
     prisma.awardRecord.findMany({
       where,
-      
+      include: { student: { include: { person: true } }, programme: true },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),

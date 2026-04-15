@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import type { Prisma } from '@prisma/client';
+import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
 
 export async function create(data: Prisma.CommunicationLogUncheckedCreateInput) {
   return prisma.communicationLog.create({ data });
@@ -11,31 +12,30 @@ export async function getById(id: string) {
   });
 }
 
-export async function list(
-  filters: { recipientId?: string; channel?: string; deliveryStatus?: string },
-  pagination: { cursor?: string; limit: number; sort: string; order: 'asc' | 'desc' },
-) {
-  const where: Prisma.CommunicationLogWhereInput = {};
-  if (filters.recipientId) where.recipientId = filters.recipientId;
-  if (filters.channel) where.channel = filters.channel as Prisma.EnumCommChannelFilter;
-  if (filters.deliveryStatus) where.deliveryStatus = filters.deliveryStatus as Prisma.EnumDeliveryStatusFilter;
+export interface CommunicationLogFilters {
+  recipientId?: string;
+  channel?: string;
+  deliveryStatus?: string;
+}
 
-  const orderBy = { [pagination.sort]: pagination.order };
-  const take = pagination.limit + 1;
-
-  const items = await prisma.communicationLog.findMany({
-    where,
-    orderBy,
-    take,
-    ...(pagination.cursor ? { skip: 1, cursor: { id: pagination.cursor } } : {}),
-  });
-
-  const hasMore = items.length > pagination.limit;
-  const data = hasMore ? items.slice(0, -1) : items;
-  return {
-    data,
-    nextCursor: hasMore ? data[data.length - 1]?.id : null,
+export async function list(filters: CommunicationLogFilters = {}, pagination: CursorPaginationParams) {
+  const where: Prisma.CommunicationLogWhereInput = {
+    ...(filters.recipientId && { recipientId: filters.recipientId }),
+    ...(filters.channel && { channel: filters.channel as Prisma.EnumCommChannelFilter }),
+    ...(filters.deliveryStatus && { deliveryStatus: filters.deliveryStatus as Prisma.EnumDeliveryStatusFilter }),
   };
+
+  const [data, total] = await Promise.all([
+    prisma.communicationLog.findMany({
+      where,
+      include: { template: true },
+      take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
+      orderBy: { [pagination.sort]: pagination.order } as any,
+    }),
+    prisma.communicationLog.count({ where }),
+  ]);
+
+  return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
 
 export async function updateStatus(id: string, deliveryStatus: string, error?: string) {

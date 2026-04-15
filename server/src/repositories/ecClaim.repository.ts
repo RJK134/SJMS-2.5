@@ -19,7 +19,7 @@ export async function list(filters: ECClaimFilters = {}, pagination: CursorPagin
   const [data, total] = await Promise.all([
     prisma.eCClaim.findMany({
       where,
-      
+      include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),

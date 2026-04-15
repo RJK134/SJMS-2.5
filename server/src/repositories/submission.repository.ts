@@ -23,7 +23,7 @@ export async function list(filters: SubmissionFilters = {}, pagination: CursorPa
   const [data, total] = await Promise.all([
     prisma.submission.findMany({
       where,
-      
+      include: { assessment: true, moduleRegistration: { include: { module: true } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
