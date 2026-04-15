@@ -23,7 +23,12 @@ export async function list(filters: AssessmentAttemptFilters = {}, pagination: C
   const [data, total] = await Promise.all([
     prisma.assessmentAttempt.findMany({
       where,
-      
+      include: {
+        assessment: { include: { module: true } },
+        moduleRegistration: {
+          include: { enrolment: { include: { student: { include: { person: true } } } } },
+        },
+      },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),

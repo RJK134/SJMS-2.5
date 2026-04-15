@@ -35,6 +35,17 @@ const STATUS_MAP: Record<string, { label: string; variant: 'success' | 'warning'
   HOME: { label: 'Home', variant: 'default' },
   OVERSEAS: { label: 'Overseas', variant: 'warning' },
   EU_TRANSITIONAL: { label: 'EU Transitional', variant: 'secondary' },
+  // Support ticket statuses
+  OPEN: { label: 'Open', variant: 'warning' },
+  IN_PROGRESS: { label: 'In Progress', variant: 'default' },
+  RESOLVED: { label: 'Resolved', variant: 'success' },
+  ESCALATED: { label: 'Escalated', variant: 'destructive' },
+  // Priority levels
+  LOW: { label: 'Low', variant: 'secondary' },
+  NORMAL: { label: 'Normal', variant: 'default' },
+  HIGH: { label: 'High', variant: 'warning' },
+  URGENT: { label: 'Urgent', variant: 'destructive' },
+  CRITICAL: { label: 'Critical', variant: 'destructive' },
   // Generic
   active: { label: 'Active', variant: 'success' },
   inactive: { label: 'Inactive', variant: 'secondary' },

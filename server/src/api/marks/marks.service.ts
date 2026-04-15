@@ -1,9 +1,25 @@
 import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import * as repo from '../../repositories/assessmentAttempt.repository';
+import * as assessmentRepo from '../../repositories/assessment.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, ValidationError } from '../../utils/errors';
+
+/** Validate that rawMark and finalMark do not exceed the assessment's maxMark. */
+async function validateMarkBounds(assessmentId: string, rawMark?: number | null, finalMark?: number | null): Promise<void> {
+  if (rawMark == null && finalMark == null) return;
+  const assessment = await assessmentRepo.getById(assessmentId);
+  if (!assessment) throw new NotFoundError('Assessment', assessmentId);
+  const max = assessment.maxMark != null ? Number(assessment.maxMark) : null;
+  if (max == null) return; // no maxMark defined on assessment — skip validation
+  if (rawMark != null && Number(rawMark) > max) {
+    throw new ValidationError(`rawMark (${rawMark}) exceeds assessment maximum of ${max}`);
+  }
+  if (finalMark != null && Number(finalMark) > max) {
+    throw new ValidationError(`finalMark (${finalMark}) exceeds assessment maximum of ${max}`);
+  }
+}
 
 export interface MarkListQuery {
   cursor?: string;
@@ -32,6 +48,7 @@ export async function getById(id: string) {
 }
 
 export async function create(data: Prisma.AssessmentAttemptUncheckedCreateInput, userId: string, req: Request) {
+  await validateMarkBounds(data.assessmentId, data.rawMark as number | undefined, data.finalMark as number | undefined);
   const result = await repo.create(data);
   await logAudit('AssessmentAttempt', result.id, 'CREATE', userId, null, result, req);
   const createEventMap: Record<string, string> = {
@@ -58,6 +75,11 @@ export async function create(data: Prisma.AssessmentAttemptUncheckedCreateInput,
 
 export async function update(id: string, data: Prisma.AssessmentAttemptUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
+  const reassignedId = data.assessment && typeof data.assessment === 'object' && 'connect' in data.assessment
+    ? (data.assessment as { connect: { id: string } }).connect.id
+    : undefined;
+  const effectiveAssessmentId = reassignedId ?? previous.assessmentId;
+  await validateMarkBounds(effectiveAssessmentId, data.rawMark as number | undefined, data.finalMark as number | undefined);
   const result = await repo.update(id, data);
   await logAudit('AssessmentAttempt', id, 'UPDATE', userId, previous, result, req);
 

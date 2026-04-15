@@ -21,7 +21,7 @@ export async function list(filters: ExamBoardFilters = {}, pagination: CursorPag
   const [data, total] = await Promise.all([
     prisma.examBoard.findMany({
       where,
-      
+      include: { programme: true },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),
