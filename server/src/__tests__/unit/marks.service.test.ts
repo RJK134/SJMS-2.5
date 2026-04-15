@@ -11,13 +11,18 @@ vi.mock('../../repositories/assessmentAttempt.repository', () => ({
 }));
 vi.mock('../../utils/audit', () => ({ logAudit: vi.fn() }));
 vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
+vi.mock('../../repositories/assessment.repository', () => ({
+  getById: vi.fn(),
+}));
 
 import * as marksService from '../../api/marks/marks.service';
 import * as repo from '../../repositories/assessmentAttempt.repository';
+import * as assessmentRepo from '../../repositories/assessment.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 
 const mockedRepo = vi.mocked(repo);
+const mockedAssessmentRepo = vi.mocked(assessmentRepo);
 const mockedLogAudit = vi.mocked(logAudit);
 const mockedEmitEvent = vi.mocked(emitEvent);
 
@@ -39,12 +44,32 @@ const fakeAttempt = {
   updatedBy: null,
 };
 
+const fakeAssessment = {
+  id: 'assess-1',
+  moduleId: 'mod-1',
+  academicYear: '2025/26',
+  title: 'Coursework 1',
+  assessmentType: 'COURSEWORK',
+  weighting: 50,
+  maxMark: { toNumber: () => 100 } as any, // Prisma Decimal
+  passmark: { toNumber: () => 40 } as any,
+  dueDate: new Date(),
+  status: 'ACTIVE',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  deletedAt: null,
+  createdBy: null,
+  updatedBy: null,
+} as any;
+
 const fakeReq = { ip: '127.0.0.1', user: {}, get: vi.fn() } as any;
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 describe('marks.service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    // Default: assessment exists with maxMark 100
+    mockedAssessmentRepo.getById.mockResolvedValue(fakeAssessment);
   });
 
   describe('list()', () => {
@@ -246,6 +271,73 @@ describe('marks.service', () => {
         .toThrow(NotFoundError);
 
       expect(mockedRepo.softDelete).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── maxMark validation ────────────────────────────────────────────────────
+  describe('maxMark validation', () => {
+    it('should reject create when rawMark exceeds assessment maxMark', async () => {
+      mockedAssessmentRepo.getById.mockResolvedValue({ ...fakeAssessment, maxMark: 80 });
+
+      await expect(
+        marksService.create(
+          { assessmentId: 'assess-1', moduleRegistrationId: 'modreg-1', attemptNumber: 1, rawMark: 85 } as any,
+          'user-1',
+          fakeReq,
+        ),
+      ).rejects.toThrow(/rawMark.*exceeds.*80/);
+
+      expect(mockedRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('should allow create when rawMark equals maxMark', async () => {
+      mockedAssessmentRepo.getById.mockResolvedValue({ ...fakeAssessment, maxMark: 100 });
+      mockedRepo.create.mockResolvedValue({ ...fakeAttempt, rawMark: 100, status: 'PENDING' } as any);
+
+      const result = await marksService.create(
+        { assessmentId: 'assess-1', moduleRegistrationId: 'modreg-1', attemptNumber: 1, rawMark: 100 } as any,
+        'user-1',
+        fakeReq,
+      );
+
+      expect(result.rawMark).toBe(100);
+      expect(mockedRepo.create).toHaveBeenCalled();
+    });
+
+    it('should reject update when rawMark exceeds assessment maxMark', async () => {
+      mockedAssessmentRepo.getById.mockResolvedValue({ ...fakeAssessment, maxMark: 75 });
+      mockedRepo.getById.mockResolvedValue(fakeAttempt);
+
+      await expect(
+        marksService.update('attempt-1', { rawMark: 80 } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(/rawMark.*exceeds.*75/);
+
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should reject create when finalMark exceeds assessment maxMark', async () => {
+      mockedAssessmentRepo.getById.mockResolvedValue({ ...fakeAssessment, maxMark: 100 });
+
+      await expect(
+        marksService.create(
+          { assessmentId: 'assess-1', moduleRegistrationId: 'modreg-1', attemptNumber: 1, finalMark: 110 } as any,
+          'user-1',
+          fakeReq,
+        ),
+      ).rejects.toThrow(/finalMark.*exceeds.*100/);
+    });
+
+    it('should skip validation when assessment has no maxMark', async () => {
+      mockedAssessmentRepo.getById.mockResolvedValue({ ...fakeAssessment, maxMark: null });
+      mockedRepo.create.mockResolvedValue({ ...fakeAttempt, rawMark: 999, status: 'PENDING' } as any);
+
+      const result = await marksService.create(
+        { assessmentId: 'assess-1', moduleRegistrationId: 'modreg-1', attemptNumber: 1, rawMark: 999 } as any,
+        'user-1',
+        fakeReq,
+      );
+
+      expect(result.rawMark).toBe(999);
     });
   });
 });
