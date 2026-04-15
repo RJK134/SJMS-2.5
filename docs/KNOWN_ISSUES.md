@@ -202,6 +202,22 @@ grep -n "useList.*modules\|useList.*marks" client/src/pages/academic/MyMarksEntr
 
 ---
 
+### KI-P11-001: 25+ services still use deprecated emitEvent two-arg form — OPEN 2026-04-16
+
+**Severity:** AMBER  
+**Phase introduced:** Phase 11 — System Remediation  
+**File(s):** `server/src/api/*/[service].service.ts` (approximately 25 services)  
+**Problem:** The deprecated `emitEvent('event.name', { id })` two-argument form is still used in ~25 services. This form works via backward compatibility in `webhooks.ts` but loses `actorId`, `entityType`, and `entityId` specificity in the event payload. Phase 11 migrated the 5 highest-traffic services (appeals, assessments, awards, admissions-events, marks) to the object form.  
+**Deferral reason:** Migrating all 25+ remaining services is mechanical but time-consuming (~2 hours). The deprecated form still works correctly — events are delivered, just with less metadata.  
+**Resolution plan:** Dedicated cleanup sprint. Each service needs 2-4 calls converted from `emitEvent('name', { id })` to `emitEvent({ event, entityType, entityId, actorId, data })`.
+
+**Detection command:**
+```bash
+grep -rn "emitEvent('" server/src/api --include="*.service.ts" | grep -v "emitEvent({" | wc -l
+```
+
+---
+
 ## Closed issues
 
 ### KI-001: 23 pre-existing TypeScript errors in server — CLOSED 2026-04-11

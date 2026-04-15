@@ -347,3 +347,31 @@ At session end or architectural questions, prepare:
 **Review findings addressed:** 9/9
 **New AMBER items logged:** 3 (KI-P10b-001, KI-P10b-002, KI-P10b-003)
 **Tests:** 56 unit tests passing (5 new maxMark validation tests)
+
+---
+
+## Phase 11 — System Remediation (COMPLETE)
+
+**Branch:** `phase-11/system-remediation`
+**PR:** #40
+**Base:** `phase-10b/review-remediation @ 494ac11`
+
+| Batch | Focus | Commit | Files Changed |
+|-------|-------|--------|---------------|
+| 1 | Repository list() includes for 11 repos | 8d74504 | 11 repo files |
+| 2 | Wire EC Claims, Appeals, Documents, Communications, FlagManagement | 5fab893 | 5 page files |
+| 3 | Wire AlertsList + ComingSoon for Interventions, UKVI, ExternalExaminers, AcademicMisconduct | 3884206 | 7 page files |
+| 4 | ComingSoon for PersonalTutoring, Wellbeing, Disability, PaymentRecording, Plans, Letters, Templates, BulkComms | 9bf3766 | 8 page files |
+| 7 | Infrastructure: systemSetting rename, health endpoint, n8n healthcheck, emitEvent migration (4 services) | 01e8c44 | 7 files |
+| 5 | Wire SystemSettings, AcademicCalendar, MyTimetable, MyECClaims + ComingSoon for 6 pages | 1a5518a | 10 page files |
+| 6 | Wire student MakePayment, MyECClaims + ComingSoon for 5 portal stubs | ccfdae5 | 7 page files |
+| 8 | Unit tests: enrolments, admissions, ec-claims, appeals, support | f0826a4 | 5 test files |
+| 9 | Documentation closeout | — | CLAUDE.md, KNOWN_ISSUES.md |
+
+**Pages wired to live API data:** 10 new (ECClaims, Appeals, DocumentList, CommunicationLog, AlertsList, SystemSettings, AcademicCalendar, MyTimetable, MakePayment, student MyECClaims)
+**Pages converted to honest ComingSoon:** 29
+**Repository includes fixed:** 11
+**emitEvent migrations:** 4 services (appeals, assessments, awards, admissions-events)
+**Infrastructure:** enriched health endpoint (DB check), n8n Docker healthcheck, systemSetting rename
+**Tests:** 109 total (56 existing + 53 new across 5 service test files)
+**New AMBER items:** 1 (KI-P11-001 — remaining emitEvent deprecated form in 25+ services)
