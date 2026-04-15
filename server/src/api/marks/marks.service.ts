@@ -75,7 +75,11 @@ export async function create(data: Prisma.AssessmentAttemptUncheckedCreateInput,
 
 export async function update(id: string, data: Prisma.AssessmentAttemptUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
-  await validateMarkBounds(previous.assessmentId, data.rawMark as number | undefined, data.finalMark as number | undefined);
+  const reassignedId = data.assessment && typeof data.assessment === 'object' && 'connect' in data.assessment
+    ? (data.assessment as { connect: { id: string } }).connect.id
+    : undefined;
+  const effectiveAssessmentId = reassignedId ?? previous.assessmentId;
+  await validateMarkBounds(effectiveAssessmentId, data.rawMark as number | undefined, data.finalMark as number | undefined);
   const result = await repo.update(id, data);
   await logAudit('AssessmentAttempt', id, 'UPDATE', userId, previous, result, req);
 

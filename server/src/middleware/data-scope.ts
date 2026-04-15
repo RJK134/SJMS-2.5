@@ -98,6 +98,10 @@ function isTeachingStaff(roles: string[]): boolean {
   return (ROLE_GROUPS.TEACHING as readonly string[]).some(r => roles.includes(r));
 }
 
+function isSupportStaff(roles: string[]): boolean {
+  return (ROLE_GROUPS.SUPPORT as readonly string[]).some(r => roles.includes(r));
+}
+
 function isStudentRole(roles: string[]): boolean {
   return roles.includes('student');
 }
@@ -124,8 +128,8 @@ export function scopeToUser(entityFilter: 'studentId' | 'personId' = 'studentId'
 
     const roles = getUserRoles(req.user);
 
-    // Admin and teaching staff see all data
-    if (isAdminStaff(roles) || isTeachingStaff(roles)) {
+    // Admin, teaching, and support staff see all data
+    if (isAdminStaff(roles) || isTeachingStaff(roles) || isSupportStaff(roles)) {
       return next();
     }
 
@@ -171,8 +175,8 @@ export function requireOwnership(getResourceOwnerId: (req: Request) => Promise<s
 
     const roles = getUserRoles(req.user);
 
-    // Admin and teaching staff bypass ownership check
-    if (isAdminStaff(roles) || isTeachingStaff(roles)) {
+    // Admin, teaching, and support staff bypass ownership check
+    if (isAdminStaff(roles) || isTeachingStaff(roles) || isSupportStaff(roles)) {
       return next();
     }
 
@@ -204,8 +208,8 @@ export function injectOwnerOnCreate(field: 'studentId' | 'personId' = 'studentId
 
     const roles = getUserRoles(req.user);
 
-    // Admin and teaching staff may specify any owner
-    if (isAdminStaff(roles) || isTeachingStaff(roles)) {
+    // Admin, teaching, and support staff may specify any owner
+    if (isAdminStaff(roles) || isTeachingStaff(roles) || isSupportStaff(roles)) {
       return next();
     }
 
