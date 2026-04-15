@@ -134,6 +134,12 @@ services:
         condition: service_healthy
     networks:
       - sjms-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # ── API Server ─────────────────────────────────────────────────
   # Rebuilt 2026-04-11 (Phase 2.5 Task 4): multi-stage Dockerfile with a
