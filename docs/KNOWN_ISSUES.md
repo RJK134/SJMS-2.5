@@ -154,6 +154,52 @@ must be resolved before Phase 9 completion.
 **Deferral reason:** Provisioning script scope was limited to workflow import; credential lifecycle is a separate concern.  
 **Resolution plan:** Phase 7 — update provisioning script to (a) create the HTTP Header Auth credential via the n8n API if absent, (b) retrieve its assigned ID, and (c) patch workflow JSON with the real credential ID before importing.
 
+### KI-P10b-001: Finance sub-domain APIs (Sponsors, Bursaries, Refunds) not implemented — OPEN 2026-04-15
+
+**Severity:** AMBER  
+**Phase introduced:** Phase 10b — Review Remediation  
+**File(s):** `client/src/pages/finance/Sponsors.tsx`, `Bursaries.tsx`, `Refunds.tsx`  
+**Problem:** Sponsor agreements, bursary management, and refund approvals each require dedicated backend APIs with domain-specific business logic (approval workflows, eligibility rules, credit note generation, payment gateway integration). The frontend pages now show honest ComingSoon components instead of misleading empty DataTables.  
+**Deferral reason:** These are net-new API domains requiring design decisions on entity models, workflows, and external integrations. Out of scope for the review remediation pass.  
+**Resolution plan:** Phase 11 or dedicated finance sprint. Use Invoicing page for current account balance visibility.
+
+**Detection command:**
+```bash
+grep -l "ComingSoon" client/src/pages/finance/*.tsx
+```
+
+---
+
+### KI-P10b-002: MinIO binary file upload not wired — OPEN 2026-04-15
+
+**Severity:** AMBER  
+**Phase introduced:** Phase 10b — Review Remediation  
+**File(s):** `client/src/pages/student-portal/MyDocuments.tsx`, `client/src/pages/applicant/UploadDocuments.tsx`  
+**Problem:** Document upload creates metadata records in PostgreSQL via the documents API, but binary files are not uploaded to MinIO. The FileUpload component captures file selections but only posts metadata (title, mimeType, fileSize). Students and applicants are directed to email documents as a workaround.  
+**Deferral reason:** MinIO upload requires presigned URL generation, multipart upload handling, virus scanning integration, and file size enforcement — significant backend work beyond the review remediation scope.  
+**Resolution plan:** Dedicated document management sprint. Backend: presigned URL endpoint, upload confirmation webhook, file validation. Frontend: progress bar, retry logic.
+
+**Detection command:**
+```bash
+grep -n "email.*documents\|binary.*deferred\|being configured" client/src/pages/student-portal/MyDocuments.tsx client/src/pages/applicant/UploadDocuments.tsx
+```
+
+---
+
+### KI-P10b-003: Academic portal module scoping — OPEN 2026-04-15
+
+**Severity:** AMBER  
+**Phase introduced:** Phase 10b — Review Remediation  
+**File(s):** `client/src/pages/academic/MyMarksEntry.tsx`, `client/src/pages/academic/MyModeration.tsx`  
+**Problem:** Academic staff see all modules and marks in the system, not just those assigned to them. The module list in MyMarksEntry fetches `/v1/modules` without filtering by the logged-in academic's teaching assignments. MyModeration similarly fetches all MARKED submissions rather than only those for modules the academic teaches or moderates.  
+**Deferral reason:** Requires a teaching-assignment or module-staff junction table and corresponding `scopeToUser` middleware for the modules and marks endpoints. The current Prisma schema does not model staff-to-module assignments explicitly.  
+**Resolution plan:** Add `ModuleStaff` model (or similar) to Prisma schema, seed teaching assignments, add `scopeToUser('staffId')` to academic-facing API calls.
+
+**Detection command:**
+```bash
+grep -n "useList.*modules\|useList.*marks" client/src/pages/academic/MyMarksEntry.tsx client/src/pages/academic/MyModeration.tsx
+```
+
 ---
 
 ## Closed issues

@@ -326,3 +326,24 @@ At session end or architectural questions, prepare:
 **Known Issues:** 0 open (KI-P3-001 closed)
 
 **SJMS 2.5 core build complete. Phase 10b review remediation in progress — see docs/review/.**
+
+---
+
+## Phase 10b — Review Remediation (COMPLETE)
+
+**Branch:** `phase-10b/review-remediation`
+**PR:** #39
+**Base:** `main @ 7668c97`
+
+| Batch | Focus | Commit | Findings Resolved |
+|-------|-------|--------|-------------------|
+| 10b-review | SME/UAT effectiveness review (8 deliverables) | ca539cf | — (analysis only) |
+| 1 | Keycloak schema bootstrap, marks maxMark validation, StatusBadge extensions, docs accuracy | aac9eb4 | F1, F2, F3, F9 |
+| 2 | Academic portal: MyMarksEntry, MyModeration, MyExamBoards wired to APIs | 80ddad6 | F4 |
+| 3 | Student self-service: RaiseTicket, MyTickets, StudentProfile + support RBAC | 31f9bd5 | F5, F6 |
+| 4 | Finance honesty stubs, document upload wiring, documents RBAC | 8a96a85 | F7, F8 |
+| 5 | Closeout — KNOWN_ISSUES, docs, final verification | — | — |
+
+**Review findings addressed:** 9/9
+**New AMBER items logged:** 3 (KI-P10b-001, KI-P10b-002, KI-P10b-003)
+**Tests:** 56 unit tests passing (5 new maxMark validation tests)
