@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, Upload } from 'lucide-react';
+import { Loader2, FileText, Upload, Info } from 'lucide-react';
 import { useList } from '@/hooks/useApi';
 import FileUpload from '@/components/shared/FileUpload';
 
@@ -14,6 +16,7 @@ interface Document {
 }
 
 export default function UploadDocuments() {
+  const [uploadMessage, setUploadMessage] = useState('');
   const { data, isLoading } = useList<Document>('my-documents', '/v1/documents', { limit: 20 });
   const docs = data?.data ?? [];
 
@@ -24,8 +27,9 @@ export default function UploadDocuments() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Upload className="h-4 w-4" /> Upload New Document</CardTitle></CardHeader>
         <CardContent>
-          <FileUpload accept=".pdf,.jpg,.png,.doc,.docx" onFilesSelected={() => {}} />
+          <FileUpload accept=".pdf,.jpg,.png,.doc,.docx" onFilesSelected={() => setUploadMessage('Document upload is being configured. Please email your documents to admissions@futurehorizons.ac.uk in the meantime.')} />
           <p className="text-xs text-muted-foreground mt-2">Accepted formats: PDF, JPG, PNG, DOC, DOCX. Maximum file size: 10MB.</p>
+          {uploadMessage && <Alert className="mt-3"><Info className="h-4 w-4" /><AlertDescription>{uploadMessage}</AlertDescription></Alert>}
         </CardContent>
       </Card>
 
