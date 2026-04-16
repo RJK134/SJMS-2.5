@@ -11,15 +11,22 @@ vi.mock('../../repositories/enrolment.repository', () => ({
 }));
 vi.mock('../../utils/audit', () => ({ logAudit: vi.fn() }));
 vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
+vi.mock('../../utils/prisma', () => ({
+  default: {
+    moduleRegistration: { findMany: vi.fn(), update: vi.fn() },
+  },
+}));
 
 import * as enrolmentService from '../../api/enrolments/enrolments.service';
 import * as repo from '../../repositories/enrolment.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
+import prisma from '../../utils/prisma';
 
 const mockedRepo = vi.mocked(repo);
 const mockedLogAudit = vi.mocked(logAudit);
 const mockedEmitEvent = vi.mocked(emitEvent);
+const mockedPrisma = prisma as any;
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 const fakeEnrolment = {
@@ -44,6 +51,7 @@ const fakeReq = { ip: '127.0.0.1', user: {}, get: vi.fn() } as any;
 describe('enrolments.service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockedPrisma.moduleRegistration.findMany.mockResolvedValue([]);
   });
 
   describe('list()', () => {

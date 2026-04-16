@@ -1108,6 +1108,31 @@ async function seedHESAEntities(students: any[], modules: any[]) {
 }
 
 // ─── Module Delivery & Teaching Events ──────────────────────────────────────
+async function seedSystemSettings() {
+  const passMarkDefaults = [
+    { settingKey: 'assessment.pass_mark.level_3', settingValue: '40', category: 'assessment', description: 'Pass mark for Level 3 (foundation/access)' },
+    { settingKey: 'assessment.pass_mark.level_4', settingValue: '40', category: 'assessment', description: 'Pass mark for Level 4 (certificate)' },
+    { settingKey: 'assessment.pass_mark.level_5', settingValue: '40', category: 'assessment', description: 'Pass mark for Level 5 (diploma)' },
+    { settingKey: 'assessment.pass_mark.level_6', settingValue: '40', category: 'assessment', description: 'Pass mark for Level 6 (honours)' },
+    { settingKey: 'assessment.pass_mark.level_7', settingValue: '50', category: 'assessment', description: 'Pass mark for Level 7 (masters/PGCert/PGDip)' },
+    { settingKey: 'assessment.pass_mark.level_8', settingValue: '50', category: 'assessment', description: 'Pass mark for Level 8 (doctorate)' },
+    { settingKey: 'enrolment.max_credits.full_time', settingValue: '120', category: 'enrolment', description: 'Maximum annual credits for full-time students' },
+    { settingKey: 'enrolment.max_credits.part_time', settingValue: '75', category: 'enrolment', description: 'Maximum annual credits for part-time students' },
+    { settingKey: 'enrolment.max_credits.sandwich', settingValue: '120', category: 'enrolment', description: 'Maximum annual credits for sandwich students' },
+    { settingKey: 'enrolment.max_credits.distance', settingValue: '120', category: 'enrolment', description: 'Maximum annual credits for distance learning students' },
+    { settingKey: 'enrolment.max_credits.block_release', settingValue: '120', category: 'enrolment', description: 'Maximum annual credits for block release students' },
+  ];
+
+  for (const s of passMarkDefaults) {
+    await prisma.systemSetting.upsert({
+      where: { settingKey: s.settingKey },
+      update: {},
+      create: { ...s, createdBy: 'system' },
+    });
+  }
+  console.log(`  ✓ Seeded ${passMarkDefaults.length} SystemSetting defaults`);
+}
+
 async function seedModuleDeliveries(modules: any[], staff: any[]) {
   console.log('  Module deliveries + teaching events...');
 
@@ -1203,6 +1228,9 @@ async function main() {
 
   // B-05: Module deliveries + teaching events (Comet round 5)
   await seedModuleDeliveries(modules, staff);
+
+  // System settings (pass marks + credit limits)
+  await seedSystemSettings();
 
   // Summary
   const counts = await Promise.all([

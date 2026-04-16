@@ -3,7 +3,10 @@ import type { Request } from 'express';
 import * as repo from '../../repositories/moduleRegistration.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, ValidationError } from '../../utils/errors';
+import prisma from '../../utils/prisma';
+import { getPassMark, PASSING_GRADES } from '../../utils/pass-marks';
+import { getMaxCreditsForMode } from '../../utils/credit-limits';
 
 export interface ModuleRegistrationListQuery {
   cursor?: string;
@@ -35,7 +38,95 @@ export async function getById(id: string) {
   return result;
 }
 
+async function validatePrerequisites(moduleId: string, enrolmentId: string): Promise<void> {
+  const prerequisites = await prisma.modulePrerequisite.findMany({
+    where: { moduleId, isMandatory: true },
+    include: { prerequisiteModule: { select: { id: true, title: true, moduleCode: true } } },
+  });
+
+  if (prerequisites.length === 0) return;
+
+  const enrolment = await prisma.enrolment.findUnique({
+    where: { id: enrolmentId },
+    select: { studentId: true, programme: { select: { level: true } } },
+  });
+  if (!enrolment) return;
+
+  const passMark = await getPassMark(enrolment.programme.level);
+
+  const passedResults = await prisma.moduleResult.findMany({
+    where: {
+      moduleRegistration: { enrolment: { studentId: enrolment.studentId } },
+      moduleId: { in: prerequisites.map((p) => p.prerequisiteModuleId) },
+      status: { in: ['CONFIRMED', 'PROVISIONAL'] },
+      OR: [
+        { aggregateMark: { gte: passMark } },
+        {
+          aggregateMark: null,
+          grade: { in: Array.from(PASSING_GRADES) },
+        },
+      ],
+    },
+    select: { moduleId: true },
+  });
+
+  const passedModuleIds = new Set(passedResults.map((r) => r.moduleId));
+  const missing = prerequisites.filter((p) => !passedModuleIds.has(p.prerequisiteModuleId));
+
+  if (missing.length > 0) {
+    const names = missing.map((m) => `${m.prerequisiteModule.moduleCode} (${m.prerequisiteModule.title})`);
+    throw new ValidationError(
+      `Student has not completed mandatory prerequisites: ${names.join(', ')}`,
+      { prerequisites: names },
+    );
+  }
+}
+
+async function validateCreditLimit(moduleId: string, enrolmentId: string, academicYear: string): Promise<void> {
+  const [targetModule, enrolment] = await Promise.all([
+    prisma.module.findUnique({
+      where: { id: moduleId },
+      select: { credits: true },
+    }),
+    prisma.enrolment.findUnique({
+      where: { id: enrolmentId },
+      select: { modeOfStudy: true },
+    }),
+  ]);
+  if (!targetModule || !enrolment) return;
+
+  const existingRegistrations = await prisma.moduleRegistration.findMany({
+    where: {
+      enrolmentId,
+      academicYear,
+      status: { in: ['REGISTERED', 'COMPLETED'] },
+      deletedAt: null,
+    },
+    select: { moduleId: true },
+  });
+
+  const moduleIds = existingRegistrations.map((r) => r.moduleId);
+  const modules = await prisma.module.findMany({
+    where: { id: { in: moduleIds } },
+    select: { id: true, credits: true },
+  });
+  const creditMap = new Map(modules.map((m) => [m.id, m.credits]));
+
+  const currentCredits = existingRegistrations.reduce((sum, r) => sum + (creditMap.get(r.moduleId) ?? 0), 0);
+  const maxCredits = await getMaxCreditsForMode(enrolment.modeOfStudy);
+
+  if (currentCredits + targetModule.credits > maxCredits) {
+    throw new ValidationError(
+      `Registration would exceed credit limit: ${currentCredits} current + ${targetModule.credits} new = ${currentCredits + targetModule.credits} (max ${maxCredits} for ${enrolment.modeOfStudy})`,
+      { credits: [`Exceeds ${maxCredits} credit limit (${enrolment.modeOfStudy})`] },
+    );
+  }
+}
+
 export async function create(data: Prisma.ModuleRegistrationUncheckedCreateInput, userId: string, req: Request) {
+  await validatePrerequisites(data.moduleId, data.enrolmentId);
+  await validateCreditLimit(data.moduleId, data.enrolmentId, data.academicYear);
+
   const result = await repo.create(data);
   await logAudit('ModuleRegistration', result.id, 'CREATE', userId, null, result, req);
   emitEvent({

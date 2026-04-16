@@ -218,6 +218,26 @@ grep -rn "emitEvent('" server/src/api --include="*.service.ts" | grep -v "emitEv
 
 ---
 
+### KI-P12-001: Enrolment cascade bypasses module registration repository — OPEN 2026-04-16
+
+**Severity:** LOW
+**Phase introduced:** Phase 12 (inherited from PR #41 P0 fixes)
+**File(s):** `server/src/api/enrolments/enrolments.service.ts:90-93`
+**Problem:** The enrolment status cascade calls `prisma.moduleRegistration.update()` directly
+from the enrolments service, bypassing the repository pattern that all 44 modules follow.
+Flagged by BugBot as NON-BLOCKING.
+**Deferral reason:** Refactoring into a `moduleRegistrationRepo.updateForEnrolmentCascade()`
+helper would touch shared infrastructure; intentionally deferred to avoid scope creep in
+the BugBot remediation PR.
+**Resolution plan:** Phase 13 repository-layer cleanup.
+
+**Detection command:**
+```bash
+grep -n "prisma.moduleRegistration" server/src/api/enrolments/enrolments.service.ts
+```
+
+---
+
 ## Closed issues
 
 ### KI-001: 23 pre-existing TypeScript errors in server — CLOSED 2026-04-11

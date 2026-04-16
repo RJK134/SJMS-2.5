@@ -2589,7 +2589,7 @@ model GradeBoundary {
 model AnonymousMarking {
   id           String     @id @default(cuid())
   assessmentId String     @map("assessment_id")
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   studentId    String     @map("student_id")
   anonymousId  String     @unique @map("anonymous_id")
   revealed     Boolean    @default(false)
@@ -2641,6 +2641,7 @@ model AssessmentComponent {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("assessment_components")
   @@index([assessmentId])
@@ -2665,6 +2666,7 @@ model MarkEntry {
 
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("mark_entries")
   @@index([assessmentComponentId])
@@ -2909,6 +2911,7 @@ model ChargeLine {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("charge_lines")
   @@index([studentAccountId])
@@ -2935,6 +2938,7 @@ model Invoice {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("invoices")
   @@index([studentAccountId])
@@ -2956,6 +2960,7 @@ model Payment {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("payments")
   @@index([studentAccountId])
