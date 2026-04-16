@@ -50,6 +50,14 @@ export async function getById(id: string) {
 
 export async function create(data: Prisma.AssessmentAttemptUncheckedCreateInput, userId: string, req: Request) {
   await validateMarkBounds(data.assessmentId, data.rawMark as number | undefined, data.finalMark as number | undefined);
+
+  if (data.finalMark != null && !data.grade && data.assessmentId) {
+    const autoGrade = await resolveGradeFromMark(data.assessmentId, Number(data.finalMark));
+    if (autoGrade) {
+      data.grade = autoGrade;
+    }
+  }
+
   const result = await repo.create(data);
   await logAudit('AssessmentAttempt', result.id, 'CREATE', userId, null, result, req);
   const createEventMap: Record<string, string> = {
