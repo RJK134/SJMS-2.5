@@ -30,8 +30,8 @@ const filterConfig: FilterConfig[] = [
     { value: 'TRANSCRIPT', label: 'Transcript' }, { value: 'CERTIFICATE', label: 'Certificate' },
     { value: 'ID_DOCUMENT', label: 'ID Document' }, { value: 'OTHER', label: 'Other' },
   ]},
-  { key: 'status', label: 'Status', options: [
-    { value: 'UPLOADED', label: 'Uploaded' }, { value: 'VERIFIED', label: 'Verified' },
+  { key: 'verificationStatus', label: 'Verification Status', options: [
+    { value: 'PENDING', label: 'Pending' }, { value: 'VERIFIED', label: 'Verified' },
     { value: 'REJECTED', label: 'Rejected' },
   ]},
 ];

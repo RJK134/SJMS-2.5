@@ -8,9 +8,10 @@ import { useList, type QueryParams } from '@/hooks/useApi';
 interface AttendanceAlert {
   id: string;
   alertType: string;
-  severity: string;
+  threshold?: number;
+  currentValue?: number;
   status: string;
-  message?: string;
+  triggerDate?: string;
   createdAt: string;
   student?: { person?: { firstName: string; lastName: string }; studentNumber?: string };
 }
@@ -18,19 +19,20 @@ interface AttendanceAlert {
 const columns: Column<AttendanceAlert>[] = [
   { key: 'student', label: 'Student', render: r => r.student?.person ? `${r.student.person.firstName} ${r.student.person.lastName}` : '—' },
   { key: 'alertType', label: 'Alert Type', render: r => r.alertType.replace(/_/g, ' ') },
-  { key: 'severity', label: 'Severity', render: r => <StatusBadge status={r.severity} /> },
-  { key: 'message', label: 'Message', render: r => r.message ? (r.message.length > 50 ? r.message.slice(0, 50) + '...' : r.message) : '—' },
+  { key: 'currentValue', label: 'Value', render: r => r.currentValue != null ? `${r.currentValue}%` : '—' },
+  { key: 'threshold', label: 'Threshold', render: r => r.threshold != null ? `${r.threshold}%` : '—' },
   { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
   { key: 'createdAt', label: 'Raised', render: r => new Date(r.createdAt).toLocaleDateString('en-GB') },
 ];
 
 const filterConfig: FilterConfig[] = [
-  { key: 'severity', label: 'Severity', options: [
-    { value: 'LOW', label: 'Low' }, { value: 'MEDIUM', label: 'Medium' },
-    { value: 'HIGH', label: 'High' }, { value: 'CRITICAL', label: 'Critical' },
+  { key: 'alertType', label: 'Alert Type', options: [
+    { value: 'LOW_ATTENDANCE', label: 'Low Attendance' }, { value: 'CONSECUTIVE_ABSENCE', label: 'Consecutive Absence' },
+    { value: 'TIER4_RISK', label: 'Tier 4 Risk' }, { value: 'ENGAGEMENT_DROP', label: 'Engagement Drop' },
+    { value: 'DEBT', label: 'Debt' },
   ]},
   { key: 'status', label: 'Status', options: [
-    { value: 'OPEN', label: 'Open' }, { value: 'ACKNOWLEDGED', label: 'Acknowledged' },
+    { value: 'ACTIVE', label: 'Active' }, { value: 'ACKNOWLEDGED', label: 'Acknowledged' },
     { value: 'RESOLVED', label: 'Resolved' },
   ]},
 ];
