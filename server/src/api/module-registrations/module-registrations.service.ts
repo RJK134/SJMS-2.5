@@ -6,6 +6,7 @@ import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError, ValidationError } from '../../utils/errors';
 import prisma from '../../utils/prisma';
 import { getPassMark, PASSING_GRADES } from '../../utils/pass-marks';
+import { getMaxCreditsForMode } from '../../utils/credit-limits';
 
 export interface ModuleRegistrationListQuery {
   cursor?: string;
@@ -82,11 +83,17 @@ async function validatePrerequisites(moduleId: string, enrolmentId: string): Pro
 }
 
 async function validateCreditLimit(moduleId: string, enrolmentId: string, academicYear: string): Promise<void> {
-  const targetModule = await prisma.module.findUnique({
-    where: { id: moduleId },
-    select: { credits: true },
-  });
-  if (!targetModule) return;
+  const [targetModule, enrolment] = await Promise.all([
+    prisma.module.findUnique({
+      where: { id: moduleId },
+      select: { credits: true },
+    }),
+    prisma.enrolment.findUnique({
+      where: { id: enrolmentId },
+      select: { modeOfStudy: true },
+    }),
+  ]);
+  if (!targetModule || !enrolment) return;
 
   const existingRegistrations = await prisma.moduleRegistration.findMany({
     where: {
@@ -106,12 +113,12 @@ async function validateCreditLimit(moduleId: string, enrolmentId: string, academ
   const creditMap = new Map(modules.map((m) => [m.id, m.credits]));
 
   const currentCredits = existingRegistrations.reduce((sum, r) => sum + (creditMap.get(r.moduleId) ?? 0), 0);
-  const maxCredits = 120;
+  const maxCredits = await getMaxCreditsForMode(enrolment.modeOfStudy);
 
   if (currentCredits + targetModule.credits > maxCredits) {
     throw new ValidationError(
-      `Registration would exceed credit limit: ${currentCredits} current + ${targetModule.credits} new = ${currentCredits + targetModule.credits} (max ${maxCredits})`,
-      { credits: [`Exceeds ${maxCredits} credit limit for academic year`] },
+      `Registration would exceed credit limit: ${currentCredits} current + ${targetModule.credits} new = ${currentCredits + targetModule.credits} (max ${maxCredits} for ${enrolment.modeOfStudy})`,
+      { credits: [`Exceeds ${maxCredits} credit limit (${enrolment.modeOfStudy})`] },
     );
   }
 }

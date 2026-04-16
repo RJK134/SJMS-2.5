@@ -62,6 +62,7 @@ describe('module-registrations.service', () => {
       ]);
       mockedPrisma.enrolment.findUnique.mockResolvedValue({
         studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
@@ -83,6 +84,7 @@ describe('module-registrations.service', () => {
       ]);
       mockedPrisma.enrolment.findUnique.mockResolvedValue({
         studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
@@ -99,6 +101,7 @@ describe('module-registrations.service', () => {
       ]);
       mockedPrisma.enrolment.findUnique.mockResolvedValue({
         studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
@@ -122,6 +125,7 @@ describe('module-registrations.service', () => {
       ]);
       mockedPrisma.enrolment.findUnique.mockResolvedValue({
         studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_7' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
@@ -141,6 +145,7 @@ describe('module-registrations.service', () => {
       ]);
       mockedPrisma.enrolment.findUnique.mockResolvedValue({
         studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue({
@@ -155,6 +160,125 @@ describe('module-registrations.service', () => {
 
       const whereArg = (mockedPrisma.moduleResult.findMany as any).mock.calls[0][0].where;
       expect(whereArg.OR[0].aggregateMark.gte).toBe(45);
+    });
+  });
+
+  describe('validateCreditLimit via create()', () => {
+    beforeEach(() => {
+      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([]);
+      mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
+    });
+
+    it('allows full-time student registering a 120-credit load', async () => {
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+        { moduleId: 'mod-a' },
+        { moduleId: 'mod-b' },
+        { moduleId: 'mod-c' },
+        { moduleId: 'mod-d' },
+        { moduleId: 'mod-e' },
+      ]);
+      mockedPrisma.module.findMany.mockResolvedValue([
+        { id: 'mod-a', credits: 20 },
+        { id: 'mod-b', credits: 20 },
+        { id: 'mod-c', credits: 20 },
+        { id: 'mod-d', credits: 20 },
+        { id: 'mod-e', credits: 20 },
+      ]);
+      mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
+
+      await expect(
+        service.create(baseRegistrationInput as any, 'user-1', fakeReq),
+      ).resolves.toBeDefined();
+    });
+
+    it('blocks full-time student exceeding 120 credits', async () => {
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 30 });
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+        { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' }, { moduleId: 'mod-d' }, { moduleId: 'mod-e' }, { moduleId: 'mod-f' },
+      ]);
+      mockedPrisma.module.findMany.mockResolvedValue([
+        { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 }, { id: 'mod-d', credits: 20 }, { id: 'mod-e', credits: 20 }, { id: 'mod-f', credits: 20 },
+      ]);
+
+      await expect(
+        service.create(baseRegistrationInput as any, 'user-1', fakeReq),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('allows part-time student registering 60 credits', async () => {
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'PART_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+        { moduleId: 'mod-a' }, { moduleId: 'mod-b' },
+      ]);
+      mockedPrisma.module.findMany.mockResolvedValue([
+        { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 },
+      ]);
+      mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
+
+      await expect(
+        service.create(baseRegistrationInput as any, 'user-1', fakeReq),
+      ).resolves.toBeDefined();
+    });
+
+    it('blocks part-time student exceeding 75 credits', async () => {
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'PART_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+        { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' },
+      ]);
+      mockedPrisma.module.findMany.mockResolvedValue([
+        { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 },
+      ]);
+
+      await expect(
+        service.create(baseRegistrationInput as any, 'user-1', fakeReq),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('respects SystemSetting override for part-time credit limit', async () => {
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'PART_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.systemSetting.findUnique.mockImplementation(({ where }: any) => {
+        if (where.settingKey === 'enrolment.max_credits.part_time') {
+          return { settingKey: where.settingKey, settingValue: '90' };
+        }
+        return null;
+      });
+      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+        { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' },
+      ]);
+      mockedPrisma.module.findMany.mockResolvedValue([
+        { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 },
+      ]);
+      mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
+
+      await expect(
+        service.create(baseRegistrationInput as any, 'user-1', fakeReq),
+      ).resolves.toBeDefined();
     });
   });
 });
