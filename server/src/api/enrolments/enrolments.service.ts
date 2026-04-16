@@ -4,6 +4,7 @@ import * as repo from '../../repositories/enrolment.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
+import prisma from '../../utils/prisma';
 
 export interface EnrolmentListQuery {
   cursor?: string;
@@ -77,6 +78,37 @@ export async function update(id: string, data: Prisma.EnrolmentUpdateInput, user
         newStatus: result.status,
       },
     });
+
+    const NON_ACTIVE_STATUSES = ['INTERRUPTED', 'SUSPENDED', 'WITHDRAWN'];
+    if (NON_ACTIVE_STATUSES.includes(result.status)) {
+      const regStatus = result.status === 'WITHDRAWN' ? 'WITHDRAWN' : 'DEFERRED';
+      const activeRegs = await prisma.moduleRegistration.findMany({
+        where: { enrolmentId: id, status: 'REGISTERED', deletedAt: null },
+        select: { id: true, moduleId: true },
+      });
+
+      for (const reg of activeRegs) {
+        await prisma.moduleRegistration.update({
+          where: { id: reg.id },
+          data: { status: regStatus, updatedBy: userId },
+        });
+        await logAudit('ModuleRegistration', reg.id, 'UPDATE', userId,
+          { status: 'REGISTERED' }, { status: regStatus }, req);
+        emitEvent({
+          event: 'module_registration.status_changed',
+          entityType: 'ModuleRegistration',
+          entityId: reg.id,
+          actorId: userId,
+          data: {
+            enrolmentId: id,
+            moduleId: reg.moduleId,
+            previousStatus: 'REGISTERED',
+            newStatus: regStatus,
+            reason: `Enrolment ${result.status.toLowerCase()}`,
+          },
+        });
+      }
+    }
   }
   return result;
 }

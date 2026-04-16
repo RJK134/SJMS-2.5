@@ -40,6 +40,12 @@ export interface JWTPayload {
 // to /#/student/... arrives at the server with X-Dev-Persona: student and
 // downstream scoping middleware sees a plausible student identity instead
 // of the old super-admin short-circuit. See client/src/lib/auth.ts.
+if (process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV === 'production') {
+  // eslint-disable-next-line no-console
+  console.error('[auth] FATAL: AUTH_BYPASS must not be enabled in production. Exiting.');
+  process.exit(1);
+}
+
 const AUTH_BYPASS =
   process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV !== 'production';
 

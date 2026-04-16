@@ -14,6 +14,7 @@ vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
 vi.mock('../../repositories/assessment.repository', () => ({
   getById: vi.fn(),
 }));
+vi.mock('../../utils/grade-boundaries', () => ({ resolveGradeFromMark: vi.fn().mockResolvedValue(null) }));
 
 import * as marksService from '../../api/marks/marks.service';
 import * as repo from '../../repositories/assessmentAttempt.repository';

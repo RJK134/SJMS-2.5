@@ -5,6 +5,7 @@ import * as assessmentRepo from '../../repositories/assessment.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError, ValidationError } from '../../utils/errors';
+import { resolveGradeFromMark } from '../../utils/grade-boundaries';
 
 /** Validate that rawMark and finalMark do not exceed the assessment's maxMark. */
 async function validateMarkBounds(assessmentId: string, rawMark?: number | null, finalMark?: number | null): Promise<void> {
@@ -12,7 +13,7 @@ async function validateMarkBounds(assessmentId: string, rawMark?: number | null,
   const assessment = await assessmentRepo.getById(assessmentId);
   if (!assessment) throw new NotFoundError('Assessment', assessmentId);
   const max = assessment.maxMark != null ? Number(assessment.maxMark) : null;
-  if (max == null) return; // no maxMark defined on assessment — skip validation
+  if (max == null) return;
   if (rawMark != null && Number(rawMark) > max) {
     throw new ValidationError(`rawMark (${rawMark}) exceeds assessment maximum of ${max}`);
   }
@@ -80,6 +81,19 @@ export async function update(id: string, data: Prisma.AssessmentAttemptUpdateInp
     : undefined;
   const effectiveAssessmentId = reassignedId ?? previous.assessmentId;
   await validateMarkBounds(effectiveAssessmentId, data.rawMark as number | undefined, data.finalMark as number | undefined);
+
+  if (data.finalMark != null && !data.grade && effectiveAssessmentId) {
+    const autoGrade = await resolveGradeFromMark(
+      effectiveAssessmentId,
+      typeof data.finalMark === 'object' && 'set' in data.finalMark
+        ? Number(data.finalMark.set)
+        : Number(data.finalMark),
+    );
+    if (autoGrade) {
+      data.grade = autoGrade;
+    }
+  }
+
   const result = await repo.update(id, data);
   await logAudit('AssessmentAttempt', id, 'UPDATE', userId, previous, result, req);
 
