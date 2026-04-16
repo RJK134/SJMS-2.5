@@ -27,7 +27,7 @@ const columns: Column<ECClaim>[] = [
 
 export default function StudentMyECClaims() {
   const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
-  const { data, isLoading } = useList<ECClaim>('my-ec-claims', '/v1/ec-claims', params);
+  const { data, isLoading } = useList<ECClaim>('student-ec-claims', '/v1/ec-claims', params);
 
   return (
     <div className="space-y-6">
