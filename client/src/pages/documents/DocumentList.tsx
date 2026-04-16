@@ -9,7 +9,7 @@ import { useList, type QueryParams } from '@/hooks/useApi';
 interface SjmsDocument {
   id: string;
   documentType: string;
-  fileName: string;
+  title: string;
   verificationStatus?: string;
   status: string;
   createdAt: string;
@@ -18,7 +18,7 @@ interface SjmsDocument {
 
 const columns: Column<SjmsDocument>[] = [
   { key: 'student', label: 'Student', render: r => r.student?.person ? `${r.student.person.firstName} ${r.student.person.lastName}` : '—' },
-  { key: 'fileName', label: 'File Name', sortable: true },
+  { key: 'title', label: 'Title', sortable: true },
   { key: 'documentType', label: 'Type', render: r => r.documentType.replace(/_/g, ' ') },
   { key: 'verificationStatus', label: 'Verification', render: r => r.verificationStatus ? <StatusBadge status={r.verificationStatus} /> : '—' },
   { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
@@ -28,7 +28,9 @@ const columns: Column<SjmsDocument>[] = [
 const filterConfig: FilterConfig[] = [
   { key: 'documentType', label: 'Type', options: [
     { value: 'TRANSCRIPT', label: 'Transcript' }, { value: 'CERTIFICATE', label: 'Certificate' },
-    { value: 'ID_DOCUMENT', label: 'ID Document' }, { value: 'OTHER', label: 'Other' },
+    { value: 'EVIDENCE', label: 'Evidence' }, { value: 'LETTER', label: 'Letter' },
+    { value: 'PASSPORT', label: 'Passport' }, { value: 'VISA', label: 'Visa' },
+    { value: 'QUALIFICATION', label: 'Qualification' }, { value: 'OTHER', label: 'Other' },
   ]},
   { key: 'verificationStatus', label: 'Verification Status', options: [
     { value: 'PENDING', label: 'Pending' }, { value: 'VERIFIED', label: 'Verified' },
