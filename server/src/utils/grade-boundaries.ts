@@ -23,40 +23,7 @@ export async function resolveGradeFromMark(
   return null;
 }
 
-export async function calculateWeightedMark(
-  assessmentId: string,
-  moduleRegistrationId: string,
-): Promise<number | null> {
-  const components = await prisma.assessmentComponent.findMany({
-    where: { assessmentId, deletedAt: null },
-    orderBy: { sortOrder: 'asc' },
-  });
-
-  if (components.length === 0) return null;
-
-  let weightedTotal = 0;
-  let totalWeight = 0;
-
-  for (const component of components) {
-    const latestMark = await prisma.markEntry.findFirst({
-      where: {
-        assessmentComponentId: component.id,
-        moduleRegistrationId,
-        mark: { not: null },
-        deletedAt: null,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!latestMark || latestMark.mark == null) return null;
-
-    const normalised = (Number(latestMark.mark) / Number(component.maxMark)) * 100;
-    weightedTotal += normalised * (component.weighting / 100);
-    totalWeight += component.weighting;
-  }
-
-  if (totalWeight === 0) return null;
-
-  const scaledMark = (weightedTotal / totalWeight) * 100;
-  return Math.round(scaledMark * 100) / 100;
-}
+// TODO [P1]: Implement mark aggregation endpoint (POST /v1/marks/aggregate)
+// — Wire component → assessment → module result aggregation
+// — Requires integration tests for full marks pipeline
+// — See docs/review/phase-10b-now/07-priority-actions.md #5
