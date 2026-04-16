@@ -9,7 +9,6 @@ export const querySchema = z.object({
   order: z.enum(['asc', 'desc']).default('desc'),
   search: z.string().optional(),
   studentId: z.string().optional(), status: z.string().optional(),
-  claimType: z.string().optional(),
 });
 
 export const createSchema = z.object({

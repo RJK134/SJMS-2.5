@@ -26,10 +26,11 @@ const fakeClaim = {
   id: 'ec-1',
   studentId: 'stu-1',
   moduleRegistrationId: 'modreg-1',
-  claimType: 'EXTENSION',
   reason: 'Medical emergency',
+  evidenceType: 'MEDICAL_CERTIFICATE',
   status: 'SUBMITTED',
   decision: null,
+  submittedDate: new Date(),
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
@@ -57,7 +58,7 @@ describe('ec-claims.service', () => {
       });
 
       expect(mockedRepo.list).toHaveBeenCalledWith(
-        { studentId: undefined, status: undefined, claimType: undefined },
+        { studentId: undefined, status: undefined },
         { cursor: undefined, limit: 20, sort: 'createdAt', order: 'desc' },
       );
       expect(result).toEqual(paginatedResult);
@@ -72,11 +73,10 @@ describe('ec-claims.service', () => {
         order: 'asc',
         studentId: 'stu-1',
         status: 'SUBMITTED',
-        claimType: 'EXTENSION',
       });
 
       expect(mockedRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ studentId: 'stu-1', status: 'SUBMITTED', claimType: 'EXTENSION' }),
+        expect.objectContaining({ studentId: 'stu-1', status: 'SUBMITTED' }),
         expect.any(Object),
       );
     });
@@ -105,8 +105,9 @@ describe('ec-claims.service', () => {
       const createData = {
         studentId: 'stu-1',
         moduleRegistrationId: 'modreg-1',
-        claimType: 'EXTENSION',
         reason: 'Medical emergency',
+        evidenceType: 'MEDICAL_CERTIFICATE',
+        submittedDate: new Date(),
       };
       mockedRepo.create.mockResolvedValue({ ...fakeClaim, ...createData } as any);
 

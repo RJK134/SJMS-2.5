@@ -8,21 +8,22 @@ import { useList, type QueryParams } from '@/hooks/useApi';
 
 interface ECClaim {
   id: string;
-  claimType: string;
+  evidenceType?: string;
   status: string;
   reason?: string;
   decision?: string;
+  submittedDate?: string;
   createdAt: string;
   moduleRegistration?: { module?: { moduleCode: string; title: string } };
 }
 
 const columns: Column<ECClaim>[] = [
-  { key: 'claimType', label: 'Type', render: r => r.claimType.replace(/_/g, ' ') },
+  { key: 'evidenceType', label: 'Evidence', render: r => r.evidenceType?.replace(/_/g, ' ') ?? '—' },
   { key: 'moduleRegistration', label: 'Module', render: r => r.moduleRegistration?.module?.moduleCode ?? '—' },
   { key: 'reason', label: 'Reason', render: r => r.reason ? (r.reason.length > 40 ? r.reason.slice(0, 40) + '...' : r.reason) : '—' },
   { key: 'decision', label: 'Decision', render: r => r.decision ?? 'Pending' },
   { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
-  { key: 'createdAt', label: 'Submitted', render: r => new Date(r.createdAt).toLocaleDateString('en-GB') },
+  { key: 'createdAt', label: 'Submitted', render: r => new Date(r.submittedDate ?? r.createdAt).toLocaleDateString('en-GB') },
 ];
 
 export default function StudentMyECClaims() {

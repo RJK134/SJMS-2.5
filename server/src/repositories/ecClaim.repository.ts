@@ -5,7 +5,6 @@ import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../ut
 export interface ECClaimFilters {
   studentId?: string;
   status?: string;
-  claimType?: string;
 }
 
 export async function list(filters: ECClaimFilters = {}, pagination: CursorPaginationParams) {
@@ -13,7 +12,6 @@ export async function list(filters: ECClaimFilters = {}, pagination: CursorPagin
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
     ...(filters.status && { status: filters.status as any }),
-    ...(filters.claimType && { claimType: filters.claimType as any }),
   };
 
   const [data, total] = await Promise.all([

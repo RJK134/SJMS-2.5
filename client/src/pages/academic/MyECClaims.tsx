@@ -6,10 +6,11 @@ import { useList, type QueryParams } from '@/hooks/useApi';
 
 interface ECClaim {
   id: string;
-  claimType: string;
+  evidenceType?: string;
   status: string;
   reason?: string;
   decision?: string;
+  submittedDate?: string;
   createdAt: string;
   student?: { person?: { firstName: string; lastName: string } };
   moduleRegistration?: { module?: { moduleCode: string; title: string } };
@@ -18,10 +19,10 @@ interface ECClaim {
 const columns: Column<ECClaim>[] = [
   { key: 'student', label: 'Student', render: r => r.student?.person ? `${r.student.person.firstName} ${r.student.person.lastName}` : '—' },
   { key: 'moduleRegistration', label: 'Module', render: r => r.moduleRegistration?.module?.moduleCode ?? '—' },
-  { key: 'claimType', label: 'Type', render: r => r.claimType.replace(/_/g, ' ') },
-  { key: 'decision', label: 'Decision', render: r => r.decision ?? '—' },
+  { key: 'evidenceType', label: 'Evidence', render: r => r.evidenceType?.replace(/_/g, ' ') ?? '—' },
+  { key: 'decision', label: 'Decision', render: r => r.decision ?? 'Pending' },
   { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
-  { key: 'createdAt', label: 'Submitted', render: r => new Date(r.createdAt).toLocaleDateString('en-GB') },
+  { key: 'createdAt', label: 'Submitted', render: r => new Date(r.submittedDate ?? r.createdAt).toLocaleDateString('en-GB') },
 ];
 
 export default function MyECClaims() {

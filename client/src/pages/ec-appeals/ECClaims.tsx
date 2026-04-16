@@ -8,10 +8,11 @@ import { useList, type QueryParams } from '@/hooks/useApi';
 
 interface ECClaim {
   id: string;
-  claimType: string;
+  evidenceType?: string;
   status: string;
   reason?: string;
-  submissionDate?: string;
+  decision?: string;
+  submittedDate?: string;
   createdAt: string;
   student?: { person?: { firstName: string; lastName: string } };
   moduleRegistration?: { module?: { moduleCode: string; title: string } };
@@ -19,20 +20,18 @@ interface ECClaim {
 
 const columns: Column<ECClaim>[] = [
   { key: 'student', label: 'Student', render: r => r.student?.person ? `${r.student.person.firstName} ${r.student.person.lastName}` : '—' },
-  { key: 'claimType', label: 'Claim Type', render: r => r.claimType.replace(/_/g, ' ') },
+  { key: 'evidenceType', label: 'Evidence Type', render: r => r.evidenceType?.replace(/_/g, ' ') ?? '—' },
   { key: 'moduleRegistration', label: 'Module', render: r => r.moduleRegistration?.module ? `${r.moduleRegistration.module.moduleCode} — ${r.moduleRegistration.module.title}` : '—' },
+  { key: 'decision', label: 'Decision', render: r => r.decision ?? 'Pending' },
   { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
-  { key: 'createdAt', label: 'Submitted', render: r => new Date(r.submissionDate ?? r.createdAt).toLocaleDateString('en-GB') },
+  { key: 'createdAt', label: 'Submitted', render: r => new Date(r.submittedDate ?? r.createdAt).toLocaleDateString('en-GB') },
 ];
 
 const filterConfig: FilterConfig[] = [
   { key: 'status', label: 'Status', options: [
-    { value: 'SUBMITTED', label: 'Submitted' }, { value: 'UNDER_REVIEW', label: 'Under Review' },
-    { value: 'APPROVED', label: 'Approved' }, { value: 'REJECTED', label: 'Rejected' },
-  ]},
-  { key: 'claimType', label: 'Claim Type', options: [
-    { value: 'ILLNESS', label: 'Illness' }, { value: 'BEREAVEMENT', label: 'Bereavement' },
-    { value: 'OTHER', label: 'Other' },
+    { value: 'SUBMITTED', label: 'Submitted' }, { value: 'EVIDENCE_RECEIVED', label: 'Evidence Received' },
+    { value: 'PRE_PANEL', label: 'Pre-Panel' }, { value: 'PANEL', label: 'Panel' },
+    { value: 'DECIDED', label: 'Decided' }, { value: 'CLOSED', label: 'Closed' },
   ]},
 ];
 
