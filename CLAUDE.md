@@ -375,3 +375,45 @@ At session end or architectural questions, prepare:
 **Infrastructure:** enriched health endpoint (DB check), n8n Docker healthcheck, systemSetting rename
 **Tests:** 109 total (56 existing + 53 new across 5 service test files)
 **New AMBER items:** 1 (KI-P11-001 — remaining emitEvent deprecated form in 25+ services)
+
+---
+
+## Phase 12 — Overnight Remediation Build (COMPLETE)
+
+**Base:** `main @ 422aa46`
+**Date:** 2026-04-16
+
+| Sub-phase | PR | Focus |
+|-----------|----|----|
+| 12 | #41 | PR #41 remediation: 3 BugBot findings (HIGH pass/fail check, MEDIUM mode-of-study credits, LOW dead code) + maxMark validation merge |
+| 12a | #42 | API module decomposition — 44 routers into 9 domain barrel groups (additive, flat routes preserved) |
+| 12b | #43 | Frontend API service layer — 9 typed domain services covering 44 entities |
+| 12c | pending | P0 priority action verification: items 1-11 audited against Phase 10b/11 state |
+
+**Business logic introduced:**
+- Prerequisite validation now dual-checks `aggregateMark >= passMark` OR `grade IN passingGrades`
+- Credit limit enforcement respects `ModeOfStudy` (FULL_TIME 120, PART_TIME 75, etc.)
+- Both externalised via `SystemSetting` (institution-configurable per Phase 8D pattern)
+- Marks auto-grade resolution now applies on both `create()` and `update()` paths
+
+**New utilities:**
+- `server/src/utils/pass-marks.ts` — pass mark lookup by RQF level
+- `server/src/utils/credit-limits.ts` — credit limit lookup by ModeOfStudy
+
+**New seed defaults:** 11 SystemSetting rows (6 pass marks + 5 credit limits)
+
+**New API surface:**
+- 9 group health endpoints under `/api/v1/{group}/health`
+- All existing flat routes unchanged
+
+**Test coverage:** 120 unit tests (109 + 11 new for module-registrations service)
+**New AMBER items:** 1 (KI-P12-001 — enrolment cascade bypasses moduleRegistrations repo; LOW severity)
+
+**P0 priority action status (from docs/review/phase-10b-now/07-priority-actions.md):**
+- #1-3 (academic portal wiring): closed in Phase 10b (PR #39)
+- #4 (maxMark validation): closed in PR #41
+- #5 (Keycloak schema bootstrap): verified present in `docker/postgres/01-create-schemas.sql`
+- #6-8 (student portal wiring): closed in Phase 10b
+- #9 (finance sub-pages): verified Sponsors/Refunds are honest ComingSoon; Invoicing wired to real data
+- #10 (document upload no-op): verified informative fallback message in place
+- #11 (CLAUDE.md updates): this section
