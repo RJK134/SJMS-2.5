@@ -5,6 +5,7 @@ import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError, ValidationError } from '../../utils/errors';
 import prisma from '../../utils/prisma';
+import { getPassMark, PASSING_GRADES } from '../../utils/pass-marks';
 
 export interface ModuleRegistrationListQuery {
   cursor?: string;
@@ -46,15 +47,24 @@ async function validatePrerequisites(moduleId: string, enrolmentId: string): Pro
 
   const enrolment = await prisma.enrolment.findUnique({
     where: { id: enrolmentId },
-    select: { studentId: true },
+    select: { studentId: true, programme: { select: { level: true } } },
   });
   if (!enrolment) return;
+
+  const passMark = await getPassMark(enrolment.programme.level);
 
   const passedResults = await prisma.moduleResult.findMany({
     where: {
       moduleRegistration: { enrolment: { studentId: enrolment.studentId } },
       moduleId: { in: prerequisites.map((p) => p.prerequisiteModuleId) },
       status: { in: ['CONFIRMED', 'PROVISIONAL'] },
+      OR: [
+        { aggregateMark: { gte: passMark } },
+        {
+          aggregateMark: null,
+          grade: { in: Array.from(PASSING_GRADES) },
+        },
+      ],
     },
     select: { moduleId: true },
   });
