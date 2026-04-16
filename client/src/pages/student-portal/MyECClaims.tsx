@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
@@ -27,7 +26,6 @@ const columns: Column<ECClaim>[] = [
 ];
 
 export default function StudentMyECClaims() {
-  const [, navigate] = useLocation();
   const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
   const { data, isLoading } = useList<ECClaim>('my-ec-claims', '/v1/ec-claims', params);
 
@@ -35,7 +33,7 @@ export default function StudentMyECClaims() {
     <div className="space-y-6">
       <PageHeader title="My EC Claims" subtitle="Submit and track extenuating circumstances claims"
         breadcrumbs={[{ label: 'Student', href: '/student' }, { label: 'EC Claims' }]}>
-        <Button onClick={() => navigate('/student/ec-claims/new')}><Plus className="h-4 w-4 mr-2" /> Submit New Claim</Button>
+        <Button disabled title="EC claim submission form is planned for a future release"><Plus className="h-4 w-4 mr-2" /> Submit New Claim</Button>
       </PageHeader>
       <DataTable<ECClaim> columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
         onPageChange={cursor => setParams(p => ({ ...p, cursor: cursor ?? undefined }))} onSort={(sort, order) => setParams(p => ({ ...p, sort, order }))}
