@@ -17,7 +17,7 @@ export async function list(filters: InterviewFilters = {}, pagination: CursorPag
   const [data, total] = await Promise.all([
     prisma.interview.findMany({
       where,
-      
+      include: { application: { include: { applicant: { include: { person: true } } } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
       orderBy: { [pagination.sort]: pagination.order } as any,
     }),

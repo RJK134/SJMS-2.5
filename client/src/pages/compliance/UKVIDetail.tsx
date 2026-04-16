@@ -1,11 +1,11 @@
 import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function UKVIDetail() {
   return (
     <div className="space-y-6">
-      <PageHeader title="UKVI Student Detail" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Compliance',href:'/admin/compliance/ukvi'},{label:'Student'}]} />
-      <Card><CardHeader><CardTitle>UKVI Record</CardTitle></CardHeader><CardContent><p className="text-muted-foreground">Detailed UKVI record — CAS, visa, BRP, sponsorship dates, contact points, and Home Office reports.</p></CardContent></Card>
+      <PageHeader title="UKVI Student Detail" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Compliance', href: '/admin/compliance/ukvi' }, { label: 'Student' }]} />
+      <ComingSoon title="UKVI Student Detail" description="Detailed UKVI record view (CAS, visa, BRP, sponsorship dates) requires the compliance API module, which is planned for Phase 12 alongside Home Office reporting integration." />
     </div>
   );
 }

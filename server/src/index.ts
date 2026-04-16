@@ -10,6 +10,7 @@ import swaggerUi from "swagger-ui-express";
 import { openApiSpec } from "./utils/openapi";
 import logger from "./utils/logger";
 import { register, httpRequestDuration, httpRequestTotal } from "./utils/metrics";
+import prisma from "./utils/prisma";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -59,12 +60,24 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, {
 }));
 
 // ── Health check ─────────────────────────────────────────────────────────
-app.get("/api/health", (_req, res) => {
-  res.json({
-    status: "ok",
+app.get("/api/health", async (_req, res) => {
+  const checks: Record<string, string> = {};
+  let healthy = true;
+
+  try {
+    await prisma.$queryRawUnsafe("SELECT 1");
+    checks.database = "connected";
+  } catch {
+    checks.database = "unavailable";
+    healthy = false;
+  }
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? "ok" : "degraded",
     version: "2.5.0",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
+    checks,
   });
 });
 

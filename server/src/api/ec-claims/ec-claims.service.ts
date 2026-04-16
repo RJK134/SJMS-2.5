@@ -12,13 +12,12 @@ export interface ECClaimListQuery {
   order: 'asc' | 'desc';
   studentId?: string;
   status?: string;
-  claimType?: string;
 }
 
 export async function list(query: ECClaimListQuery) {
-  const { cursor, limit, sort, order, studentId, status, claimType } = query;
+  const { cursor, limit, sort, order, studentId, status } = query;
   return repo.list(
-    { studentId, status, claimType },
+    { studentId, status },
     { cursor, limit, sort, order },
   );
 }

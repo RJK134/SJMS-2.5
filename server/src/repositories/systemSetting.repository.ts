@@ -47,6 +47,9 @@ export async function update(id: string, data: Prisma.SystemSettingUpdateInput) 
   return prisma.systemSetting.update({ where: { id }, data });
 }
 
-export async function softDelete(id: string) {
+export async function remove(id: string) {
   return prisma.systemSetting.delete({ where: { id } });
 }
+
+/** @deprecated Use remove() — SystemSetting has no deletedAt field; this is a hard delete. */
+export const softDelete = remove;

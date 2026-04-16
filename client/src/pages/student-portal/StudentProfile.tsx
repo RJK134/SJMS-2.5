@@ -17,7 +17,7 @@ interface Enrolment {
 
 export default function StudentProfile() {
   const { user } = useAuth();
-  const { data: enrolments, isLoading } = useList<Enrolment>('my-enrolments', '/v1/enrolments', { limit: 1, sort: 'createdAt', order: 'desc' });
+  const { data: enrolments, isLoading } = useList<Enrolment>('my-enrolments', '/v1/enrolments', { limit: 1, sort: 'academicYear', order: 'desc' });
   const enrolment = enrolments?.data?.[0];
 
   return (
