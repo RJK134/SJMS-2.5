@@ -93,3 +93,24 @@ apiV1Router.use('/config', configRouter);
 apiV1Router.use('/hesa', hesaRouter);
 apiV1Router.use('/accommodation', accommodationRouter);
 apiV1Router.use('/governance', governanceRouter);
+
+// ── Domain Group Mounts (Phase 12a — additive, flat routes preserved above) ──
+import identityGroup from './identity/group-index';
+import admissionsGroup from './admissions/group-index';
+import enrolmentGroup from './enrolment/group-index';
+import curriculumGroup from './curriculum/group-index';
+import assessmentGroup from './assessment/group-index';
+import progressionGroup from './progression/group-index';
+import studentSupportGroup from './student-support/group-index';
+import complianceGroup from './compliance/group-index';
+import platformGroup from './platform/group-index';
+
+apiV1Router.use('/identity', identityGroup);
+apiV1Router.use('/admissions', admissionsGroup);
+apiV1Router.use('/enrolment', enrolmentGroup);
+apiV1Router.use('/curriculum', curriculumGroup);
+apiV1Router.use('/assessment', assessmentGroup);
+apiV1Router.use('/progression', progressionGroup);
+apiV1Router.use('/student-support', studentSupportGroup);
+apiV1Router.use('/compliance', complianceGroup);
+apiV1Router.use('/platform', platformGroup);
