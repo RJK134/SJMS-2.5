@@ -16,7 +16,35 @@ The **stated intent** (per README and CLAUDE.md) is a reference / pilot implemen
 
 ## 2. Feature completeness
 
-_To be written._
+Completeness is measured at three layers: **schema → API → wired UI**. The system thins out at each step.
+
+| Domain | Schema | API (router + service) | UI wired | Business rules |
+|---|---|---|---|---|
+| Identity & Person | ✅ full (6 models) | ✅ CRUD | ✅ | — (no dedupe/match) |
+| Admissions / Applications | ✅ full | ✅ CRUD | ✅ draft→submit→offer | ⚠️ no offer conditions engine |
+| Enrolment / Module Reg | ✅ full | ✅ CRUD | ✅ | ⚠️ prerequisite + credit-limit utils exist (`server/src/utils/pass-marks.ts`, `credit-limits.ts`) but only invoked on create, not update |
+| Curriculum (Programmes/Modules) | ✅ full | ✅ CRUD | ✅ | — |
+| Assessment & Marks | ✅ full (Assessment → Component → MarkEntry → ModuleResult) | ✅ CRUD | ✅ entry + moderation screens | ❌ **no mark aggregation, no grade-boundary application, no moderation state machine, no auto-promotion to ModuleResult** |
+| Progression & Awards | ✅ full | ✅ CRUD | partial | ❌ no classification calculator, no degree algorithm |
+| Finance | ✅ full (Invoice/ChargeLine/Payment/PaymentPlan/StudentAccount) | ✅ CRUD for accounts/invoices/payments; ❌ Sponsors, Bursaries, Refunds | partial (10 `ComingSoon` pages) | ❌ no fee calculator, no invoice generator, no payment plan engine |
+| Attendance & Engagement | ✅ full | ✅ CRUD + alerts | ✅ | ⚠️ UKVI threshold read from SystemSetting but alert escalation un-wired (TODO) |
+| Timetable | ✅ full | ✅ CRUD | ✅ view only | ❌ no clash detection, no room allocation |
+| Student Support | ✅ full | ✅ CRUD | ✅ tickets; ❌ Tutoring/Wellbeing/Disability/Flags | — |
+| EC Claims & Appeals | ✅ full | ✅ CRUD | ✅ | ❌ no evaluation workflow |
+| UKVI | ✅ full | ✅ CRUD | partial | ❌ no Home Office report export, no contact-point reminder scheduling |
+| HESA Data Futures | ✅ 5 models (Return/Snapshot/Student/Module/ValidationRule) | ✅ CRUD | ✅ report view | ❌ **no entity mapper, no validation executor, no XML/JSON export, no submission client — HESA is unimplementable as-built** |
+| Documents | ✅ full | ✅ CRUD (metadata) | ✅ list | ❌ MinIO binary upload not wired (KI-P10b-002) |
+| Communications | ✅ full | ✅ CRUD + log | ✅ view | ❌ no template renderer, no bulk send |
+| Accommodation | ✅ full (Block/Room/Booking/Application) | ✅ CRUD | ⚠️ 3 pages no backend logic | ❌ no clash detection, no allocation algorithm |
+| Graduation | ✅ full (Ceremony/Registration/Certificate) | ⚠️ CRUD only | ⚠️ | ❌ no eligibility engine, no certificate generator |
+| Placements | ✅ full | ⚠️ CRUD | ⚠️ | ❌ no provider vetting, no visit scheduling |
+| Disability | ✅ full | ✅ CRUD | ❌ ComingSoon | ❌ no adjustment enforcement |
+| Governance | ✅ full (Committee/Meeting/Member) | ✅ CRUD | ✅ | — |
+| Change of Circumstances | ✅ model | ⚠️ thin | ⚠️ | ❌ no state machine |
+| Audit & System | ✅ full | ✅ (log + settings) | ✅ | — |
+| Calendar | ✅ full | ✅ CRUD | ✅ | — |
+
+**Net position:** schema coverage is **~95%** of a plausible UK HE SIS; API coverage **~85%** (CRUD-only); UI coverage **~70%** (65 wired, 87 `ComingSoon`); **business logic coverage ~5%**. The product can record the student journey but cannot compute, decide, or automate any material step of it.
 
 ## 3. Architecture and project structure
 
