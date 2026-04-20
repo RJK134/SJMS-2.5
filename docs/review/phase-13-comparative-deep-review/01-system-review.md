@@ -198,7 +198,35 @@ Versions verified against `package.json`, `docker-compose.yml` and the respectiv
 
 ## 7. UX / UI flows
 
-_To be written._
+**Shape.** 129 `.tsx` pages across four portals. Hash-routed SPA via wouter v3 + `useHashLocation()`. Each portal has a top-level router (`AdminRouter.tsx`, `AcademicRouter.tsx`, `StudentRouter.tsx`, `ApplicantRouter.tsx`) and a portal guard (`usePortalGuard`) consolidating race-condition fixes from the earlier four separate implementations.
+
+**Design system.** FHE palette applied through Tailwind tokens (navy #1e3a5f primary, slate #334155 secondary, amber #d97706 accent, #f8fafc background, #e2e8f0 card borders). 12 shadcn/Radix primitives under `client/src/components/ui/` (Button, Card, Input, Select, DataTable, Dialog, Alert, Badge, plus icon helpers). Dark mode supported via `class` strategy but not yet QA'd. British English throughout UI copy, labels, form fields — verified by Comet round-5 audit (0 violations).
+
+**Portal coverage (page counts and wiring state).**
+
+| Portal | Pages | Wired to API | `ComingSoon` | Notable flows |
+|---|---|---|---|---|
+| Admin | ~80 | ~55 | ~25 | Students, Programmes, Modules, Enrolments, Marks, Exam Boards, EC Claims, Appeals, Finance (core), Attendance, UKVI, HESA reports, Governance, Calendar, Audit Log, System Settings |
+| Academic | 14 | 8 | 6 | MyMarksEntry, MyModeration, MyExamBoards, MyModules, MyStudents, MyECClaims, MyProfile, AcademicDashboard — MyTutees/TuteeProfile/MyAttendance/MyTimetable/MyModuleDetail have partial tabs as stubs |
+| Student | 16 | 13 | 3 | StudentDashboard, MyModules, MyMarks, MyTimetable, MyAttendance, MyTickets, RaiseTicket, MyECClaims, MakePayment, MyPaymentPlan (partial), MyProgram, MyAccount, MyDocuments (metadata only), StudentProfile |
+| Applicant | 9 | 6 | 2 | ApplicantDashboard, CourseSearch, MyApplication, MyOffers, Events, EditApplication, UploadDocuments (metadata only), ContactAdmissions (static) |
+
+**Golden journeys (as delivered today).**
+
+1. **Applicant → Student:** can create an application, edit while `DRAFT`, see offers under `MyOffers` (accept/decline wired), but **offer generation itself has no business logic** and document uploads are metadata-only.
+2. **Student everyday:** can see timetable, marks, attendance, tickets and EC claims, with real data fetched via TanStack Query. Payments can be recorded but payment plan generation is absent.
+3. **Academic everyday:** can enter marks, submit for moderation, view moderation queue and exam board memberships. But marks are stored as draft/submitted flags — there is **no pipeline state machine** driving DRAFT → SUBMITTED → MODERATED → RATIFIED → RELEASED with side-effects.
+4. **Admin:** can do CRUD across every domain, audit log is viewable, system settings editable. HESA return page exists but is view-only.
+
+**What's missing at the UX level (beyond the ComingSoon list).**
+- **No progressive disclosure of work-in-progress state** — pages are either "fully wired" or "placeholder", with no partial-feature affordance that communicates what the user can vs cannot do.
+- **No unified notifications / inbox** — announcement endpoint stub exists (G-04) but no UI.
+- **No bulk-action UX** — lists support pagination + filters but not bulk-select, bulk-edit, or CSV export.
+- **No clash detection / room picker** in the timetable or accommodation flows.
+- **No WCAG 2.1 AA audit** has been performed; the CLAUDE.md rule is stated but not verified. shadcn/Radix primitives provide strong default accessibility, so the baseline is likely mid-to-high AA, but this cannot be claimed without evidence.
+- **Responsive breakpoints** are configured for 1024 / 1440 but mobile (<768) is explicitly out of scope — defensible for a staff-oriented SIS, limiting for the student portal.
+
+Overall the UI is **visually polished and structurally consistent** (one of the stronger dimensions of the build) but **narratively thin** — it shows the student journey rather than driving it.
 
 ## 8. Testing strategy and coverage
 
