@@ -104,7 +104,43 @@ SJMS-2.5/
 
 ## 4. Technology stack
 
-_To be written._
+Versions verified against `package.json`, `docker-compose.yml` and the respective Dockerfiles.
+
+| Layer | Technology | Version | Notes |
+|---|---|---|---|
+| Frontend framework | React | 18.3.1 | Function components + hooks |
+| Client build / dev | Vite | 6.0 | Hash-routed SPA (wouter v3 + regexparam v3) |
+| Client routing | wouter | 3.x | `useHashLocation()` in `App.tsx` |
+| Client data | TanStack Query | v5 | Axios interceptor + 401 refresh (`client/src/lib/api.ts`) |
+| UI kit | shadcn/ui + Radix | — | 12 primitives under `components/ui/` |
+| Styling | Tailwind CSS | configured in `client/tailwind.config.ts` | Dark-mode class; FHE palette (#1e3a5f navy, #d97706 amber) |
+| Backend runtime | Node + Express | Express 4.21.2 | TS-compiled to CJS |
+| Language | TypeScript | 5.7.0 | `strict: true` (`server/tsconfig.json:6`), `@/*` path alias |
+| ORM | Prisma | 6.5.0 | Singleton in `server/src/utils/prisma.ts` |
+| Database | PostgreSQL | 16-alpine | Schema `sjms_app`; pgcrypto available |
+| Cache / rate-limit store | Redis | 7-alpine | Password-protected in prod overlay |
+| Validation | Zod | 3.24.2 | 49 schema files across API |
+| Auth | Keycloak | 24.0 | OIDC PKCE; JWKS with 10 req/min refresh cap |
+| File storage | MinIO | latest | S3-compatible; **binary upload not wired (KI-P10b-002)** |
+| Workflow engine | n8n | latest | 15 version-controlled JSON workflows |
+| Reverse proxy | Nginx | alpine | Dual-mode TLS (Let's Encrypt OR institutional CA) |
+| Logging | Winston | 3.17.0 | + morgan for HTTP |
+| Security headers | Helmet | 8.0.0 | default CSP |
+| CORS | cors | 2.8.5 | Allow-list via `CORS_ORIGIN` in prod |
+| Metrics | prom-client | 15.1.3 | `/metrics` endpoint (histogram + counter) |
+| Tests (unit) | Vitest | 4.1.4 | + `@vitest/coverage-v8` |
+| Tests (E2E) | Playwright | 1.59.1 | Chromium project only |
+| CI | — | **none** | `.github/workflows/` is empty |
+| Container runtime | Docker / Compose | — | 8-service stack; prod overlay with memory limits |
+
+**Version observations.**
+- React 18, Express 4, Prisma 6, Node (inferred LTS 20+). All current-generation, no end-of-life components. No Next.js, no RSC — deliberately kept as a classic SPA.
+- TypeScript 5.7 with strict mode is ahead of many HE-sector builds.
+- Prisma 6 (the repo advertises Prisma 5 in CLAUDE.md — a small documentation drift, not a functional issue).
+- Choosing Keycloak over Auth0 / Okta is appropriate for a UK HE build — Keycloak is free, self-hosted, and SAML/OIDC-capable, which matches Jisc federation expectations.
+- Choosing n8n as the workflow engine (rather than Temporal, BullMQ, or in-process cron) is the single biggest architectural bet: it externalises all automation behind webhook boundaries. This is very scalable for integrations but means every non-trivial business process must be authored twice — once in code as an event emitter, once in n8n as a flow.
+
+**Dependency hygiene.** No abandoned or deprecated top-level packages were observed in the agent sweep. ESLint is configured (`npm run lint` targets `src/`) but no `.eslintrc` / `.prettierrc` is in-repo at root — formatting rules rely on editor defaults. Adding a pinned ESLint + Prettier config is a low-cost next step.
 
 ## 5. Data model and persistence
 
