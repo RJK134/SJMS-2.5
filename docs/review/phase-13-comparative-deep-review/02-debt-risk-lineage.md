@@ -74,7 +74,7 @@ Debt is organised into five categories: architectural, data-model, business-logi
 4. **87 `ComingSoon` stubs in the UI.** Large visible completion gap for any stakeholder walkthrough.
 5. **No MFA, no SAML** in Keycloak despite documentation claims.
 6. **Finance cascade delete** compromises financial-audit retention.
-7. **Realm-name drift** between code default and env config — first-deploy landmine.
+7. **Realm documentation drift** — the codebase is already aligned to Keycloak realm `fhe`, but stale review notes still describe an `sjms`/`fhe` mismatch.
 8. **No backup/restore automation.**
 9. **HESA unimplementable.** Models exist, logic does not.
 10. **Documentation drifts.** CLAUDE.md vs code (Prisma version, endpoint count, test count); harmless until it isn't.
@@ -83,7 +83,7 @@ Debt is organised into five categories: architectural, data-model, business-logi
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | First production deploy fails on realm-name mismatch producing silent 401s | High | Medium | Reconcile `auth.ts` default with `.env` and realm import; add startup assertion |
+| R1 | Stale documentation reopens a resolved Keycloak realm issue and prompts unnecessary config churn | Medium | Low | Update review docs to state that `auth.ts`, `.env.example`, client defaults and `docker/keycloak/fhe-realm.json` already use `fhe` |
 | R2 | Stakeholder walks through a `ComingSoon` page expecting a live feature and loses confidence | High | High | Replace stubs with **honest** empty-state explanations (Phase 11 already did some of this; finish) |
 | R3 | Finance cascade delete triggered by a well-intentioned "clean up test data" script wipes invoice history | Medium | High | Change cascade to `Restrict`; add pre-migration review gate |
 | R4 | HESA Data Futures deadline arrives with no mapper/exporter written | High at 12 months | Institution-critical | Start mapper spike in Phase 14; pair with an actual registry user |

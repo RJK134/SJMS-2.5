@@ -189,7 +189,7 @@ Versions verified against `package.json`, `docker-compose.yml` and the respectiv
 **Data scoping.** `server/src/middleware/data-scope.ts` provides automatic row-level filtering — student-role requests inject `studentId` derived from email → Person → Student chain, with a 5-minute LRU identity cache. Ten resolver helpers (`resolveEnrolmentOwnership`, `resolveModuleRegistrationOwnership`, etc.) prevent cross-student access. A dev fast-path hardcodes seeded persona identities to avoid DB lookups during UI walkthroughs.
 
 **Known gaps.**
-- **Realm-name drift (HIGH-risk config):** `auth.ts` default realm is `fhe`; `.env.example` and some docs reference `sjms`. A misconfigured production deploy would silently return 401. Reconciling and documenting the realm name is a 10-minute fix and should precede any external pilot.
+- **Realm documentation drift:** the Keycloak realm is already standardised to `fhe` across `auth.ts`, `.env.example`, client defaults and `docker/keycloak/fhe-realm.json`; the remaining `sjms` references are stale documentation, not a deployment blocker.
 - **MFA:** a feature branch for MFA was abandoned; the current realm has no enforced second factor. Acceptable for a dev/pilot build, unacceptable for UKVI-regulated sponsor compliance.
 - **SAML:** claimed in CLAUDE.md, not configured.
 - **Module-scope leak (KI-P10b-003):** academic staff currently see **all** modules rather than only their taught modules — the underlying resolver exists but is not wired in the academic-portal router guards. Flagged AMBER.
@@ -354,13 +354,13 @@ A **production overlay** (`docker/docker-compose.prod.yml`) adds memory limits (
 **Notable surprises for an external reviewer.**
 1. **Finance cascade delete** (§5) — a `DELETE` on a `StudentAccount` would cascade through Invoice and ChargeLine. Combined with the non-blocking audit logger and the absence of a DELETE role-guard below SUPER_ADMIN, this is a chain of defensible choices that together create a non-trivial data-loss surface. Tightening to `Restrict` closes it.
 2. **`AUTH_BYPASS` exists at all.** The fail-fast guard is correct, but many HE-sector security reviewers will prefer the bypass code path not be present in the production bundle. Build-time tree-shake or a separate dev entrypoint is a clean mitigation.
-3. **Realm-name drift** (§6) — the most likely cause of an "it worked in dev but not in prod" incident on first deploy.
+3. **Realm documentation drift** (§6) — stale review notes could send a maintainer chasing a resolved `fhe` realm issue instead of a real deployment fault.
 4. **No MFA** on the Keycloak realm.
 5. **No automated secret-scanning in CI** (GitGuardian runs at GitHub side only; there is no pre-commit or PR-gate enforcement inside this repo).
 
 **Dependency vulnerability posture.** No `npm audit` report committed; no Dependabot config; no Snyk / Socket integration. Low cost to add — install Dependabot with a weekly schedule.
 
-**Overall.** The system's security thinking is genuinely mature. The gaps are the operational ones typical of a pre-pilot build: MFA, realm config, CI secret-scanning, backup/restore drill. None are deal-breakers; all are closable inside a month.
+**Overall.** The system's security thinking is genuinely mature. The gaps are the operational ones typical of a pre-pilot build: MFA, documentation accuracy, CI secret-scanning, backup/restore drill. None are deal-breakers; all are closable inside a month.
 
 ## 12. Documentation quality
 
