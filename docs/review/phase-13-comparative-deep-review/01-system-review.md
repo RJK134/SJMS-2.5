@@ -48,7 +48,59 @@ Completeness is measured at three layers: **schema → API → wired UI**. The s
 
 ## 3. Architecture and project structure
 
-_To be written._
+**Topology.** Classic three-tier monolith fronted by nginx, with identity, files, cache and workflow orchestration externalised to purpose-built services. Eight Docker services: `postgres`, `redis`, `minio`, `keycloak`, `n8n`, `api`, `client`, `nginx` (`docker-compose.yml`).
+
+```
+┌───────── Browser ─────────┐
+│  React 18 + Vite (client) │
+└─────────────┬─────────────┘
+              │ HTTPS (nginx 443, dual-mode TLS)
+┌─────────────▼─────────────┐      ┌──────────┐      ┌──────────┐
+│  Express API (:3001)      │─────▶│ Postgres │      │ Keycloak │
+│  44 routers · 9 groups    │      │   16     │      │   24     │
+│  router→ctrl→svc→repo     │◀─────┤ (pgcrypto)│     │ (OIDC)   │
+└──┬────────┬───────┬───────┘      └──────────┘      └──────────┘
+   │        │       │                                    ▲
+   │        │       └─emitEvent()─▶ n8n webhook ─┐       │
+   │        │                       (15 flows)   │       │
+   │        └─signed URL / object──▶ MinIO       │       │
+   │                                             ▼       │
+   └──rate-limit / cache ─────────▶ Redis ──▶ API (via x-internal-key)
+```
+
+**Project layout (monorepo, not npm-workspaces):**
+
+```
+SJMS-2.5/
+├── server/src/
+│   ├── api/                 44 domain folders + 9 group barrels
+│   │   └── <domain>/
+│   │       ├── <domain>.router.ts
+│   │       ├── <domain>.controller.ts
+│   │       ├── <domain>.service.ts
+│   │       └── <domain>.schema.ts           (Zod)
+│   ├── repositories/        50 *.repository.ts (data access)
+│   ├── middleware/          auth, data-scope, rate-limit, error, validate
+│   ├── utils/               prisma singleton, audit, webhooks, pass-marks, credit-limits
+│   └── constants/           roles.ts (36 roles in 12 groups)
+├── client/src/
+│   ├── pages/               129 .tsx across 4 portals
+│   ├── components/ui/       shadcn (12 primitives)
+│   ├── contexts/            AuthContext (Keycloak PKCE)
+│   ├── lib/api.ts           TanStack Query + axios + 401 refresh
+│   └── hooks/               useList/useDetail/useCreate/useUpdate/usePortalGuard
+├── prisma/                  schema.prisma (197 models) + migrations/
+├── n8n-workflows/           15 JSON (version-controlled)
+├── docker/                  Dockerfiles, keycloak realm, nginx configs
+├── docs/                    architecture, review, delivery-plan, standards, KIs
+└── scripts/                 provision-n8n-workflows.ts, seed, migration helpers
+```
+
+**Pattern conformance.** The router → controller → service → repository pattern is applied with **100% consistency** across all 44 domains (verified by the architecture agent). No service imports `PrismaClient` directly; all data access routes through repositories and the singleton in `server/src/utils/prisma.ts`. No DI container is used — dependencies are resolved by direct module import; this is adequate at the current scale but will complicate mocking if services ever grow past ~2k lines.
+
+**Domain grouping (Phase 12a).** The 44 flat routers are additionally exposed as 9 barrel groups — Identity, Admissions, Enrolment, Curriculum, Assessment, Progression, Student Support, Compliance, Platform — each with its own `/api/v1/<group>/health` endpoint. Flat routes are preserved for backward compatibility. This is a pragmatic middle step between 44 loose routers and a full modular-monolith / DDD-bounded-context refactor.
+
+**Notable absences.** No formal domain-event bus internal to the API (events are emitted straight to n8n); no CQRS, no read-model projections, no message queue; no background job scheduler inside the API process (daily jobs rely on n8n cron workflows). These are defensible choices for the current scale but will become limits if batch workloads (HESA submission, fee runs, classification) are built in-process rather than in n8n.
 
 ## 4. Technology stack
 
