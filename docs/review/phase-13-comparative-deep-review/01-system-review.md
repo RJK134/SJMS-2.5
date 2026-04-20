@@ -230,7 +230,35 @@ Overall the UI is **visually polished and structurally consistent** (one of the 
 
 ## 8. Testing strategy and coverage
 
-_To be written._
+**Unit tests (Vitest).**
+- 10 service-level test files under `server/src/__tests__/unit/`
+- 2,786 total lines; 193 `describe`/`it` blocks; 228 `expect()` assertions
+- Tested services: `admissions`, `appeals`, `attendance`, `communications`, `ec-claims`, `enrolments`, `finance`, `marks`, `module-registrations`, `support`
+- **Coverage: 10 of 44 domain services ≈ 23%**
+- Pattern: Vitest with `vi.mock()` for repositories and utilities; fixture-based; `beforeEach` reset hooks — idiomatic and readable
+- Coverage tool (`@vitest/coverage-v8`) is installed but no coverage thresholds are enforced and no coverage report is checked in
+
+**E2E tests (Playwright).**
+- 3 spec files under `client/e2e/`: `admin-auth.spec.ts`, `assessment-submission.spec.ts`, `student-enrolment.spec.ts`
+- 253 total lines; 21 assertions
+- Configured against `http://localhost:5173`, Chromium-only, screenshot + trace on failure
+- **Coverage: smoke-test level** — authentication path and two thin form submissions. Nothing verifies a real golden journey end-to-end (e.g. application → offer → enrolment → mark → result)
+
+**What is NOT tested.**
+- 34 of 44 services (77%) have zero unit-test coverage, including assessment, awards, transcripts, HESA, UKVI, documents, webhooks, governance, accommodation, identity, curriculum.
+- No integration tests (service + repo + DB together) — the `PGlite` pattern seen in some UK HE builds is not adopted here.
+- No contract tests between API and client service layer.
+- No repository-layer tests (Prisma mocked in service tests; the Prisma queries themselves are never exercised under test).
+- No frontend component tests (no React Testing Library, no Storybook).
+- No accessibility tests (axe / Pa11y / Playwright `@axe-core/playwright`).
+- No performance / load tests (k6, artillery).
+- No security tests (ZAP baseline, dependency scanning beyond GitGuardian).
+
+**CI.** `.github/workflows/` is empty. No pipeline runs typecheck, tests, lint, Prisma validation or migrations on PR. This is the single biggest quality-gate gap in the repository. The existing `docs/VERIFICATION-PROTOCOL.md` is enforced manually during autonomous build loops, not automated.
+
+**Phase 9 claim vs reality.** `CLAUDE.md` Phase 9 table says "51 unit tests, 11 E2E specs (3 files)"; the live count is 120 unit cases across 10 files and 3 E2E specs. The difference reflects growth through Phases 10b–12, but the gap between CLAUDE.md and repo truth is another example of documentation drift.
+
+**Net position.** Testing is **present but shallow**: the 10 tested services demonstrate that the team knows how to write good Vitest specs; the 34 untested services show the discipline is not yet routine. A CI workflow enforcing `tsc --noEmit`, Vitest, and Playwright smoke on every PR would deliver more quality-insurance per unit of effort than any other single intervention in this repo.
 
 ## 9. Deployment and infrastructure readiness
 
