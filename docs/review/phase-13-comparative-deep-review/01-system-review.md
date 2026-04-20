@@ -364,4 +364,22 @@ A **production overlay** (`docker/docker-compose.prod.yml`) adds memory limits (
 
 ## 12. Documentation quality
 
-_To be written._
+**Volume.** `docs/` holds ~50 markdown files across architecture, standards, data model, delivery plan, review artefacts, domain knowledge, process maps, skills profiles, known issues and operational runbooks. The repo root adds another ~10 project-level documents (`CLAUDE.md`, `README.md`, `SJMS-Lessons-Learned.md`, `OVERNIGHT-BUILD-LOG.md`, the 124-page Build Plan DOCX, `SJMS 2.5 — Deep Repository Review.md`, etc.). This is an unusually dense documentation footprint for a codebase of this size.
+
+**Strengths.**
+- **`CLAUDE.md` as an agent constitution.** Every build phase is summarised with commit hashes, batch descriptions, KIs resolved, and phase tags. Serves as a runbook for an AI pair and as a history for a human reviewer.
+- **Self-critical review chain.** `docs/review/00-executive-verdict.md` (4.2/10), `phase-13-enhanced-review.md` (3.8/10 corrected), `phase-13-truth-table.md` (factual grep-verified inventory), `pr-41-remediation-plan.md` — these are **genuinely honest self-assessments**, not marketing. The truth-table pattern (every claim grounded in file path or grep count) is an idiom worth exporting.
+- **Operational runbooks.** `OPERATIONS-SSL-RUNBOOK.md` and `STAGING-RUNBOOK.md` are practical, tested and current.
+- **Process maps (HTML).** `FHE End-to-End Admissions & Enrolment Process Map.html` and `FHE_Curriculum_Management_Process_Map.html` are full BPMN-style flows — rare to see in a Node/React repo.
+- **Lessons-learned distillation.** `SJMS-Lessons-Learned.md` (~69 KB) names prior failure modes explicitly (context degradation, storage monoliths, bounded-context violations, premature verification).
+- **KNOWN_ISSUES.md.** Every open KI has a severity, a phase, a file path, a problem statement, a deferral reason, a resolution plan and a **detection command**. When closed, each entry gets an explicit closure record (date, commit hash, fix description). This is best-in-class issue tracking.
+
+**Gaps.**
+- **Drift between docs and code.** CLAUDE.md advertises Prisma 5, schema lists Prisma 6. CLAUDE.md says 197 models "197 Prisma models · 129 pages · 246 API endpoints (44 routers) · 36 roles · 15 n8n workflows" — mostly matches, but the "246 endpoints" number is not reproducible from a grep. The Phase 9 test counts in CLAUDE.md lag the current repo state. A "docs/truth-table" CI check (grep + diff against CLAUDE.md claims) would keep these synchronised automatically.
+- **No developer onboarding guide.** `README.md` is a scope statement, not a setup walkthrough. A new engineer needs a "zero to local stack in 30 minutes" document — it exists in fragments across Phase-3 setup scripts but not as a cohesive `CONTRIBUTING.md`.
+- **No API reference.** Swagger UI is referenced in the Phase 9 completion note as pre-existing but not linked from the README. OpenAPI generation from Zod schemas would be a high-value follow-up.
+- **No ADRs.** Architecture Decision Records (why n8n, why Keycloak, why wouter, why no workspaces) would help future maintainers understand the design rationale — currently this lives implicitly in `SJMS-Lessons-Learned.md`.
+- **No user-facing documentation.** Staff training guides, student portal help, registry SOPs — none. Acceptable for a pre-pilot build, a blocker for any institutional go-live.
+- **Previous-threads dumping ground.** `previous-threads/` contains two ~315 KB markdown files of preserved Claude reasoning. Useful as audit evidence, confusing as documentation.
+
+**Net position.** Documentation is **one of this project's genuine differentiators**. The self-reflective review chain (executive verdict, truth tables, lessons learned, known issues) is of a quality rarely seen outside well-funded commercial products. The principal gap is **docs-to-code synchronisation** — the claims in CLAUDE.md are authoritative by convention but are not mechanically verified on every merge. A cheap CI step can close this.
