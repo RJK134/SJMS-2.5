@@ -262,7 +262,46 @@ Overall the UI is **visually polished and structurally consistent** (one of the 
 
 ## 9. Deployment and infrastructure readiness
 
-_To be written._
+**Compose stack (`docker-compose.yml`).** Eight services, each with `healthcheck` and `depends_on: service_healthy` gates:
+
+| Service | Image | Role | Healthcheck |
+|---|---|---|---|
+| postgres | `postgres:16-alpine` | Primary store; `sjms_app` schema | ✅ `pg_isready` |
+| redis | `redis:7-alpine` | Cache + rate-limit store; password-protected in prod | ✅ `redis-cli ping` |
+| minio | `minio/minio` | S3-compatible object storage | ✅ `/minio/health/live` |
+| keycloak | `quay.io/keycloak/keycloak:24.0` | OIDC; realm imported from `docker/keycloak/fhe-realm.json` | ✅ `/health/ready` |
+| n8n | `n8nio/n8n:latest` | Workflow engine; Postgres-backed | ✅ `/healthz` |
+| api | multi-stage Dockerfile | Express API; `unless-stopped`; 30 s start period | ✅ `/api/health` (DB probe) |
+| client | multi-stage Dockerfile | React build served behind nginx | ✅ nginx status |
+| nginx | `nginx:alpine` | Reverse proxy, TLS termination, rate limiting | depends on api/keycloak healthy |
+
+A **production overlay** (`docker/docker-compose.prod.yml`) adds memory limits (API 512M, Postgres 1G), Redis password + `maxmemory 256mb` + `allkeys-lru`, json-file log rotation (10 MB × 3 files), and `restart: unless-stopped` on every service.
+
+**TLS and ingress.** `docker/nginx/nginx.prod.conf` implements **dual-mode TLS**: Let's Encrypt via certbot webroot, or institutional CA certificates in `/etc/nginx/certs/`. TLSv1.2 + TLSv1.3 only; ECDHE + CHACHA20-POLY1305 cipher suite; session cache 10 MB / 1-day timeout; OCSP stapling enabled; `/health` is HTTP-accessible for load-balancer probes; `/.well-known/acme-challenge/` HTTP-only for cert renewal; everything else forced to HTTPS. Rate-limiting zones: `api` 30 r/s, `auth` 10 r/s. Security headers applied at proxy (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy). Restricted paths (`/admin`, `/metrics`, `/n8n`, `/minio`) allow only private IP ranges (10/8, 172.16/12, 192.168/16, 127/8). `docs/OPERATIONS-SSL-RUNBOOK.md` documents the lifecycle.
+
+**Observability.**
+- `/api/health` — DB probe + service metadata (JSON), 200/503
+- `/metrics` — Prometheus registry via `prom-client`: HTTP duration histogram + request counter, labelled by method/route/status_code
+- Winston structured logs to stdout, collected by Docker json-file driver; 10 MB rotation × 3 files
+- No Grafana / Loki / Tempo bundled — metrics/logs are exported but consumer is BYO
+
+**Secrets and config.**
+- `.env.example` is complete (DATABASE_URL, REDIS_URL, KEYCLOAK_*, N8N_*, INTERNAL_SERVICE_KEY, TLS_MODE, DOMAIN, CORS_ORIGIN, WEBHOOK_SECRET)
+- All secrets use `changeme` / `replace-me-generate-…` placeholders
+- `INTERNAL_SERVICE_KEY` min 64 chars; server refuses to start in production without it and blocks dev default (auth.ts:268)
+- Cert volumes and MinIO data volumes are gitignored; `.gitkeep` preserves structure
+
+**Runbooks.** `docs/OPERATIONS-SSL-RUNBOOK.md` and `docs/STAGING-RUNBOOK.md` cover cert lifecycle, deployment, rollback and incident triage — unusual maturity for a build at this stage.
+
+**Gaps.**
+- **No CI/CD pipeline** (`.github/workflows/` is empty). Builds and deploys are manual.
+- **No Kubernetes artefacts** — no Helm chart, no Kustomize, no k3s overlay. Acceptable for a single-VM pilot, a blocker for multi-institution scaling.
+- **No automated backup / restore** — Postgres, MinIO and n8n volumes are declared persistent but no `pg_basebackup`/`pg_dump` cron, no WAL archiving, no MinIO replication, no restore drill documented.
+- **No tenancy boundary** — single-realm Keycloak, single Postgres schema; a second institution would require fork-and-modify or a new deploy.
+- **No blue/green or canary** deploy support; nginx sits directly in front of single-replica containers.
+- **`api`, `client`, `nginx` Dockerfiles were flagged as broken** in prior notes — per README the current dev workflow runs the infra in Docker and the app locally. Needs verification before any hosted deploy.
+
+**Net position.** Day-1 infrastructure is **above HE-sector median** for a build of this maturity — dual-mode TLS and Prometheus in particular are nice-to-haves that many production deployments lack. Day-2 operations (CI/CD, backups, failover, multi-tenant scaling) are **materially underdeveloped** and are the realistic blocker to any institutional go-live.
 
 ## 10. Code quality and maintainability
 
