@@ -173,7 +173,28 @@ Versions verified against `package.json`, `docker-compose.yml` and the respectiv
 
 ## 6. Authentication and authorisation
 
-_To be written._
+**Identity provider.** Keycloak 24.0, self-hosted, deployed as a Docker service with realm bootstrapped from `docker/keycloak/fhe-realm.json`. Protocol is **OIDC Authorization Code with PKCE**. The client uses `responseMode: 'query'` to avoid hash-fragment collisions with the wouter hash router. Tokens are held **memory-only** on the client (`client/src/contexts/AuthContext.tsx`) — no localStorage, no sessionStorage. `keycloak.onTokenExpired()` triggers a silent refresh at the 30-second expiry window. SAML is advertised in CLAUDE.md but not configured in the realm import — a documentation drift worth correcting before any Jisc-federated pilot.
+
+**Token verification (server).** `server/src/middleware/auth.ts` verifies RS256 tokens via Keycloak's JWKS endpoint with a 600-second cache and a 10-req/min refresh cap (to prevent JWKS DoS). A static `JWT_SECRET` fallback exists for dev. A dev-bypass shortcut is gated to `NODE_ENV !== 'production'`; the middleware **exits the process** if `AUTH_BYPASS=true` ever leaks into a production env (auth.ts:43). This is the right fail-fast posture.
+
+**Internal service key.** Webhook callbacks from n8n authenticate via `x-internal-key`; comparison is timing-safe (`crypto.timingSafeEqual`), minimum key length 32 chars, dev default explicitly blocked in production (auth.ts:268). The key is injected into n8n via its credential store by `scripts/provision-n8n-workflows.ts` — never committed to workflow JSON.
+
+**Role model.** 36 roles defined in `server/src/constants/roles.ts`, aggregated into 12 role groups: `ADMIN_STAFF` (20 roles), `TEACHING` (9), `FINANCE` (3), `SUPPORT` (5), `EXAM_BOARD` (6), `REGISTRY`, `SUPER_ADMIN`, `ALL_AUTHENTICATED`, plus portal groups (`ACADEMIC`, `STUDENT`, `APPLICANT`). `SUPER_ADMIN` short-circuits role checks at `auth.ts:314` — appropriate for break-glass access and easy to audit.
+
+**RBAC enforcement.** The `requireRole(…)` middleware is applied **pre-controller on every mutating endpoint**, verified by sampling marks / finance / students / webhooks routers. Pattern observed:
+- `GET` → `ADMIN_STAFF + TEACHING + scopeToUser` (students see only their records; staff scoped per module assignment resolver)
+- `POST / PATCH` → single domain group (e.g. `TEACHING` for marks, `FINANCE` for invoices, `REGISTRY` for enrolments)
+- `DELETE` → `SUPER_ADMIN` only
+
+**Data scoping.** `server/src/middleware/data-scope.ts` provides automatic row-level filtering — student-role requests inject `studentId` derived from email → Person → Student chain, with a 5-minute LRU identity cache. Ten resolver helpers (`resolveEnrolmentOwnership`, `resolveModuleRegistrationOwnership`, etc.) prevent cross-student access. A dev fast-path hardcodes seeded persona identities to avoid DB lookups during UI walkthroughs.
+
+**Known gaps.**
+- **Realm-name drift (HIGH-risk config):** `auth.ts` default realm is `fhe`; `.env.example` and some docs reference `sjms`. A misconfigured production deploy would silently return 401. Reconciling and documenting the realm name is a 10-minute fix and should precede any external pilot.
+- **MFA:** a feature branch for MFA was abandoned; the current realm has no enforced second factor. Acceptable for a dev/pilot build, unacceptable for UKVI-regulated sponsor compliance.
+- **SAML:** claimed in CLAUDE.md, not configured.
+- **Module-scope leak (KI-P10b-003):** academic staff currently see **all** modules rather than only their taught modules — the underlying resolver exists but is not wired in the academic-portal router guards. Flagged AMBER.
+
+**Audit coverage.** `server/src/utils/audit.ts` records `entityType`, `entityId`, `action` (CREATE/UPDATE/DELETE/VIEW/EXPORT), `userId`, `userRole`, `ipAddress`, `userAgent`, `previousData`, `newData`. Coverage is ~90% across services. The logger is **non-blocking** (try/catch, failures swallowed) — acceptable for throughput, but enterprise auditors typically want the opposite (hard fail on audit-log write failure). Configuration flag to switch mode is a small follow-up.
 
 ## 7. UX / UI flows
 
