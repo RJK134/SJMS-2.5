@@ -53,7 +53,55 @@ Debt is organised into five categories: architectural, data-model, business-logi
 
 ## 14. Strengths, weaknesses, major risks, maturity level
 
-_To be written._
+### Top 10 strengths
+
+1. **Structural discipline.** 44 API domains in identical router → controller → service → repository layering, zero exceptions, zero MemStorage, zero direct Prisma in services. Rare at this scale in a self-built SIS.
+2. **HE-literate data model.** 197 models, 23 domains, British English throughout, Tribal-SITS-shaped nomenclature, HESA Data Futures snapshot semantics in-schema.
+3. **Keycloak + 36-role RBAC.** Realistic role hierarchy, data-scoping middleware, memory-only client tokens, timing-safe internal-service-key, fail-fast auth-bypass guard.
+4. **Security posture above sector median.** Helmet + nginx double-header-setting, 3-tier Redis-backed rate limiting, dual-mode TLS, OCSP stapling, private-IP gates on admin/metrics/n8n/minio.
+5. **Audit log at ~90% coverage** with entity, actor, IP, user-agent, before/after payloads.
+6. **Operational runbooks.** SSL lifecycle, staging bring-up, known-issue register with detection commands — material operational maturity.
+7. **Consistent frontend design system.** 4 portals, shadcn/Radix primitives, FHE palette, British English, hash-routed SPA free of auth-token persistence.
+8. **Honest self-review.** Executive verdict, Phase 13 truth table, lessons-learned, KNOWN_ISSUES — the project assesses itself accurately.
+9. **n8n workflow versioning.** 15 flows in-repo, idempotent provisioning script, credential store never touches git, HMAC webhook auth.
+10. **Low type-escape-hatch rate.** 3 `any`s, 0 `@ts-ignore`, strict mode on.
+
+### Top 10 weaknesses
+
+1. **Business logic almost entirely absent.** Defining characteristic of the build: the system records the student journey but cannot compute any step of it.
+2. **No CI.** Merges to `main` are ungated.
+3. **77% of services untested.** Vitest coverage is demonstrative, not systematic.
+4. **87 `ComingSoon` stubs in the UI.** Large visible completion gap for any stakeholder walkthrough.
+5. **No MFA, no SAML** in Keycloak despite documentation claims.
+6. **Finance cascade delete** compromises financial-audit retention.
+7. **Realm-name drift** between code default and env config — first-deploy landmine.
+8. **No backup/restore automation.**
+9. **HESA unimplementable.** Models exist, logic does not.
+10. **Documentation drifts.** CLAUDE.md vs code (Prisma version, endpoint count, test count); harmless until it isn't.
+
+### Major risks (top 5)
+
+| # | Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|---|
+| R1 | First production deploy fails on realm-name mismatch producing silent 401s | High | Medium | Reconcile `auth.ts` default with `.env` and realm import; add startup assertion |
+| R2 | Stakeholder walks through a `ComingSoon` page expecting a live feature and loses confidence | High | High | Replace stubs with **honest** empty-state explanations (Phase 11 already did some of this; finish) |
+| R3 | Finance cascade delete triggered by a well-intentioned "clean up test data" script wipes invoice history | Medium | High | Change cascade to `Restrict`; add pre-migration review gate |
+| R4 | HESA Data Futures deadline arrives with no mapper/exporter written | High at 12 months | Institution-critical | Start mapper spike in Phase 14; pair with an actual registry user |
+| R5 | Further phases add more CRUD domains instead of filling in business rules | High | High (entrenches the 3.8/10 ceiling) | Impose a "no new domains until 3 golden-journey rules are coded" freeze |
+
+### Maturity level
+
+Measured against a five-band scale commonly used for enterprise SIS readiness:
+
+| Band | Label | SJMS 2.5 state |
+|---|---|---|
+| 1 | **Prototype** — single demo flow, hard-coded data | Past |
+| 2 | **Scaffold** — multiple flows, real DB, no rules | **Current (3.8/10 overall)** |
+| 3 | **Pilot-ready** — rules wired for core journeys, integration tested, CI in place | **Target after 6–9 months** |
+| 4 | **Production-ready** — statutory reporting live, backup/restore drills, MFA, multi-env CI/CD | 12–18 months |
+| 5 | **Enterprise-grade** — multi-tenant, HA, disaster recovery, WCAG audited, third-party pen-tested | 24–36 months |
+
+The repo's self-assessment (3.8/10 overall, 8/10 platform, 1.5/10 business logic) sits inside band 2 and is consistent with this reviewer's reading.
 
 ## 15. Evolutionary lineage — from SRS v2 to SJMS 2.5
 
