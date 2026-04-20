@@ -109,4 +109,91 @@ This section places SJMS 2.5 side-by-side with the three dominant HE SIS platfor
 
 ## 18. Design and remediation plan
 
-_To be written._
+**Guiding principle.** Stop adding domains. Start wiring rules. Every prior build in the SRS/SJMS family hit band-2 maturity and then **expanded horizontally** into more CRUD domains rather than vertically into rules — and each one bounced. SJMS 2.5 must resist the same pull.
+
+### Design principles (for all subsequent phases)
+
+1. **Business logic lives in the service layer, not in n8n.** n8n handles integration, notification, scheduled ingestion. Calculations (marks, classification, fees) live in code, are unit-tested, and emit events after completion.
+2. **One state machine per critical entity.** Marks, Enrolment, Application, ECClaim, Appeal, Refund, HESAReturn each get an explicit `status` enum + transition guard + `StatusHistory` table. No boolean flags.
+3. **Every rule is SystemSetting-overridable** where the institution may want local policy (pass marks, credit limits, classification thresholds, UKVI escalation windows). Follow the pattern of `server/src/utils/pass-marks.ts`.
+4. **Every mutation emits a single canonical event** using the modern 5-arg `emitEvent()` signature. Retire the deprecated form.
+5. **No new API domain added until 3 golden journeys are rule-complete.**
+6. **CI gate on every PR**: typecheck, lint, Vitest, Playwright smoke, Prisma validate, GitGuardian.
+
+### Phase plan
+
+#### Phase 14 — Golden Journey Ruleset (weeks 1–10)
+
+Wire the three rules that unblock the most UI and cover the core student lifecycle:
+
+- **GJ-1 Marks Pipeline**: AssessmentComponent.rawMark → weighted aggregation → GradeBoundary lookup → ModuleResult; state machine DRAFT → SUBMITTED → MODERATED → RATIFIED → RELEASED; trigger n8n `marks-released` workflow on RELEASED.
+- **GJ-2 Module Registration**: invoke existing `pass-marks.ts` and `credit-limits.ts` on **both** create and update; add ModulePrerequisite evaluation; reject with structured error.
+- **GJ-3 Fee Invoice Generation**: ChargeLine generator driven by (programme band × fee status × study mode × intake); produces Invoice header + ChargeLine items; emits `finance.invoice.created`.
+
+Deliverables: 3 services rule-complete, 30+ new unit tests, 3 Playwright golden-journey E2E specs, 3 n8n workflows activated (`"active": true`), 1 CI workflow running the full pipeline.
+
+Closes: marks/prerequisite/fee blockers from §13.
+
+#### Phase 15 — Statutory Currency (weeks 8–16, partially overlapping)
+
+- **HESA Data Futures mapper**: SJMS entity → DF entity table, validation executor, JSON export, submission-stub client. Pair with a registry SME; validate against a small synthetic return.
+- **UKVI alert automation**: wire `ukvi-compliance-monitor` workflow to actual alert records; add escalation windows; log contact-point events.
+- **Finance cascade fix**: migrate Invoice and ChargeLine to `onDelete: Restrict`; add pre-migration check script.
+- **Realm-name reconcile + MFA enforcement** on Keycloak.
+
+Closes: R1, R3, R4; KI-P10b-001 (partially).
+
+#### Phase 16 — Operational Hardening (weeks 14–22)
+
+- **CI/CD pipeline** on GitHub Actions: typecheck, Vitest, Playwright, Prisma validate, Docker build + push to registry on merge to `main`.
+- **Backup + restore** scripts: pg_basebackup + WAL archive to MinIO; nightly MinIO snapshot; documented restore drill.
+- **Dependabot + CodeQL + pre-commit hooks** (ESLint + Prettier + secret scan).
+- **OpenAPI generation** from Zod schemas; Swagger UI linked from README.
+- **WCAG 2.1 AA audit** using Playwright `@axe-core/playwright`; remediate findings.
+- **Docs-vs-code truth-table CI** — a `scripts/verify-claude-md.ts` that diffs CLAUDE.md claims against grep-verifiable facts; fails CI on drift.
+
+#### Phase 17 — Integration Layer (weeks 20–34)
+
+Prioritise two connectors that unblock a real pilot:
+
+- **UCAS Apply feed** (XML ingestion via SFTP → `applications` domain).
+- **SLC fee-status feed** (batch ingestion of tuition-fee-loan status).
+
+Defer UCAS Track, UCAS Hub, SharePoint, Moodle LTI to Phase 18.
+
+#### Phase 18 — Pilot Readiness (weeks 32–40)
+
+- **Multi-environment promotion** (dev → staging → pilot) with env-specific Keycloak realms and Prisma migration journals.
+- **Data migration playbook** from a source SITS/Banner extract to SJMS 2.5 Person + Application + Enrolment tables.
+- **User training materials** for registrar, academic staff, student, applicant.
+- **Third-party security review** (penetration test + dependency audit).
+- **Pilot go/no-go gate** against this document's §14 risk register.
+
+### Investment envelope (order-of-magnitude)
+
+- Phase 14 + 15 + 16: 2 engineers × 16–20 weeks ≈ **£160–200k**
+- Phase 17 + 18: 2 engineers × 16 weeks + 0.5 FTE registry SME ≈ **£220–260k**
+- Total to pilot-ready: **~£400–500k** spread over 9–10 months
+
+### Exit criteria for "pilot-ready" (band 3)
+
+- 3 golden journeys rule-complete, tested, observable.
+- HESA mock submission validates against a DF return.
+- CI gate green on every PR.
+- Backup + restore drill executed in staging.
+- WCAG audit passed at 2.1 AA.
+- MFA enforced on Keycloak realm.
+- Zero open HIGH KIs.
+- Registry SME sign-off on at least one end-to-end student journey.
+
+### What NOT to do
+
+- **Do not** build more CRUD domains (already sufficient).
+- **Do not** attempt Workday/Banner feature parity — wrong target.
+- **Do not** rewrite the architecture — it is fit for purpose.
+- **Do not** rely on n8n for stateful calculations — wrong tool.
+- **Do not** extend CLAUDE.md claims without a matching truth-table entry.
+
+### Closing note
+
+SJMS 2.5 is closer to a viable UK HE SIS than any of its five predecessors. The risk is not in the architecture or the schema — both are sound. The risk is in **repeating the historic failure to cross the business-logic threshold before the next rebuild cycle begins**. Executing Phases 14–18 in order, and refusing horizontal scope expansion until the golden journeys are rule-complete, is the single intervention most likely to break that pattern.
