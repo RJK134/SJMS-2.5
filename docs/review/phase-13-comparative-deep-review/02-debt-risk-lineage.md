@@ -105,4 +105,42 @@ The repo's self-assessment (3.8/10 overall, 8/10 platform, 1.5/10 business logic
 
 ## 15. Evolutionary lineage — from SRS v2 to SJMS 2.5
 
-_To be written._
+The repository's own `SJMS-Lessons-Learned.md` and `CLAUDE.md` identify at least six prior builds in the SRS / SJMS family. The pattern across versions is consistent and diagnostic.
+
+| # | Build | Period | Primary goal | What worked | What broke | Outcome |
+|---|---|---|---|---|---|---|
+| 1 | **Student-Record-System-v.2** | early | Single-user CRUD over SQLite | Proved domain vocabulary; informed later schema naming | MemStorage-like patterns, no auth, no normalisation | Archived; used as requirements source |
+| 2 | **SRS-Build-Version-3.1** | mid | Multi-user UI, Keycloak first attempt | Introduced role constants, introduced soft-delete idea | Monolithic `routes.ts`; schema drift; no migrations discipline | Deprecated in favour of v4 |
+| 3 | **SRS-Build-Version-4** | recent | Full enterprise stack (Prisma + Keycloak + n8n + MinIO) | 298 Prisma models, 27 roles, workflow engine proved integrable | **26 of 57 staff pages served mock data**; 7,965-line `routes.ts`; 56 P-series findings open | Blocking defects; not pilotable |
+| 4 | **sjms-v4-integrated** | recent | Attempt to converge v4 with an FHE-specific UI fork | Better UI density; some domain rules prototyped | Merge introduced dual identity models; BugBot HIGH findings accumulated; context-degradation failures during autonomous build | Parked; hybrid state never stabilised |
+| 5 | **SJMS 2.4 (Perplexity build)** | recent | Pure UI polish, 81 pages on MemStorage | Clean design system, fast iteration, British English baseline | **No persistence, no auth, no integrations** by design | Kept as UI donor for 2.5 |
+| 6 | **SJMS 2.5 (this repo)** | current | Converge 2.4 UI + v4 infra + fix gaps | 197 models, 44 routers, 129 pages, Keycloak, rate-limit, TLS, honest KI register | Business logic almost entirely unwritten; same "platform not product" shape as v4 | Live development; Phase 13 |
+
+### The recurring failure mode
+
+`SJMS-Lessons-Learned.md` names it directly and this review concurs:
+
+> **"Infrastructure complete, business logic absent."**
+
+Every prior build reached an architecturally defensible state before the rules that make a SIS a SIS (mark aggregation, classification, fee calculation, HESA mapping, UKVI alerting) were encoded. Each build then attempted a remediation phase that preserved the infrastructure but never crossed the business-logic threshold before a rebuild was triggered.
+
+SJMS 2.5 is the **sixth iteration of the same pattern**. It is further along than any prior attempt (because it consolidates the best of 2.4's UI and 4.0's infra) but it currently sits in the same local minimum: **structurally defensible, functionally empty**.
+
+### What's genuinely different in 2.5
+
+- **Honest documentation.** Previous builds had marketing-style phase completion notes; 2.5 has grep-verified truth tables and a 3.8/10 self-score. The repo no longer lies to itself.
+- **Repository pattern actually enforced.** v4 had services reaching into Prisma directly despite the documented layering; 2.5's architecture agent found **zero** such violations.
+- **Role + data-scope middleware is real.** v4 had roles defined but not enforced on every endpoint; 2.5 enforces on 100% of mutating routes sampled.
+- **n8n workflows are versioned and idempotently provisioned.** v4 had flows in the n8n UI only.
+- **Soft-delete is a schema-level concept**, not an ad hoc filter.
+
+### What's the same
+
+- **Business logic is still missing.** 40+ services are CRUD shells.
+- **HESA is still unimplementable.** Schema exists; mapping / execution / export do not.
+- **CI is still manual.** v4 had the same gap.
+- **No MFA, no SAML, no multi-tenancy.**
+
+### Implication for the remediation plan
+
+The historical evidence is that adding further infrastructure or further domains **does not** move the project out of band 2. The only intervention that has any record of breaking the pattern is a **ruthless focus on wiring business logic for a small number of golden journeys** before any scope expansion. File `03-benchmark-and-remediation.md` operationalises this.
