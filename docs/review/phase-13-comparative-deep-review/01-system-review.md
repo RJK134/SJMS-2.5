@@ -327,7 +327,40 @@ A **production overlay** (`docker/docker-compose.prod.yml`) adds memory limits (
 
 ## 11. Security considerations
 
-_To be written._
+**Overall posture.** Measurably above UK HE-sector median for a build at this stage. Weaknesses are real but are operational / configuration rather than architectural.
+
+**Authentication / session.** OIDC PKCE, memory-only tokens, JWKS-verified JWTs, silent refresh at 30 s expiry window, 10 req/min JWKS refresh cap, dev-bypass gated and fail-fast in production. Internal-service-key verification is timing-safe with a 32-char minimum. See §6.
+
+**Transport.** TLSv1.2 / TLSv1.3 only, ECDHE + CHACHA20-POLY1305, OCSP stapling, HSTS (implicit in nginx Helmet chain), dual-mode cert lifecycle. HTTP is open only for ACME challenge and load-balancer health probe.
+
+**HTTP hardening.** Helmet 8 at the Express layer for default CSP and X-* headers, supplemented at nginx for `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy`. CORS is allow-list-driven in production (`CORS_ORIGIN` comma-separated) and wide-open in dev — correct posture but make sure the prod env vars are set at deploy time.
+
+**Rate limiting.** Redis-backed (`server/src/middleware/rate-limit.ts`) with in-memory fallback. Three tiers: general API 100 req/min per IP, auth endpoints 5 req/min per IP, sensitive ops 10 req/hr per IP. Uses Redis `MULTI`/`pttl` for atomic count + expiry — implementation is correct and does not race. Nginx adds an additional 30 r/s + 10 r/s gate at the edge.
+
+**Input validation.** 49 Zod schema files across the API. Every mutating endpoint passes through `validate` middleware. Types are coerced (`z.coerce.number()`), bounds enforced (`min`, `max`), enums used in preference to free strings — material contrast with the typical HE-sector practice of trusting controller-level parsing.
+
+**SQL injection surface.** Effectively zero. One raw query in the entire codebase (health-check `SELECT 1`). Everything else is Prisma-parameterised.
+
+**CSRF.** No explicit CSRF middleware. Defensible under Bearer-token + allow-list-CORS posture (no auto-sent auth on cross-origin requests) but will need review if cookie-based sessions are ever introduced for SSO.
+
+**SSRF.** `emitEvent()` POSTs to a configured `WEBHOOK_BASE_URL` (pointing to n8n inside the Docker network). URLs are not user-controlled. No obvious SSRF risk.
+
+**Secrets.** `.env.example` with `changeme` placeholders only; no hardcoded credentials in repo. Phase 13 GitGuardian run on this PR passed. Cert and key volumes are gitignored.
+
+**Audit log.** 90%+ coverage at the service layer. Captures `entityType`, `entityId`, `action`, `userId`, `userRole`, `ipAddress`, `userAgent`, `previousData`, `newData`. Non-blocking writes — acceptable-but-configurable recommendation noted in §6.
+
+**File handling.** MinIO is configured but **binary uploads are not wired** (KI-P10b-002). Metadata-only document records exist. When upload is wired, required controls are: signed PUT URLs with short TTL, virus scan (ClamAV or equivalent) before metadata promotion, content-type whitelist, size limit enforced at both nginx (`client_max_body_size`) and MinIO.
+
+**Notable surprises for an external reviewer.**
+1. **Finance cascade delete** (§5) — a `DELETE` on a `StudentAccount` would cascade through Invoice and ChargeLine. Combined with the non-blocking audit logger and the absence of a DELETE role-guard below SUPER_ADMIN, this is a chain of defensible choices that together create a non-trivial data-loss surface. Tightening to `Restrict` closes it.
+2. **`AUTH_BYPASS` exists at all.** The fail-fast guard is correct, but many HE-sector security reviewers will prefer the bypass code path not be present in the production bundle. Build-time tree-shake or a separate dev entrypoint is a clean mitigation.
+3. **Realm-name drift** (§6) — the most likely cause of an "it worked in dev but not in prod" incident on first deploy.
+4. **No MFA** on the Keycloak realm.
+5. **No automated secret-scanning in CI** (GitGuardian runs at GitHub side only; there is no pre-commit or PR-gate enforcement inside this repo).
+
+**Dependency vulnerability posture.** No `npm audit` report committed; no Dependabot config; no Snyk / Socket integration. Low cost to add — install Dependabot with a weekly schedule.
+
+**Overall.** The system's security thinking is genuinely mature. The gaps are the operational ones typical of a pre-pilot build: MFA, realm config, CI secret-scanning, backup/restore drill. None are deal-breakers; all are closable inside a month.
 
 ## 12. Documentation quality
 
