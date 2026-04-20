@@ -305,7 +305,25 @@ A **production overlay** (`docker/docker-compose.prod.yml`) adds memory limits (
 
 ## 10. Code quality and maintainability
 
-_To be written._
+**Type discipline.** TypeScript strict mode is on (`server/tsconfig.json:6`). Only **3 `: any` occurrences** were found across the server codebase — in a dashboard repository filter, a timetable map, and one unit-test mock. No `@ts-ignore`, no `@ts-expect-error` in production code. No direct `PrismaClient` imports in services — the singleton at `server/src/utils/prisma.ts` is imported exclusively by repositories, and 44/44 services import repositories rather than the ORM. This is one of the strongest signals in the codebase.
+
+**Structural consistency.** Router / controller / service / repository / schema naming is uniform across all 44 domains. No domain has "special-cased" layering. Middleware surface is small (5 files) and coherent. The `emitEvent()` utility has two supported signatures (legacy two-arg and modern five-arg) with 25+ services still using the deprecated form — tracked as KI-P11-001, low priority; the dual signature is tolerated for migration reasons.
+
+**File sizes and complexity.** No router or service file is over ~500 lines — a deliberate contrast with the 7,965-line `routes.ts` and 13,887-line `storage.ts` in SJMS 4.0 that `docs/SJMS-Lessons-Learned.md` identifies as a primary failure mode of the prior build. The largest current file is `server/src/middleware/auth.ts` at ~13.6 KB. Cyclomatic complexity has not been measured but file-level structure suggests it is acceptable.
+
+**Duplication / DRY.** Some parallel implementations exist — e.g. `enrolment/` and `enrolments/`, `assessment/` and `assessments/`, `progression/` and `progressions/`, `students/` and `persons/`. These are historical singular-vs-plural routing splits that have not been consolidated. They do not duplicate logic (they split responsibility) but the naming is confusing and ought to be collapsed.
+
+**Comment density.** Low — consistent with the project's own coding standards ("default to writing no comments"). Domain invariants such as "MarkEntry is immutable" or "AuditLog is non-blocking" are stated in `docs/` not in-code; adding one-line comments at those exact callsites would materially improve maintainability.
+
+**Lint / formatter.** ESLint is installed and `npm run lint` is wired, but **no `.eslintrc` or `.prettierrc` is committed** at the repo root. Rules fall back to defaults plus editor config. A pinned config (with `eslint-plugin-import`, `eslint-plugin-unused-imports`, and a Prettier contract) would catch drift before it enters `main`.
+
+**Migration hygiene.** 7 applied Prisma migrations under `prisma/migrations/`. Two duplicate-named, untracked directories (`extend_support_category`, 46 s apart) exist on disk but are not applied — residue from a Phase 13 baseline that needs cleaning before the next `prisma migrate dev` run, otherwise the migration journal will diverge across environments.
+
+**Git hygiene.** 46 merged PRs reviewed by prior phases. Conventional-commit format is applied consistently (`feat(scope): …`, `fix(scope): …`, `docs(scope): …`). CLAUDE.md codifies the autonomous build loop's 10-step discipline. No force-pushes to `main`. Evidence of branch-per-phase workflow with phase-gate merges.
+
+**Dead code.** Schema contains `YearWeights` and `ClassificationRule` model fields that are never referenced by any service or UI — identified in `docs/review/phase-13-enhanced-review.md` as schema drift. Prune or wire before Phase 14.
+
+**Maintainability summary.** This codebase is **materially easier to extend than its predecessors**. The risk is not structural rot but **business-logic atrophy** — because every service is a thin CRUD shell, each new rule added has to be bolted onto the service layer from scratch, without prior patterns to imitate. The first three or four business-logic implementations will set the idiom for the rest.
 
 ## 11. Security considerations
 
