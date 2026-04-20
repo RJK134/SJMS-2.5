@@ -144,7 +144,32 @@ Versions verified against `package.json`, `docker-compose.yml` and the respectiv
 
 ## 5. Data model and persistence
 
-_To be written._
+**Scale (verified).** `prisma/schema.prisma` declares **197 models** and **123 enums**, spanning 23 HE domains as mapped in CLAUDE.md. Seven applied migrations live under `prisma/migrations/`; two untracked duplicate-named migration directories (`extend_support_category`, 46s apart) remain from a Phase 13 baseline and should be reconciled before the next production migration.
+
+**Canonical identity pattern.** Every model carries: `id String @id @default(cuid())`, `createdAt DateTime @default(now())`, `updatedAt DateTime @updatedAt`, `createdBy String?`, `updatedBy String?`, and — for student-facing entities — `deletedAt DateTime?` for soft delete. 835 audit-field references are present across the schema. One notable exception: **`MarkEntry` has `createdAt` / `createdBy` / `deletedAt` but no `updatedAt` / `updatedBy`** — deliberate immutability by design, but the decision is not documented as an invariant and would confuse an external auditor.
+
+**Soft-delete coverage.** Migration `20260410203303_add_deleted_at_to_31_models` added `deletedAt` to 31 models; the repository layer consistently filters `where: { id, deletedAt: null }` on reads (sampled in `finance.repository.ts`). Per `docs/review/00-executive-verdict.md`, coverage is still partial — **154 of 197 models lack `deletedAt`** (21.8% coverage). The bias is toward academic/reference data, which is defensible, but a documented list of "hard-delete-allowed" entities would make the rule auditable.
+
+**Cascade behaviour (80 `onDelete` clauses).**
+- **Marks chain correctly uses `Restrict`** on `AssessmentComponent → Assessment` and `MarkEntry → AssessmentComponent` — academic marks cannot cascade-delete. ✅
+- **Person descendants cascade to Person** (PersonName, PersonAddress, PersonContact) — acceptable for supporting data. ✅
+- **Finance chain contains `onDelete: Cascade`** on `Invoice → StudentAccount` and `ChargeLine → Invoice`. For a UK HE finance system subject to SOX-equivalent audit retention, these should be `Restrict`. ⚠️ **Primary cascade-hazard finding.**
+
+**Indexing.** 228 `@@index` declarations. Spot-check found no redundant indexes overlapping a `@@unique` prefix — the Phase-0.5 BugBot finding (redundant HESA indexes) has been resolved. Compound indexes on foreign-key columns are strategically placed.
+
+**Raw SQL.** Exactly one raw query in the entire codebase — `prisma.$queryRawUnsafe("SELECT 1")` in the `/api/health` probe (`server/src/index.ts:68`). SQL-injection surface is effectively zero.
+
+**Effective-dating / temporality.** HESA models (`HESASnapshot`, `HESAStudentModule`) embed snapshot semantics correctly: snapshots are immutable once sealed (schema uses a DB trigger per the overnight-build log). Other domains (Enrolment status, Fee bands, Programme specifications) rely on `StatusHistory` tables (e.g., `EnrolmentStatusHistory`) rather than true bitemporal fields — a standard compromise, but it means point-in-time queries ("what was this student's status on 2025-06-30?") require joining through history tables rather than a valid-from/valid-to range scan.
+
+**Domain coverage.** All 23 domains listed in CLAUDE.md are present in-schema. Notably thin areas:
+- `ChangeOfCircumstances` — single model, no status machine
+- `GraduationRegistration` — no certificate-generation pivot
+- `Placement` — no visit-scheduling model
+- `AccommodationBooking` — no clash/allocation model
+
+**Seed data.** Phase 1B seed covers reference data (countries, programmes, modules, roles, system settings) and dev personas (admin/academic/student/applicant) aligned with the four portals. No large synthetic student cohort is seeded by default — existing SQL scripts in `scripts/` can be adapted.
+
+**Persistence summary.** The schema is wide, HE-literate and correctly named for a UK context (British English throughout). The two material risks are (a) the finance-chain cascade choice, and (b) the partial soft-delete coverage. Both are fixable with targeted migrations.
 
 ## 6. Authentication and authorisation
 
