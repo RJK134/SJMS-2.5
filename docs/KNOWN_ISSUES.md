@@ -202,18 +202,19 @@ grep -n "useList.*modules\|useList.*marks" client/src/pages/academic/MyMarksEntr
 
 ---
 
-### KI-P11-001: 25+ services still use deprecated emitEvent two-arg form — OPEN 2026-04-16
+### KI-P11-001: 25+ services still use deprecated emitEvent two-arg form — CLOSED 2026-04-21
 
 **Severity:** AMBER  
 **Phase introduced:** Phase 11 — System Remediation  
-**File(s):** `server/src/api/*/[service].service.ts` (approximately 25 services)  
-**Problem:** The deprecated `emitEvent('event.name', { id })` two-argument form is still used in ~25 services. This form works via backward compatibility in `webhooks.ts` but loses `actorId`, `entityType`, and `entityId` specificity in the event payload. Phase 11 migrated the 5 highest-traffic services (appeals, assessments, awards, admissions-events, marks) to the object form.  
-**Deferral reason:** Migrating all 25+ remaining services is mechanical but time-consuming (~2 hours). The deprecated form still works correctly — events are delivered, just with less metadata.  
-**Resolution plan:** Dedicated cleanup sprint. Each service needs 2-4 calls converted from `emitEvent('name', { id })` to `emitEvent({ event, entityType, entityId, actorId, data })`.
+**File(s):** `server/src/api/*/[service].service.ts` (17 services remaining at close)  
+**Problem (original):** The deprecated `emitEvent('event.name', { id })` two-argument form was still used in ~25 services. This form worked via backward compatibility in `webhooks.ts` but lost `actorId`, `entityType`, and `entityId` specificity in the event payload. Phase 11 migrated the 5 highest-traffic services (appeals, assessments, awards, admissions-events, marks) to the object form.
 
-**Detection command:**
+**CLOSED:** 2026-04-21 — Phase 13b overnight remediation pass — All 66 remaining two-argument call sites across 17 services migrated to the canonical `WebhookPayload` object form. Every event now carries `actorId`, `entityType`, `entityId`, and a domain-specific `data` payload. Services migrated: module-results, progressions, clearance-checks, submissions, persons, students, programmes, references, qualifications, interviews, demographics, identifiers, transcripts, departments, faculties, schools, modules, programme-modules, programme-routes, config, webhooks, communications, notifications.
+
+**Verification:**
 ```bash
 grep -rn "emitEvent('" server/src/api --include="*.service.ts" | grep -v "emitEvent({" | wc -l
+# → 0
 ```
 
 ---
