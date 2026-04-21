@@ -1,0 +1,53 @@
+# SJMS 2.5 — Code owners
+#
+# Every file in this repository has an implicit default owner
+# (`RJK134`) through the catch-all at the top of the list. Subsequent
+# entries override it for security-critical, governance-critical, or
+# high-blast-radius paths so those changes cannot merge without an
+# explicit code-owner review when the branch protection rule
+# "Require review from Code Owners" is enabled.
+#
+# See: https://docs.github.com/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+
+# --- Default owner ---------------------------------------------------
+
+*                                                   @RJK134
+
+# --- Governance and delivery control set -----------------------------
+
+/CLAUDE.md                                          @RJK134
+/.claude/CLAUDE.md                                  @RJK134
+/docs/BUILD-QUEUE.md                                @RJK134
+/docs/KNOWN_ISSUES.md                               @RJK134
+/docs/VERIFICATION-PROTOCOL.md                      @RJK134
+/docs/delivery-plan/**                              @RJK134
+
+# --- CI / CD / Security tooling --------------------------------------
+
+/.github/workflows/**                               @RJK134
+/.github/dependabot.yml                             @RJK134
+/.github/CODEOWNERS                                 @RJK134
+/.github/pull_request_template.md                   @RJK134
+/SECURITY.md                                        @RJK134
+
+# --- Authentication and authorisation --------------------------------
+
+/server/src/middleware/auth.ts                      @RJK134
+/server/src/middleware/data-scope.ts                @RJK134
+/server/src/constants/roles.ts                      @RJK134
+
+# --- Data model and migrations ---------------------------------------
+
+/prisma/schema.prisma                               @RJK134
+/prisma/migrations/**                               @RJK134
+
+# --- Deployment surface (TLS, CSP, CORS, nginx) ----------------------
+
+/docker/nginx/**                                    @RJK134
+/docker/docker-compose.prod.yml                     @RJK134
+/docker-compose.yml                                 @RJK134
+
+# --- Webhook and event contract --------------------------------------
+
+/server/src/utils/webhooks.ts                       @RJK134
+/server/src/workflows/**                            @RJK134
