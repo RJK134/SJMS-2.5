@@ -161,6 +161,46 @@ describe('appeals.service', () => {
 
       expect(mockedRepo.update).not.toHaveBeenCalled();
     });
+
+    it('should emit appeals.status_changed when status moves through a valid transition', async () => {
+      const previous = { ...fakeAppeal, status: 'SUBMITTED' };
+      const updated = { ...fakeAppeal, status: 'UNDER_REVIEW' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await appealsService.update('appeal-1', { status: 'UNDER_REVIEW' } as any, 'user-1', fakeReq);
+
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(events).toContain('appeals.status_changed');
+    });
+
+    it('should reject an invalid appeal status transition', async () => {
+      const previous = { ...fakeAppeal, status: 'SUBMITTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+
+      // SUBMITTED → HEARD is not a legal transition (must pass through
+      // UNDER_REVIEW → HEARING_SCHEDULED first).
+      await expect(
+        appealsService.update('appeal-1', { status: 'HEARD' } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(/Invalid appeal status transition/);
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should not emit status_changed when no status supplied', async () => {
+      const previous = { ...fakeAppeal, status: 'SUBMITTED' };
+      const updated = { ...fakeAppeal, grounds: 'updated grounds text' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await appealsService.update('appeal-1', { grounds: 'updated grounds text' } as any, 'user-1', fakeReq);
+
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(events).not.toContain('appeals.status_changed');
+    });
   });
 
   describe('remove()', () => {
