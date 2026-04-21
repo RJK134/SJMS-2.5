@@ -142,6 +142,31 @@ enforcement point. See KI-P14-002 for the ratchet plan.
 
 ---
 
+## Gate 11: Security Observability (AMBER only)
+
+```bash
+# Static analysis workflow present
+test -f .github/workflows/codeql.yml && echo "codeql: OK"
+
+# Supply-chain scanning workflow present
+test -f .github/workflows/security-audit.yml && echo "audit: OK"
+
+# Dependency auto-update config present
+test -f .github/dependabot.yml && echo "dependabot: OK"
+
+# Disclosure policy present
+test -f SECURITY.md && echo "security.md: OK"
+
+# Code ownership map present
+test -f .github/CODEOWNERS && echo "codeowners: OK"
+```
+
+All five artefacts must exist. They are advisory — none block merges
+on their own — but their absence indicates a regression in Phase 15A
+security observability. See KI-P15-001 for the baseline-triage plan.
+
+---
+
 ## Quick Run Script
 
 Run all gates in sequence:
@@ -169,6 +194,12 @@ git ls-files .claude/worktrees/ 2>/dev/null && \
 git ls-files ".claude/*.txt" 2>/dev/null && \
 echo "=== GATE 10: Coverage policy ===" && \
 grep -E 'coverage\.thresholds' .github/workflows/ci.yml && \
+echo "=== GATE 11: Security observability ===" && \
+test -f .github/workflows/codeql.yml && \
+test -f .github/workflows/security-audit.yml && \
+test -f .github/dependabot.yml && \
+test -f SECURITY.md && \
+test -f .github/CODEOWNERS && \
 echo "=== ALL GATES COMPLETE ==="
 ```
 

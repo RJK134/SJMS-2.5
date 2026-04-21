@@ -98,28 +98,78 @@
   module-registration path is already the focus.
 
 ### Batch 14F — Phase closeout
-**Status:** IN PROGRESS — this PR
+**Status:** DONE — PR #54 merged 2026-04-21 as `b9a2a58`
 **Acceptance:**
-- Control docs internally consistent.
-- CI workflow updated and green (reporting steps cannot falsely fail).
-- BugBot HIGH findings resolved.
-- Remaining AMBER/LOW items logged in `docs/KNOWN_ISSUES.md`.
-- Next phase branch ready: `phase-15/security-hardening`.
+- Control docs internally consistent. ✅
+- CI workflow updated and green (reporting steps cannot falsely fail). ✅
+- BugBot review returned Medium-Risk advisory; no HIGH findings. ✅
+- Remaining AMBER/LOW items logged in `docs/KNOWN_ISSUES.md`. ✅
+- Next phase branch: `phase-15/security-observability` (split from the original `phase-15/security-hardening` scope — see Phase 15 section below).
+
+---
+
+## Phase 15 — Security and Platform Hardening Blockers
+
+**Objective:** Close pilot-blocking platform/security gaps incrementally, in reviewable slices, without touching architecturally-significant surface (`auth.ts`, `roles.ts`, established Prisma models) without explicit sign-off.
+
+### Active split
+
+The original Phase 15 plan (MFA, Redis identity cache, CSP/CORS, scanning, finance retention) has been sequenced into two branches so reviewable slices land ahead of the architectural decisions:
+
+- **Phase 15A — Security observability and supply-chain scanning** (this PR, branch `phase-15/security-observability`). Adds static analysis, dependency scanning, disclosure policy, and code ownership. No source code or schema changes.
+- **Phase 15B — Auth, MFA, identity cache, and retention** (later PR, branch `phase-15/auth-hardening`). Architecturally significant — will STOP-gate per CLAUDE.md rule 6 until Richard signs off on the approach.
+
+### Batch 15A.1 — CodeQL static security analysis
+**Status:** DONE — commit `119e73f`
+**Scope:** New `.github/workflows/codeql.yml` runs CodeQL `security-extended` query suite on PR, push to main, and weekly (Mon 03:17 UTC). Scoped away from `node_modules/`, `dist/`, and `prisma/generated/`. Advisory only — findings publish to Security tab.
+
+### Batch 15A.2 — Dependabot config
+**Status:** DONE — commit `f70b4d2`
+**Scope:** New `.github/dependabot.yml` watches four ecosystems (`npm` at `/`, `/server`, `/client`; `github-actions` at `/`). Weekly cadence Monday 07:00 Europe/London. Minor/patch updates grouped per ecosystem, major bumps individual. Conventional-commit prefixes match existing repo conventions.
+
+### Batch 15A.3 — npm audit supply-chain scanning
+**Status:** DONE — commit `953529c`
+**Scope:** New `.github/workflows/security-audit.yml` runs `npm audit --omit=dev --json` against root/server/client on PR, push to main, and daily 04:23 UTC. Publishes a severity-count summary table to the Actions step summary and uploads raw JSON as the `security-audit-reports` artefact. Advisory only.
+
+### Batch 15A.4 — SECURITY.md disclosure policy
+**Status:** DONE — commit `b20100e`
+**Scope:** New `SECURITY.md` publishes coordinated-disclosure policy with GitHub PVR as the preferred channel, 3-day ack, 7-day triage, 90-day disclosure window, safe-harbour wording, explicit in/out-of-scope list, and the current ongoing security posture.
+
+### Batch 15A.5 — CODEOWNERS
+**Status:** DONE — commit `e967c2b`
+**Scope:** New `.github/CODEOWNERS` names `@RJK134` as owner for governance docs, GitHub automation, auth middleware, roles constant, Prisma schema and migrations, nginx/Docker deployment surface, and the webhook/workflow contract. Enforcement depends on branch protection's "Require review from Code Owners" toggle.
+
+### Batch 15A.6 — Control-doc alignment
+**Status:** IN PROGRESS — this PR
+**Scope:** Update `docs/BUILD-QUEUE.md`, `docs/KNOWN_ISSUES.md`, `docs/VERIFICATION-PROTOCOL.md`, `CLAUDE.md`, `.claude/CLAUDE.md` to record Phase 15A delivery and the Phase 15B sequencing decision.
+
+### Batch 15A.7 — Phase 15A closeout
+**Status:** PENDING — closes on PR merge.
+**Acceptance:**
+- BugBot review returned with no HIGH findings.
+- GitGuardian clean.
+- CodeQL workflow runs against the PR and returns a result (pass or advisory findings) rather than infrastructure failure.
+- npm audit workflow runs against the PR and publishes a summary.
+- Control docs list Phase 15B as the next phase-15 branch with explicit STOP-gate note.
 
 ---
 
 ## Forward phase roadmap
 
-### Phase 15 — Security and platform hardening blockers
-**Planned branch:** `phase-15/security-hardening`
+### Phase 15B — Auth, MFA, identity cache, and retention
+**Planned branch:** `phase-15/auth-hardening`
 **HERM uplift:** Identity & Access Management, operational control
-**Priority outcomes:** MFA enforcement, Redis-backed identity cache, auth fallback review, CSP/CORS/Swagger tightening, dependency/security scanning, finance retention safeguards.
+**Priority outcomes:** MFA enforcement, Redis-backed identity cache, auth fallback review, CSP/CORS/Swagger tightening, finance retention safeguards. Supply-chain scanning and disclosure policy already delivered in Phase 15A.
+
+**STOP-gate note (per CLAUDE.md rule 6):** each of the Phase 15B batches below touches `auth.ts`, `roles.ts`, the Keycloak realm JSON, or established Prisma models. Claude will not open a PR for Phase 15B without explicit approval of the technical approach. The branch will carry a design doc first.
+
 **Candidate batches:**
-- 15A MFA and realm policy hardening
-- 15B Identity cache migration to Redis
-- 15C Auth fallback and environment guard review
-- 15D Security scanning and finance retention safeguards
-- 15E Phase closeout and review findings remediation
+- 15B.1 MFA enforcement and realm policy hardening
+- 15B.2 Identity cache migration to Redis
+- 15B.3 Auth fallback and environment guard review
+- 15B.4 CSP/CORS/Swagger tightening (bounded review of existing headers, not new architecture)
+- 15B.5 Finance retention and cascade safeguard review
+- 15B.6 Phase closeout and review findings remediation
 
 ### Phase 16 — Golden Journey 1: Admissions to Enrolment
 **Planned branch:** `phase-16/admissions-to-enrolment`
