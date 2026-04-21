@@ -281,4 +281,87 @@ describe('module-registrations.service', () => {
       ).resolves.toBeDefined();
     });
   });
+
+  // ── update() validation ─────────────────────────────────────────────────
+  // Mirrors the create() validation — a user who PATCHes a registration to
+  // a different module or academic year must still pass prerequisite and
+  // credit-limit checks.
+  describe('validatePrerequisites via update() when moduleId changes', () => {
+    const existingReg = {
+      id: 'reg-1',
+      enrolmentId: 'enr-1',
+      moduleId: 'mod-original',
+      academicYear: '2025/26',
+      status: 'REGISTERED',
+    };
+
+    it('blocks PATCH to a new module whose prerequisite is unmet', async () => {
+      mockedRepo.getById.mockResolvedValue(existingReg as any);
+      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([
+        { prerequisiteModuleId: 'mod-pre', isMandatory: true, prerequisiteModule: { id: 'mod-pre', title: 'Pre', moduleCode: 'PRE101' } },
+      ]);
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
+      mockedPrisma.moduleResult.findMany.mockResolvedValue([]); // No passed prereqs
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+
+      await expect(
+        service.update(
+          'reg-1',
+          { module: { connect: { id: 'mod-target' } } } as any,
+          'user-1',
+          fakeReq,
+        ),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('does NOT re-run prerequisite check when module is unchanged', async () => {
+      mockedRepo.getById.mockResolvedValue(existingReg as any);
+      mockedRepo.update.mockResolvedValue({ ...existingReg, status: 'DEFERRED' } as any);
+
+      await service.update(
+        'reg-1',
+        { status: 'DEFERRED' } as any,
+        'user-1',
+        fakeReq,
+      );
+
+      // No prerequisite lookup was performed
+      expect(mockedPrisma.modulePrerequisite.findMany).not.toHaveBeenCalled();
+    });
+
+    it('blocks PATCH to a different academic year that would breach credit limit', async () => {
+      mockedRepo.getById.mockResolvedValue(existingReg as any);
+      // No prereq change because moduleId unchanged; but academic year flipped
+      // triggers credit-limit check against the new year load.
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 30 });
+      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+        { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' },
+        { moduleId: 'mod-d' }, { moduleId: 'mod-e' }, { moduleId: 'mod-f' },
+      ]);
+      mockedPrisma.module.findMany.mockResolvedValue([
+        { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 },
+        { id: 'mod-d', credits: 20 }, { id: 'mod-e', credits: 20 }, { id: 'mod-f', credits: 20 },
+      ]);
+
+      await expect(
+        service.update(
+          'reg-1',
+          { academicYear: '2026/27' } as any,
+          'user-1',
+          fakeReq,
+        ),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+  });
 });

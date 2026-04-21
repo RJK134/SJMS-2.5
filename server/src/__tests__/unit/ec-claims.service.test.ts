@@ -150,19 +150,30 @@ describe('ec-claims.service', () => {
       expect(result.reason).toBe('Updated reason');
     });
 
-    it('should emit ec_claim.status_changed when status changes', async () => {
+    it('should emit ec_claim.status_changed when status changes through a valid transition', async () => {
       const previous = { ...fakeClaim, status: 'SUBMITTED' };
-      const updated = { ...fakeClaim, status: 'APPROVED', decision: 'APPROVED' };
+      const updated = { ...fakeClaim, status: 'EVIDENCE_RECEIVED' };
 
       mockedRepo.getById.mockResolvedValue(previous as any);
       mockedRepo.update.mockResolvedValue(updated as any);
 
-      await ecClaimsService.update('ec-1', { status: 'APPROVED', decision: 'APPROVED' } as any, 'user-1', fakeReq);
+      await ecClaimsService.update('ec-1', { status: 'EVIDENCE_RECEIVED' } as any, 'user-1', fakeReq);
 
       const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
         typeof c[0] === 'object' ? c[0].event : c[0],
       );
       expect(emittedEvents).toContain('ec_claim.status_changed');
+    });
+
+    it('should reject invalid EC status transitions', async () => {
+      const previous = { ...fakeClaim, status: 'SUBMITTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+
+      // SUBMITTED → PANEL is not a legal transition (must pass through
+      // EVIDENCE_RECEIVED → PRE_PANEL first).
+      await expect(
+        ecClaimsService.update('ec-1', { status: 'PANEL' } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(/Invalid EC claim status transition/);
     });
 
     it('should NOT emit status_changed when status remains the same', async () => {

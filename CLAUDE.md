@@ -12,7 +12,7 @@
 SJMS 2.5 is a **unified enterprise student records system** for UK higher education, merging:
 
 - **SJMS 2.4** (Perplexity Computer): 81 polished UI pages, clean design, MemStorage only, no auth/integrations
-- **SJMS 4.0** (Claude Code): 298 Prisma models, Keycloak/27 roles, n8n, MinIO — but 26/57 staff pages served mock data, 56 P-series findings unresolved
+- **SJMS 4.0** (Claude Code): 298 Prisma models, Keycloak/36 roles, n8n, MinIO — but 26/57 staff pages served mock data, 56 P-series findings unresolved
 
 **SJMS 2.5 = 2.4's proven UI + 4.0's enterprise infrastructure + critical gap fixes.**
 
@@ -38,7 +38,7 @@ SJMS 2.5 is a **unified enterprise student records system** for UK higher educat
 | Backend | Express.js + TypeScript, 37 domain modules |
 | ORM | Prisma 5 → PostgreSQL 16 (pgcrypto) |
 | Cache | Redis 7 |
-| Auth | Keycloak 24 (OIDC/SAML, 27 roles) |
+| Auth | Keycloak 24 (OIDC, 36 roles) |
 | Files | MinIO (S3-compatible) |
 | Workflows | n8n (webhook-triggered) |
 | Proxy | Nginx |
@@ -417,3 +417,94 @@ At session end or architectural questions, prepare:
 - #9 (finance sub-pages): verified Sponsors/Refunds are honest ComingSoon; Invoicing wired to real data
 - #10 (document upload no-op): verified informative fallback message in place
 - #11 (CLAUDE.md updates): this section
+
+---
+
+## Phase 13b — Overnight Remediation Pass (2026-04-21)
+
+**Branch:** `claude/sjms-remediation-pass-ZnE8G`
+**Base:** `main @ b9d6a81`
+**Scope:** Enterprise-readiness remediation across compliance depth, business-rule
+enforcement, event/audit consistency, security hardening and documentation accuracy.
+See `docs/remediation/overnight-remediation-plan.md` for the full plan.
+
+### Business-rule hardening
+- **Appeals lifecycle** (`server/src/api/appeals/appeals.service.ts`): canonical state
+  machine enforced at the service boundary. Invalid transitions throw
+  `ValidationError`; `appeals.status_changed` now emitted on every valid hop. The
+  previous service accepted arbitrary status writes silently.
+- **EC claim lifecycle** (`server/src/api/ec-claims/ec-claims.service.ts`): canonical
+  QAA-aligned transitions (`SUBMITTED → EVIDENCE_RECEIVED → PRE_PANEL → PANEL →
+  DECIDED → CLOSED`) enforced. Arbitrary hops rejected with `ValidationError`.
+- **Module-registration update path**
+  (`server/src/api/module-registrations/module-registrations.service.ts`):
+  `update()` now re-runs prerequisite and credit-limit validation when the module
+  or academic year changes. Previously a student could bypass these rules by
+  creating a throwaway registration and PATCHing its `moduleId`.
+- **Attendance threshold monitoring**
+  (`server/src/api/attendance/attendance.service.ts`): the dormant
+  `emitAttendanceAlert` / `emitUkviBreach` helpers are now invoked from every
+  attendance mutation via an in-process `evaluateAttendanceThresholds()` backstop.
+  Rolling rate is read from the repository, compared against two thresholds
+  (`attendance.alert.threshold` default 80, `ukvi.attendance.threshold` default 70)
+  read from `SystemSetting`, deduplicated against existing ACTIVE alerts, and
+  persisted as `AttendanceAlert` rows. UKVI breach risk emitted only for
+  `tier4Status = SPONSORED`. Closes the TODO at line 129 of this file.
+
+### Event & audit consistency
+- **All 66 deprecated two-argument `emitEvent('name', {id})` call-sites migrated**
+  to the canonical `WebhookPayload` object form across 17 services. Every event
+  now carries `actorId`, `entityType`, `entityId` and a domain-specific `data`
+  shape. Closes KI-P11-001.
+- **`notifications.service.ts` now emits events** on `create`, `update`, and
+  `markAsRead` — previously no notification mutation emitted an event at all.
+- **Webhook routing extended** (`server/src/utils/webhooks.ts`): added dedicated
+  `EVENT_ROUTES` entries for `appeals.*`, `ec_claim.submitted`,
+  `ec_claim.status_changed`, `attendance.alert_triggered`, and
+  `attendance.ukvi_breach_risk`. Prefix fallback retained.
+
+### Security & operability
+- **Request-ID correlation middleware** (`server/src/middleware/request-id.ts` +
+  `server/src/index.ts`): UUID v4 per request, echoed on the `x-request-id`
+  response header, captured by Morgan via `:reqid` token so Winston JSON and
+  HTTP access lines share one correlation value per request. Accepts an
+  inbound id when the caller already propagates one.
+- **Content-Security-Policy header** in `docker/nginx/nginx.prod.conf`: closes
+  the real XSS surface left open by the React SPA + embedded Swagger UI.
+- **Dead role reference removed** from `server/src/middleware/auth.ts`: the
+  dev-bypass admin persona no longer advertises a non-existent `registry_manager`
+  role. Role count now matches `server/src/constants/roles.ts` (36) and the
+  Keycloak realm JSON exactly.
+
+### Testing
+- **Unit tests: 120 → 133** (+13 new).
+- `module-registrations.service.test.ts` — 3 new cases covering update-path
+  prereq / credit-limit enforcement and the "no change" fast-path.
+- `appeals.service.test.ts` — 3 new cases covering status_changed emission,
+  invalid-transition rejection, and the "no status supplied" skip path.
+- `ec-claims.service.test.ts` — replaced an enum-invalid test with a
+  valid-transition case and added a new invalid-transition rejection case.
+- `attendance.service.test.ts` — 5 new cases covering threshold alert emission,
+  UKVI breach risk, deduplication, small-sample skip, and update-only-on-status-change.
+
+### CI
+- New `.github/workflows/ci.yml` runs server tsc, server vitest, client tsc,
+  and `prisma validate` on every PR. No separate workflow for Playwright
+  (still manual until the Docker stack is part of the GitHub runner image).
+
+### Documentation
+- `docs/remediation/overnight-remediation-plan.md` — the pass's own plan file.
+- `CLAUDE.md` + `.claude/CLAUDE.md` + `docs/architecture/system-architecture.md` —
+  reconciled role count drift from 27 → 36.
+- `docs/KNOWN_ISSUES.md` — KI-P11-001 closed; no new AMBER items opened by
+  this pass.
+
+### What remains open (deferred)
+- MFA enforcement in Keycloak realm (`phase-10/keycloak-mfa-hardening` branch
+  unshipped — architectural decision needed).
+- Identity cache → Redis (blocks horizontal scaling).
+- MinIO presigned uploads (KI-P10b-002).
+- Teaching-assignment model for academic scoping (KI-P10b-003).
+- Finance sub-domains — Sponsors, Bursaries, Refunds (KI-P10b-001).
+- Multi-tenancy substrate.
+- Activating the 15 n8n workflows under a live n8n instance.

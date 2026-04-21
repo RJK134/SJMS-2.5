@@ -31,7 +31,16 @@ export async function getById(id: string) {
 export async function create(data: Prisma.TranscriptUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('Transcript', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('transcripts.created', { id: result.id });
+  emitEvent({
+    event: 'transcripts.created',
+    entityType: 'Transcript',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      transcriptType: (result as { transcriptType?: string }).transcriptType ?? null,
+    },
+  });
   return result;
 }
 
@@ -39,7 +48,16 @@ export async function update(id: string, data: Prisma.TranscriptUpdateInput, use
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Transcript', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('transcripts.updated', { id });
+  emitEvent({
+    event: 'transcripts.updated',
+    entityType: 'Transcript',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      transcriptType: (result as { transcriptType?: string }).transcriptType ?? null,
+    },
+  });
   return result;
 }
 
@@ -47,5 +65,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Transcript', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('transcripts.deleted', { id });
+  emitEvent({
+    event: 'transcripts.deleted',
+    entityType: 'Transcript',
+    entityId: id,
+    actorId: userId,
+    data: { studentId: previous.studentId },
+  });
 }

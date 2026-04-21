@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  server:
+    name: Server — tsc + vitest + prisma validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install root workspace
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=prisma/schema.prisma
+      - name: Validate Prisma schema
+        env:
+          # prisma validate requires DATABASE_URL to be resolvable at validation
+          # time but does not connect to the database.
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npx prisma validate --schema=prisma/schema.prisma
+      - name: TypeScript check (server)
+        working-directory: server
+        run: npx tsc --noEmit
+      - name: Unit tests (server)
+        run: npm run test --workspace=server -- --reporter=default
+
+  client:
+    name: Client — tsc
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install root workspace
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=prisma/schema.prisma
+      - name: TypeScript check (client)
+        working-directory: client
+        run: npx tsc --noEmit

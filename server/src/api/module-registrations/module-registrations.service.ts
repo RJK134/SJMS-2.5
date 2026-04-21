@@ -147,6 +147,36 @@ export async function create(data: Prisma.ModuleRegistrationUncheckedCreateInput
 
 export async function update(id: string, data: Prisma.ModuleRegistrationUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
+
+  // Re-run the same business rules that create() enforces when an update
+  // points the registration at a different module or academic year.
+  // Without this, a student could bypass prerequisite / credit-limit checks
+  // by creating a throwaway registration and then PATCHing it to the real
+  // target module.
+  const newModuleId =
+    data.module && typeof data.module === 'object' && 'connect' in data.module
+      ? (data.module as { connect: { id: string } }).connect.id
+      : undefined;
+  const newAcademicYear =
+    typeof data.academicYear === 'string'
+      ? data.academicYear
+      : data.academicYear && typeof data.academicYear === 'object' && 'set' in data.academicYear
+        ? (data.academicYear as { set: string }).set
+        : undefined;
+
+  const effectiveModuleId = newModuleId ?? previous.moduleId;
+  const effectiveAcademicYear = newAcademicYear ?? previous.academicYear;
+
+  if (newModuleId && newModuleId !== previous.moduleId) {
+    await validatePrerequisites(effectiveModuleId, previous.enrolmentId);
+  }
+  if (
+    (newModuleId && newModuleId !== previous.moduleId) ||
+    (newAcademicYear && newAcademicYear !== previous.academicYear)
+  ) {
+    await validateCreditLimit(effectiveModuleId, previous.enrolmentId, effectiveAcademicYear);
+  }
+
   const result = await repo.update(id, data);
   await logAudit('ModuleRegistration', id, 'UPDATE', userId, previous, result, req);
   emitEvent({

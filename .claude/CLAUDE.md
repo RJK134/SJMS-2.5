@@ -66,7 +66,7 @@ sjms-2.5/
 | Frontend | React 18 + Vite + shadcn/ui + Tailwind | `client/src/App.tsx`, `client/src/pages/` |
 | API | Express.js + Zod validation | `server/src/api/` (37 modules) |
 | ORM | Prisma 5 + PostgreSQL 16 | `prisma/schema.prisma` |
-| Auth | Keycloak 24 OIDC, 27 roles | `server/src/middleware/auth.ts` |
+| Auth | Keycloak 24 OIDC, 36 roles | `server/src/middleware/auth.ts` |
 | Cache | Redis 7 | `server/src/middleware/cache.ts` |
 | Files | MinIO (S3-compatible) | `server/src/api/documents/` |
 | Workflows | n8n (webhook-triggered) | `n8n-workflows/` |
@@ -112,7 +112,7 @@ sjms-2.5/
 | 0.5 | Remediation Sprint (BugBot fixes) | Medium | NEXT |
 | 1A | Prisma Schema (~190 models) | Very High | In Progress |
 | 1B | Seed Data + Repository Layer | High | Pending |
-| 2 | Keycloak Auth (27 roles) | High | Pending |
+| 2 | Keycloak Auth (36 roles) | High | Pending |
 | 3 | API Decomposition (37 modules) | High | Pending |
 | 4 | RED Workstream (Person, HESA, Finance) | Very High | Pending |
 | 5 | Frontend Portal Build (140 pages) | Very High | Pending |

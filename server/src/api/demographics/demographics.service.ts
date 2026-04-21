@@ -30,7 +30,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.PersonDemographicUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('PersonDemographic', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('demographics.created', { id: result.id });
+  emitEvent({
+    event: 'demographics.created',
+    entityType: 'PersonDemographic',
+    entityId: result.id,
+    actorId: userId,
+    data: { personId: result.personId },
+  });
   return result;
 }
 
@@ -38,7 +44,13 @@ export async function update(id: string, data: Prisma.PersonDemographicUpdateInp
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('PersonDemographic', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('demographics.updated', { id });
+  emitEvent({
+    event: 'demographics.updated',
+    entityType: 'PersonDemographic',
+    entityId: id,
+    actorId: userId,
+    data: { personId: result.personId },
+  });
   return result;
 }
 
@@ -46,5 +58,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('PersonDemographic', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('demographics.deleted', { id });
+  emitEvent({
+    event: 'demographics.deleted',
+    entityType: 'PersonDemographic',
+    entityId: id,
+    actorId: userId,
+    data: { personId: previous.personId },
+  });
 }

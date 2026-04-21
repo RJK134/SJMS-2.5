@@ -34,7 +34,17 @@ export async function getById(id: string) {
 export async function create(data: Prisma.CommunicationTemplateUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('CommunicationTemplate', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('communications.created', { id: result.id });
+  emitEvent({
+    event: 'communications.created',
+    entityType: 'CommunicationTemplate',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      templateCode: (result as { templateCode?: string }).templateCode ?? null,
+      channel: (result as { channel?: string }).channel ?? null,
+      isActive: (result as { isActive?: boolean }).isActive ?? null,
+    },
+  });
   return result;
 }
 
@@ -42,7 +52,17 @@ export async function update(id: string, data: Prisma.CommunicationTemplateUpdat
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('CommunicationTemplate', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('communications.updated', { id });
+  emitEvent({
+    event: 'communications.updated',
+    entityType: 'CommunicationTemplate',
+    entityId: id,
+    actorId: userId,
+    data: {
+      templateCode: (result as { templateCode?: string }).templateCode ?? null,
+      channel: (result as { channel?: string }).channel ?? null,
+      isActive: (result as { isActive?: boolean }).isActive ?? null,
+    },
+  });
   return result;
 }
 
@@ -50,7 +70,13 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('CommunicationTemplate', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('communications.deleted', { id });
+  emitEvent({
+    event: 'communications.deleted',
+    entityType: 'CommunicationTemplate',
+    entityId: id,
+    actorId: userId,
+    data: { templateCode: (previous as { templateCode?: string }).templateCode ?? null },
+  });
 }
 
 // ── Send endpoint (workflow-facing) ─────────────────────────────────────

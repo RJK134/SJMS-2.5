@@ -78,6 +78,19 @@ const EVENT_ROUTES: Record<string, string> = {
   'ukvi.compliance_changed':          '/webhook/sjms/ukvi/compliance-changed',
   'ukvi.record_deleted':              '/webhook/sjms/ukvi/record-deleted',
 
+  // ── Appeals & EC lifecycle (used for regulatory reporting) ────────────
+  'appeals.created':                  '/webhook/sjms/appeals/created',
+  'appeals.updated':                  '/webhook/sjms/appeals/updated',
+  'appeals.status_changed':           '/webhook/sjms/appeals/status-changed',
+  'appeals.deleted':                  '/webhook/sjms/appeals/deleted',
+  'ec_claim.submitted':               '/webhook/sjms/ec-claim/submitted',
+  'ec_claim.status_changed':          '/webhook/sjms/ec-claim/status-changed',
+
+  // ── Attendance threshold events (used for UKVI & engagement) ──────────
+  'attendance.recorded':              '/webhook/sjms/attendance/recorded',
+  'attendance.alert_triggered':       '/webhook/sjms/attendance/alert-triggered',
+  'attendance.ukvi_breach_risk':      '/webhook/sjms/attendance/ukvi-breach-risk',
+
   // ── Prefix-based fallback for domains without dedicated workflows ─────
   'finance':                          '/webhook/sjms/finance',
   'ec_claim':                         '/webhook/sjms/ec-claim',

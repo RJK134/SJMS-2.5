@@ -31,7 +31,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ApplicationReferenceUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('ApplicationReference', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('references.created', { id: result.id });
+  emitEvent({
+    event: 'references.created',
+    entityType: 'ApplicationReference',
+    entityId: result.id,
+    actorId: userId,
+    data: { applicationId: result.applicationId },
+  });
   return result;
 }
 
@@ -39,7 +45,13 @@ export async function update(id: string, data: Prisma.ApplicationReferenceUpdate
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('ApplicationReference', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('references.updated', { id });
+  emitEvent({
+    event: 'references.updated',
+    entityType: 'ApplicationReference',
+    entityId: id,
+    actorId: userId,
+    data: { applicationId: result.applicationId },
+  });
   return result;
 }
 
@@ -47,5 +59,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('ApplicationReference', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('references.deleted', { id });
+  emitEvent({
+    event: 'references.deleted',
+    entityType: 'ApplicationReference',
+    entityId: id,
+    actorId: userId,
+    data: { applicationId: previous.applicationId },
+  });
 }
