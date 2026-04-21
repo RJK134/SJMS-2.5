@@ -58,7 +58,6 @@ const ADMIN_PERSONA_ROLES = [
   'super_admin',
   'system_admin',
   'registrar',
-  'registry_manager',
   'senior_registry_officer',
   'registry_officer',
   'admissions_manager',
