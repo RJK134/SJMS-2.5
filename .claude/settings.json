@@ -18,7 +18,7 @@
       "Bash(timeout 10 npx vite --port 5173)",
       "Bash(docker-compose --version)",
       "Bash(npm run:*)",
-      "Bash(gh pr create --title 'fix: add missing ACADEMIC_STAFF role group' --body ':*)"
+      "Bash(gh pr create:*)"
     ]
   },
   "env": {
