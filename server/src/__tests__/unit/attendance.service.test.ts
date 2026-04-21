@@ -9,21 +9,32 @@ vi.mock('../../repositories/attendance.repository', () => ({
   update: vi.fn(),
   softDelete: vi.fn(),
   listAlerts: vi.fn(),
+  getStudentAttendanceRate: vi.fn(),
+  createAlert: vi.fn(),
 }));
 vi.mock('../../repositories/systemSetting.repository', () => ({
   getByKey: vi.fn(),
 }));
 vi.mock('../../utils/audit', () => ({ logAudit: vi.fn() }));
 vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
+vi.mock('../../utils/prisma', () => ({
+  default: {
+    enrolment: { findFirst: vi.fn() },
+    uKVIRecord: { findFirst: vi.fn() },
+    attendanceAlert: { findFirst: vi.fn() },
+  },
+}));
 
 import * as attendanceService from '../../api/attendance/attendance.service';
 import * as repo from '../../repositories/attendance.repository';
 import * as settingsRepo from '../../repositories/systemSetting.repository';
+import prisma from '../../utils/prisma';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 
 const mockedRepo = vi.mocked(repo);
 const mockedSettingsRepo = vi.mocked(settingsRepo);
+const mockedPrisma = prisma as any;
 const mockedLogAudit = vi.mocked(logAudit);
 const mockedEmitEvent = vi.mocked(emitEvent);
 
@@ -383,6 +394,107 @@ describe('attendance.service', () => {
           data: expect.objectContaining({ ukviThreshold: 70 }),
         }),
       );
+    });
+  });
+
+  // ── Threshold evaluation on mutation ────────────────────────────────────
+  // The new in-process evaluator is the regulatory backstop when n8n is not
+  // live. It must emit and persist alerts the moment a mutation crosses a
+  // threshold; without this, UKVI compliance is dependent on an external
+  // job running, which in turn cannot be audited reliably.
+  describe('threshold evaluation on create/update', () => {
+    const activeEnrolment = { academicYear: '2025/26' };
+
+    it('emits a LOW_ATTENDANCE alert when rate falls below the general threshold', async () => {
+      mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
+      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
+      mockedPrisma.uKVIRecord.findFirst.mockResolvedValue(null);
+      mockedPrisma.attendanceAlert.findFirst.mockResolvedValue(null);
+      mockedSettingsRepo.getByKey.mockResolvedValue(null as any);
+      mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 10, present: 7, rate: 70 });
+
+      await attendanceService.create({ studentId: 'stu-1' } as any, 'user-1', fakeReq);
+
+      // Fire-and-forget — give the microtask queue a tick to flush
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockedRepo.createAlert).toHaveBeenCalledWith(
+        expect.objectContaining({ alertType: 'LOW_ATTENDANCE', studentId: 'stu-1' }),
+      );
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(events).toContain('attendance.alert_triggered');
+    });
+
+    it('emits TIER4_RISK alert when a sponsored visa holder is under UKVI threshold', async () => {
+      mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
+      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
+      mockedPrisma.uKVIRecord.findFirst.mockResolvedValue({ tier4Status: 'SPONSORED' } as any);
+      mockedPrisma.attendanceAlert.findFirst.mockResolvedValue(null);
+      mockedSettingsRepo.getByKey.mockResolvedValue(null as any);
+      // 68 < UKVI default threshold of 70
+      mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 25, present: 17, rate: 68 });
+
+      await attendanceService.create({ studentId: 'stu-1' } as any, 'user-1', fakeReq);
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockedRepo.createAlert).toHaveBeenCalledWith(
+        expect.objectContaining({ alertType: 'TIER4_RISK', studentId: 'stu-1' }),
+      );
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(events).toContain('attendance.ukvi_breach_risk');
+    });
+
+    it('does NOT duplicate alerts when an ACTIVE alert of the same type already exists', async () => {
+      mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
+      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
+      mockedPrisma.uKVIRecord.findFirst.mockResolvedValue(null);
+      mockedPrisma.attendanceAlert.findFirst.mockResolvedValue({ id: 'existing-alert' } as any);
+      mockedSettingsRepo.getByKey.mockResolvedValue(null as any);
+      mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 10, present: 5, rate: 50 });
+
+      await attendanceService.create({ studentId: 'stu-1' } as any, 'user-1', fakeReq);
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockedRepo.createAlert).not.toHaveBeenCalled();
+    });
+
+    it('skips evaluation when sample size is below 5', async () => {
+      mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
+      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
+      mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 3, present: 1, rate: 33 });
+
+      await attendanceService.create({ studentId: 'stu-1' } as any, 'user-1', fakeReq);
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockedRepo.createAlert).not.toHaveBeenCalled();
+      expect(mockedPrisma.uKVIRecord.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('skips evaluation when the student has no active enrolment', async () => {
+      mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
+      mockedPrisma.enrolment.findFirst.mockResolvedValue(null);
+
+      await attendanceService.create({ studentId: 'stu-1' } as any, 'user-1', fakeReq);
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockedRepo.getStudentAttendanceRate).not.toHaveBeenCalled();
+      expect(mockedRepo.createAlert).not.toHaveBeenCalled();
+    });
+
+    it('only re-evaluates on update() when the attendance status actually changes', async () => {
+      const previous = { ...fakeRecord, status: 'PRESENT' };
+      const updated = { ...fakeRecord, status: 'PRESENT' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await attendanceService.update('att-1', { status: 'PRESENT' } as any, 'user-1', fakeReq);
+      await new Promise((r) => setImmediate(r));
+
+      expect(mockedRepo.getStudentAttendanceRate).not.toHaveBeenCalled();
     });
   });
 });
