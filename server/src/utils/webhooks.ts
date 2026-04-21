@@ -1,6 +1,7 @@
 import { createHmac } from 'crypto';
 import logger from './logger';
 import prisma from './prisma';
+import { getRequestId } from './request-context';
 
 // ── Canonical webhook payload contract ──────────────────────────────────────
 // All SJMS events MUST use this shape.
@@ -17,9 +18,15 @@ export interface WebhookPayload {
   actorId: string;
   /** ISO 8601 UTC timestamp — auto-generated if omitted */
   timestamp?: string;
+  /** Correlation identifier propagated from the inbound HTTP request when present. */
+  requestId?: string;
   /** Relevant fields only (never the full Prisma object) */
   data: Record<string, unknown>;
 }
+
+type ResolvedWebhookPayload = WebhookPayload & {
+  timestamp: string;
+};
 
 // ── Configuration ───────────────────────────────────────────────────────────
 // WEBHOOK_BASE_URL is preferred; falls back to legacy WEBHOOK_URL for compat.
@@ -137,7 +144,7 @@ export function emitEvent(
   eventTypeOrPayload: string | WebhookPayload,
   legacyData?: unknown,
 ): void {
-  let resolved: Required<WebhookPayload>;
+  let resolved: ResolvedWebhookPayload;
 
   if (typeof eventTypeOrPayload === 'string') {
     // Legacy two-argument form — best-effort conversion for backward compat
@@ -148,12 +155,14 @@ export function emitEvent(
       entityId: String(raw.id ?? 'unknown'),
       actorId: 'system',
       timestamp: new Date().toISOString(),
+      requestId: getRequestId(),
       data: raw,
     };
   } else {
     resolved = {
       ...eventTypeOrPayload,
       timestamp: eventTypeOrPayload.timestamp || new Date().toISOString(),
+      requestId: eventTypeOrPayload.requestId || getRequestId(),
     };
   }
 
@@ -163,6 +172,7 @@ export function emitEvent(
       event: resolved.event,
       entityType: resolved.entityType,
       entityId: resolved.entityId,
+      requestId: resolved.requestId,
     });
     // Persist failure to AuditLog for operational visibility
     logWebhookFailure(resolved, (err as Error).message).catch(() => {
@@ -174,7 +184,7 @@ export function emitEvent(
 // ── Internal helpers ────────────────────────────────────────────────────────
 
 async function fireWithRetry(
-  payload: Required<WebhookPayload>,
+  payload: ResolvedWebhookPayload,
   attempt: number,
 ): Promise<void> {
   const path = resolveWebhookPath(payload.event);
@@ -187,6 +197,7 @@ async function fireWithRetry(
       headers: {
         'Content-Type': 'application/json',
         'x-webhook-signature': signature,
+        ...(payload.requestId ? { 'x-request-id': payload.requestId } : {}),
       },
       body,
       signal: AbortSignal.timeout(5000),
@@ -225,7 +236,7 @@ async function fireWithRetry(
 
 /** Write a WebhookDelivery failure record to AuditLog. */
 async function logWebhookFailure(
-  payload: Required<WebhookPayload>,
+  payload: ResolvedWebhookPayload,
   errorMessage: string,
 ): Promise<void> {
   try {
@@ -240,6 +251,7 @@ async function logWebhookFailure(
           targetEntityType: payload.entityType,
           error: errorMessage,
           failedAt: new Date().toISOString(),
+          requestId: payload.requestId ?? null,
         },
       },
     });

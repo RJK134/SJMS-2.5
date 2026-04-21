@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
+import { runWithRequestContext } from '../utils/request-context';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -30,5 +31,5 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
   const id = incoming && /^[\w.-]{1,128}$/.test(incoming) ? incoming : randomUUID();
   req.requestId = id;
   res.setHeader(REQUEST_ID_HEADER, id);
-  next();
+  runWithRequestContext({ requestId: id }, next);
 }
