@@ -34,6 +34,11 @@ yarn-error.log*
 # Claude Code — personal overrides, never tracked
 .claude/settings.local.json
 
+# Claude Code — transient agent worktrees and captured chat transcripts.
+# These are created by interactive sessions and must never be committed.
+.claude/worktrees/
+.claude/*.txt
+
 # OS
 .DS_Store
 Thumbs.db
