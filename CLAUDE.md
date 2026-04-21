@@ -3,7 +3,7 @@
 
 > **Organisation:** Future Horizons Education (FHE)
 > **Project Lead:** Richard Knapp — Lead Developer / Architect
-> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-09
+> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-21
 
 ---
 
@@ -91,6 +91,26 @@ Every code change follows this pipeline:
 4. Fix any HIGH severity BugBot findings before requesting merge
 5. LOW/MEDIUM findings should be noted and fixed in the same PR if quick, or logged for the next commit
 6. Human reviews and merges — Claude never merges its own PRs
+
+### Delivery Control Set
+- `CLAUDE.md`
+- `docs/BUILD-QUEUE.md`
+- `docs/VERIFICATION-PROTOCOL.md`
+- `docs/KNOWN_ISSUES.md`
+- `docs/delivery-plan/enterprise-readiness-plan.md`
+
+These documents must be updated together at every phase closeout. Phase 14+
+uses them as the source of truth for what is current, what is deferred, and
+what may be started next.
+
+### Phase Delivery Model
+- One active phase branch at a time from `main`
+- 3–8 reviewable batches per phase
+- `report_progress` before the first edit and after every meaningful batch
+- Run the verification protocol plus the relevant unit/E2E suites after each batch
+- Request BugBot review on every phase PR and fix HIGH findings before merge
+- Do not start the next phase until the current phase is merged and the control set is updated
+
 ### Phase Gate Reviews
 At the end of each build phase (per the Build Plan), a full BugBot review
 is conducted across ALL changed files in that phase. No phase is considered
@@ -138,10 +158,10 @@ Events without a dedicated workflow fall back to prefix-based routing (e.g. `fin
 - **One webhook path per workflow** — enforced by EVENT_ROUTES exact-match routing
 - Workflow JSON files are the source of truth — the n8n visual editor may be used for testing but changes must be exported back to version control
 
-### Remaining AMBER Items (deferred to Phase 8)
-- KI-P6-003: UKVI attendance threshold hardcoded (should be config-driven)
-- KI-P6-007: enquiry-received workflow has no event source yet
-- ~~KI-P6-008: Communications API payload shape speculative~~ — CLOSED 2026-04-14 (Phase 7A)
+### Remaining AMBER Items
+- All original Phase 6 AMBER items listed here have now been resolved.
+- Activation of the 15 n8n workflows under a live instance is now sequenced to **Phase 20 — Integration activation**.
+- Runtime credential, webhook-path, and payload-shape rules in this section remain current and are still the source of truth.
 
 ---
 
@@ -501,10 +521,34 @@ See `docs/remediation/overnight-remediation-plan.md` for the full plan.
 
 ### What remains open (deferred)
 - MFA enforcement in Keycloak realm (`phase-10/keycloak-mfa-hardening` branch
-  unshipped — architectural decision needed).
-- Identity cache → Redis (blocks horizontal scaling).
-- MinIO presigned uploads (KI-P10b-002).
-- Teaching-assignment model for academic scoping (KI-P10b-003).
-- Finance sub-domains — Sponsors, Bursaries, Refunds (KI-P10b-001).
-- Multi-tenancy substrate.
-- Activating the 15 n8n workflows under a live n8n instance.
+  unshipped — now sequenced to **Phase 15 — Security and platform hardening blockers**).
+- Identity cache → Redis (blocks horizontal scaling) — **Phase 15**.
+- MinIO presigned uploads (KI-P10b-002) — **Phase 21 — Portal completion**.
+- Teaching-assignment model for academic scoping (KI-P10b-003) — **Phase 21**.
+- Finance sub-domains — Sponsors, Bursaries, Refunds (KI-P10b-001) — **Phase 18 — Finance readiness**.
+- Multi-tenancy substrate — deferred until after **Phase 23** unless a commercial requirement pulls it forward.
+- Activating the 15 n8n workflows under a live n8n instance — **Phase 20 — Integration activation**.
+
+---
+
+## Phase 14+ — Enterprise Readiness Programme (PLANNED)
+
+**Current Phase:** 14 — Governance, Truth Baseline, and Release Discipline  
+**Planned branch:** `phase-14/governance-baseline`  
+**Programme plan:** `docs/delivery-plan/enterprise-readiness-plan.md`
+
+| Phase | Branch | Focus |
+|---|---|---|
+| 14 | `phase-14/governance-baseline` | Governance, truth baseline, CI/review discipline |
+| 15 | `phase-15/security-hardening` | Security and platform blockers |
+| 16 | `phase-16/admissions-to-enrolment` | Admissions to enrolment golden journey |
+| 17 | `phase-17/assessment-to-award` | Assessment to progression/award golden journey |
+| 18 | `phase-18/finance-readiness` | Fees, invoicing, payments, finance controls |
+| 19 | `phase-19/statutory-compliance` | HESA, UKVI, EC/appeals execution |
+| 20 | `phase-20/integration-activation` | n8n activation and external connectors |
+| 21 | `phase-21/portal-completion` | Portal completion, scoping, accessibility |
+| 22 | `phase-22/analytics-operability` | Analytics, BI, and observability |
+| 23 | `phase-23/pilot-readiness` | Pilot readiness and controlled deployment |
+
+**Strategic rule:** no further horizontal domain expansion until the core
+vertical journeys are rule-complete, tested, and evidenced.

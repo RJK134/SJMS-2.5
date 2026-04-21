@@ -1,155 +1,74 @@
-# SJMS 2.5 — Student Journey Management System
-## Claude Code Master Context
+# SJMS 2.5 — Claude Code Master Context
 
 > **Owner:** Richard Knapp · Future Horizons Education (FHE)
-> **Stack:** React 18 + Vite | Express.js | Prisma 5 | PostgreSQL 16 | Redis 7 | Keycloak 24 | MinIO | n8n | Docker
-> **Build approach:** 9-phase, 26-week plan converging SJMS 2.4 (UI) + SJMS 4.0 (enterprise backend)
+> **Last updated:** 2026-04-21
+> **Current delivery state:** Post-Phase 13b remediation baseline, entering Phase 14 enterprise-readiness governance
 
 ---
 
-## Critical Rules — Read Before Every Task
+## Project position
 
-1. **British English everywhere** — enrolment, programme, colour, organisation, centre, licence (noun), practise (verb). NEVER American spellings in UI text, comments, variable names (except external API field names).
-2. **Prisma migrations only** — `npx prisma migrate dev`, never `db push` after Phase 1A.
-3. **No MemStorage** — every data operation goes through Prisma → PostgreSQL. Zero in-memory business data.
-4. **Audit every mutation** — all CREATE/UPDATE/DELETE operations log to AuditLog via `src/utils/audit.ts`.
-5. **Soft delete by default** — student-facing entities use `deletedAt DateTime?`. Filter `deletedAt IS NULL` in all queries.
-6. **onDelete: Restrict in marks domain** — academic marks must NEVER cascade-delete. Assessment → AssessmentComponent → MarkEntry chain uses Restrict throughout.
-7. **No redundant indexes** — if `@@unique([col])` exists, do NOT add `@@index([col])`. Unique constraints create B-tree indexes in PostgreSQL automatically.
-8. **Tokens in memory only** — no localStorage, no sessionStorage. Keycloak tokens stored in JS variables.
-9. **Events for integrations** — API mutations emit webhook events; n8n handles all external system calls. Application code never calls external APIs directly.
-10. **Every model must have:** `id String @id @default(cuid())`, `createdAt DateTime @default(now())`, `updatedAt DateTime @updatedAt`, `createdBy String?`, `updatedBy String?`.
+SJMS 2.5 combines the polished SJMS 2.4 portal experience with the enterprise backend foundations built in SJMS 4.0. The platform baseline is now strong: 197 Prisma models, 44 API routers, 36 roles, 15 version-controlled n8n workflows, Redis-backed infrastructure, Keycloak OIDC, MinIO, and Prometheus metrics.
 
----
+The remaining gap is **enterprise readiness through business-rule depth and operational discipline**, not broad CRUD expansion.
 
-## Project Structure
+## Delivery control set
 
-sjms-2.5/
-├── CLAUDE.md                          ← YOU ARE HERE
-├── .claude/
-│   └── agents/
-│       ├── sjms-reviewer.md           ← Schema & code review agent
-│       ├── sjms-explorer.md           ← Codebase navigation agent
-│       └── british-english-checker.md ← Language compliance agent
-├── docs/
-│   ├── domain-guide.md                ← 23 domains, entity relationships, business rules
-│   ├── api-patterns.md                ← Router/controller/service/schema patterns
-│   ├── hesa-data-futures.md           ← HESA entity mapping, snapshot architecture
-│   ├── assessment-domain.md           ← Marks pipeline, moderation, exam boards
-│   ├── schema-remediation.md          ← BugBot findings + Cursor/Copilot review plan
-│   ├── review-strategy.md            ← Multi-tool code review workflow
-│   └── sits-mapping.md               ← SITS entity equivalents for every SJMS model
-├── prisma/
-│   └── schema.prisma
-├── server/src/
-│       ├── api/                       ← 37 domain modules
-│       ├── middleware/
-│       ├── repositories/
-│       ├── utils/
-│       └── constants/
-├── client/src/
-│       ├── pages/                     ← 140 pages across 5 portals
-│       ├── components/
-│       ├── contexts/
-│       └── lib/
-├── n8n-workflows/                     ← 15 workflow JSON files
-├── scripts/
-├── docker/
-└── docker-compose.yml
+Read these before every phase:
 
----
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/CLAUDE.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/BUILD-QUEUE.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/VERIFICATION-PROTOCOL.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/KNOWN_ISSUES.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/delivery-plan/enterprise-readiness-plan.md`
+- relevant review/remediation docs under `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/review/` and `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/remediation/`
 
-## Architecture Quick Reference
+## Non-negotiable delivery rules
 
-| Layer | Tech | Key Files |
-|-------|------|-----------|
-| Frontend | React 18 + Vite + shadcn/ui + Tailwind | `client/src/App.tsx`, `client/src/pages/` |
-| API | Express.js + Zod validation | `server/src/api/` (37 modules) |
-| ORM | Prisma 5 + PostgreSQL 16 | `prisma/schema.prisma` |
-| Auth | Keycloak 24 OIDC, 36 roles | `server/src/middleware/auth.ts` |
-| Cache | Redis 7 | `server/src/middleware/cache.ts` |
-| Files | MinIO (S3-compatible) | `server/src/api/documents/` |
-| Workflows | n8n (webhook-triggered) | `n8n-workflows/` |
-| Proxy | Nginx | `docker/nginx.conf` |
+1. British English throughout.
+2. Prisma-backed persistence only — no MemStorage or in-memory business stores.
+3. Audit every mutation.
+4. Emit a canonical webhook event for every mutation.
+5. Use one active phase branch at a time from `main`.
+6. Use `report_progress` before the first edit and after each meaningful batch.
+7. Run the verification protocol after each batch.
+8. Request BugBot review on every phase PR and fix HIGH findings before merge.
+9. Update the control set before declaring a phase complete.
+10. Do not expand horizontally into new domains until the core vertical journeys are rule-complete.
 
----
+## Current roadmap
 
-## Domain Map (23 Domains, ~190 Models)
+| Phase | Branch | Focus |
+|---|---|---|
+| 14 | `phase-14/governance-baseline` | Governance, truth baseline, release discipline |
+| 15 | `phase-15/security-hardening` | Security and platform blockers |
+| 16 | `phase-16/admissions-to-enrolment` | Admissions to enrolment golden journey |
+| 17 | `phase-17/assessment-to-award` | Assessment to progression/award golden journey |
+| 18 | `phase-18/finance-readiness` | Fees, invoicing, payments, finance controls |
+| 19 | `phase-19/statutory-compliance` | HESA, UKVI, EC/appeals compliance execution |
+| 20 | `phase-20/integration-activation` | n8n activation and external connectors |
+| 21 | `phase-21/portal-completion` | Portal completion, scoping, accessibility |
+| 22 | `phase-22/analytics-operability` | Analytics, BI, observability |
+| 23 | `phase-23/pilot-readiness` | Pilot readiness and controlled deployment |
 
-| # | Domain | Key Models | SITS Equivalent |
-|---|--------|-----------|-----------------|
-| 1 | Identity & Person | Person, PersonName, PersonAddress, PersonContact, PersonIdentifier, PersonDemographic | STU/SRS.PRS |
-| 2 | Curriculum | Faculty, School, Department, Programme, Module, ProgrammeModule, ProgrammeSpecification | SRS.CRS, SRS.MOD |
-| 3 | Admissions | Application, ApplicationQualification, OfferCondition, Interview, Agent | CAP.SAC.D |
-| 4 | Enrolment | Enrolment, ModuleRegistration, EnrolmentStatusHistory, StudentProgrammeRoute | SCJ/SCE/SPR |
-| 5 | Assessment & Marks | Assessment, AssessmentComponent, AssessmentAttempt, ModuleResult, ExamBoard | CAM.S/SMO/SMR |
-| 6 | Progression & Awards | ProgressionRecord, AwardRecord, Transcript, DegreeCalculation | SQA |
-| 7 | Finance | StudentAccount, ChargeLine, Invoice, Payment, PaymentPlan, SponsorAgreement | SRS.FEE |
-| 8 | Attendance | AttendanceRecord, EngagementScore, EngagementIntervention, AttendanceAlert | INS.SES |
-| 9 | Timetable | TeachingEvent, Room, TimetableSlot, TimetableClash | INS.EVN/ROM |
-| 10 | Support | SupportTicket, SupportInteraction, StudentFlag, PersonalTutoring | — |
-| 11 | UKVI | UKVIRecord, UKVIContactPoint, UKVIReport | SRS.CAS |
-| 12 | EC & Appeals | ECClaim, Appeal, PlagiarismCase, DisciplinaryCase | — |
-| 13 | Disability | DisabilityRecord, DisabilityAdjustment, WellbeingRecord | — |
-| 14 | Graduation | GraduationCeremony, GraduationRegistration, Certificate | — |
-| 15 | Placements | PlacementProvider, Placement | — |
-| 16 | Documents | Document, DocumentVerification, LetterTemplate, GeneratedLetter | — |
-| 17 | Communications | CommunicationTemplate, CommunicationLog, BulkCommunication | — |
-| 18 | HESA | HESAReturn, HESASnapshot, HESAValidationRule, DataFuturesEntity | — |
-| 19 | Accommodation | AccommodationBlock, AccommodationRoom, AccommodationBooking | — |
-| 20 | Change of Circumstances | ChangeOfCircumstances | — |
-| 21 | Governance | Committee, CommitteeMeeting, CommitteeMember | — |
-| 22 | Audit & System | AuditLog, SystemSetting, Notification, UserSession, WebhookSubscription | — |
-| 23 | Calendar | AcademicCalendar, AcademicYear | — |
+## Immediate open items already sequenced
 
----
+- MFA enforcement → Phase 15
+- Redis-backed identity cache → Phase 15
+- Finance sub-domains (Sponsors, Bursaries, Refunds) → Phase 18
+- n8n workflow activation → Phase 20
+- MinIO presigned uploads → Phase 21
+- Teaching-assignment model → Phase 21
+- Multi-tenancy substrate → after Phase 23 unless pulled forward by commercial need
 
-## Phase Plan Summary
+## Reference status
 
-| Phase | Description | Effort | Status |
-|-------|-------------|--------|--------|
-| 0 | Bootstrap + Docker | High | Done |
-| 0.5 | Remediation Sprint (BugBot fixes) | Medium | NEXT |
-| 1A | Prisma Schema (~190 models) | Very High | In Progress |
-| 1B | Seed Data + Repository Layer | High | Pending |
-| 2 | Keycloak Auth (36 roles) | High | Pending |
-| 3 | API Decomposition (37 modules) | High | Pending |
-| 4 | RED Workstream (Person, HESA, Finance) | Very High | Pending |
-| 5 | Frontend Portal Build (140 pages) | Very High | Pending |
-| 6 | n8n Workflow Automation (15 workflows) | High | Pending |
-| 7 | Integration Layer (SharePoint, UCAS, SLC) | High | Pending |
-| 8 | AMBER/GREEN Workstreams | High | Pending |
-| 9 | QA, Performance, Production | Very High | Pending |
+- Server typecheck: passing
+- Client typecheck: passing
+- Prisma validate/generate: passing
+- Server Vitest suite: passing
+- Linting: scripted but not operational yet (`eslint` tooling gap tracked in `docs/KNOWN_ISSUES.md`)
 
----
+## Strategic rule
 
-## Known Issues to Fix (from Cursor BugBot Review)
-
-### MEDIUM: Cascade Delete Chain
-`AssessmentComponent` declares `onDelete: Cascade` from `Assessment`, but `MarkEntry` uses default `onDelete: Restrict` on `AssessmentComponent`. Broken cascade chain. **FIX:** Change AssessmentComponent→Assessment to `onDelete: Restrict`. Academic marks must NEVER cascade-delete.
-
-### LOW: Redundant Indexes
-- `HESAStudent`: remove `@@index([studentId])` — already covered by `@@unique([studentId])`
-- `HESAStudentModule`: remove `@@index([hesaStudentId])` — leading column of `@@unique([hesaStudentId, hesaModuleId])`
-- **Scan entire schema** for any `@@index` whose columns are a prefix of an existing `@@unique`.
-
----
-
-## v4.0 System Scale (Reference from Previous Build)
-
-| Metric | Count |
-|--------|-------|
-| API Endpoints | 416 |
-| Router Files | 85 |
-| Service Files | 69 |
-| Prisma Models | 237 |
-| Database Tables (live) | 212 |
-| Frontend Pages | 114 (44 wired to APIs) |
-| n8n Workflows | 125 JSON files |
-| Tests | 2,242 (0 failures) |
-| Seeded Students | 500 |
-| Seeded Programmes | 60 |
-| Seeded Modules | 565 |
-
-SJMS 2.5 targets: ~190 models, 650 endpoints, 140 pages, 15 production n8n workflows.
-CLAUDE_EOF
+SJMS 2.5 should aim for **HERM-aligned completeness in a single-institution UK HE deployment**, not literal feature-for-feature parity with SITS, Banner, or Workday. The winning path is vertical completion of golden journeys, not more surface area.

@@ -13,6 +13,25 @@ Items that should be fixed in the active branch do **not** belong here.
 
 ## Open issues
 
+### Enterprise-readiness sequencing
+
+The current delivery roadmap is now controlled by
+`docs/delivery-plan/enterprise-readiness-plan.md` and
+`docs/BUILD-QUEUE.md`. Deferred items are currently sequenced as follows:
+
+| Item | Target phase |
+|---|---|
+| KI-P12-001 — enrolment cascade repository cleanup | Phase 14 |
+| MFA enforcement in Keycloak | Phase 15 |
+| Redis-backed identity cache | Phase 15 |
+| KI-P10b-001 — finance sub-domains | Phase 18 / 18A |
+| n8n workflow activation | Phase 20 |
+| KI-P10b-002 — MinIO presigned uploads | Phase 21 |
+| KI-P10b-003 — teaching-assignment model | Phase 21 |
+| Multi-tenancy substrate | Post-Phase 23 unless commercially required earlier |
+
+---
+
 ### KI-P3-001: PR #27 merged without Cursor BugBot automated review — CLOSED 2026-04-14
 
 **Severity:** Low  
@@ -161,7 +180,7 @@ must be resolved before Phase 9 completion.
 **File(s):** `client/src/pages/finance/Sponsors.tsx`, `Bursaries.tsx`, `Refunds.tsx`  
 **Problem:** Sponsor agreements, bursary management, and refund approvals each require dedicated backend APIs with domain-specific business logic (approval workflows, eligibility rules, credit note generation, payment gateway integration). The frontend pages now show honest ComingSoon components instead of misleading empty DataTables.  
 **Deferral reason:** These are net-new API domains requiring design decisions on entity models, workflows, and external integrations. Out of scope for the review remediation pass.  
-**Resolution plan:** Phase 11 or dedicated finance sprint. Use Invoicing page for current account balance visibility.
+**Resolution plan:** Phase 18 — Finance readiness (or a dedicated Phase 18a sub-phase). Use Invoicing page for current account balance visibility until then.
 
 **Detection command:**
 ```bash
@@ -177,7 +196,7 @@ grep -l "ComingSoon" client/src/pages/finance/*.tsx
 **File(s):** `client/src/pages/student-portal/MyDocuments.tsx`, `client/src/pages/applicant/UploadDocuments.tsx`  
 **Problem:** Document upload creates metadata records in PostgreSQL via the documents API, but binary files are not uploaded to MinIO. The FileUpload component captures file selections but only posts metadata (title, mimeType, fileSize). Students and applicants are directed to email documents as a workaround.  
 **Deferral reason:** MinIO upload requires presigned URL generation, multipart upload handling, virus scanning integration, and file size enforcement — significant backend work beyond the review remediation scope.  
-**Resolution plan:** Dedicated document management sprint. Backend: presigned URL endpoint, upload confirmation webhook, file validation. Frontend: progress bar, retry logic.
+**Resolution plan:** Phase 21 — Portal completion, academic scoping, and UX/accessibility. Backend: presigned URL endpoint, upload confirmation webhook, file validation. Frontend: progress bar, retry logic.
 
 **Detection command:**
 ```bash
@@ -193,7 +212,7 @@ grep -n "email.*documents\|binary.*deferred\|being configured" client/src/pages/
 **File(s):** `client/src/pages/academic/MyMarksEntry.tsx`, `client/src/pages/academic/MyModeration.tsx`  
 **Problem:** Academic staff see all modules and marks in the system, not just those assigned to them. The module list in MyMarksEntry fetches `/v1/modules` without filtering by the logged-in academic's teaching assignments. MyModeration similarly fetches all MARKED submissions rather than only those for modules the academic teaches or moderates.  
 **Deferral reason:** Requires a teaching-assignment or module-staff junction table and corresponding `scopeToUser` middleware for the modules and marks endpoints. The current Prisma schema does not model staff-to-module assignments explicitly.  
-**Resolution plan:** Add `ModuleStaff` model (or similar) to Prisma schema, seed teaching assignments, add `scopeToUser('staffId')` to academic-facing API calls.
+**Resolution plan:** Phase 21 — Portal completion, academic scoping, and UX/accessibility. Add `ModuleStaff` model (or similar), seed teaching assignments, and add `scopeToUser('staffId')` to academic-facing API calls.
 
 **Detection command:**
 ```bash
@@ -230,11 +249,27 @@ Flagged by BugBot as NON-BLOCKING.
 **Deferral reason:** Refactoring into a `moduleRegistrationRepo.updateForEnrolmentCascade()`
 helper would touch shared infrastructure; intentionally deferred to avoid scope creep in
 the BugBot remediation PR.
-**Resolution plan:** Phase 13 repository-layer cleanup.
+**Resolution plan:** Phase 14 — Governance, truth baseline, and release discipline. Fold the cleanup into the low-effort follow-on batch unless a broader repository refactor becomes necessary.
 
 **Detection command:**
 ```bash
 grep -n "prisma.moduleRegistration" server/src/api/enrolments/enrolments.service.ts
+```
+
+---
+
+### KI-P14-001: Lint scripts defined but ESLint toolchain absent — OPEN 2026-04-21
+
+**Severity:** AMBER  
+**Phase introduced:** Phase 14 — Governance, truth baseline, and release discipline  
+**File(s):** `package.json`, `server/package.json`, `client/package.json`  
+**Problem:** The repository declares workspace lint scripts (`npm run lint`, `eslint src/ ...`) but does not currently include a working ESLint toolchain or committed ESLint configuration. The current validation baseline therefore cannot execute the advertised lint gate, and CI cannot honestly enforce it yet.  
+**Deferral reason:** Selecting and wiring a durable ESLint configuration for both the Express TypeScript server and the React TypeScript client is tooling work that would widen the scope of this governance PR.  
+**Resolution plan:** Phase 14 follow-on tooling batch or a dedicated `chore/tooling-eslint-bootstrap` branch before lint is added as a blocking CI gate.
+
+**Detection command:**
+```bash
+cd /home/runner/work/SJMS-2.5/SJMS-2.5 && npm run lint
 ```
 
 ---
