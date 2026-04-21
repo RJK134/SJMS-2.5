@@ -1,0 +1,122 @@
+name: Security audit
+
+# Supply-chain scanning for the SJMS 2.5 npm workspaces.
+#
+# Runs `npm audit` on root, server, and client, publishes a summary
+# table of High/Critical findings to the step summary, and uploads
+# the raw audit JSON as evidence. This workflow is advisory — it
+# does not block merges. Triage of outstanding HIGH findings is
+# folded into the Phase 15 closeout.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Daily at 04:23 UTC so a newly-disclosed CVE in a transitive
+    # dependency is surfaced within 24h even on quiet days.
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: security-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run npm audit (all workspaces)
+        id: audit
+        if: always()
+        run: |
+          set -u
+          mkdir -p audit-reports
+
+          run_audit() {
+            local label="$1"
+            local dir="$2"
+            local outfile="audit-reports/${label}.json"
+            echo "::group::npm audit (${label})"
+            # `npm audit --json` exits non-zero when vulnerabilities
+            # are present; we still want the JSON body so we capture
+            # it and inspect it ourselves.
+            (cd "$dir" && npm audit --json --omit=dev 2>/dev/null) > "$outfile" || true
+            # Emit a compact human line as well for CI logs.
+            (cd "$dir" && npm audit --omit=dev 2>&1 | tail -20) || true
+            echo "::endgroup::"
+          }
+
+          run_audit root .
+          run_audit server server
+          run_audit client client
+
+      - name: Publish audit summary
+        if: always()
+        run: |
+          set -u
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs');
+          const path = require('path');
+          const dir = 'audit-reports';
+          const labels = ['root', 'server', 'client'];
+          console.log('## Security audit');
+          console.log('');
+          console.log('| Workspace | Critical | High | Moderate | Low | Info |');
+          console.log('| --- | ---: | ---: | ---: | ---: | ---: |');
+          const totals = { critical: 0, high: 0, moderate: 0, low: 0, info: 0 };
+          for (const label of labels) {
+            const file = path.join(dir, `${label}.json`);
+            if (!fs.existsSync(file)) {
+              console.log(`| ${label} | n/a | n/a | n/a | n/a | n/a |`);
+              continue;
+            }
+            let data;
+            try {
+              const raw = fs.readFileSync(file, 'utf8');
+              data = raw.trim() ? JSON.parse(raw) : {};
+            } catch (err) {
+              console.log(`| ${label} | parse error | — | — | — | — |`);
+              continue;
+            }
+            const meta = (data && data.metadata && data.metadata.vulnerabilities) || {};
+            const row = {
+              critical: meta.critical || 0,
+              high: meta.high || 0,
+              moderate: meta.moderate || 0,
+              low: meta.low || 0,
+              info: meta.info || 0,
+            };
+            for (const k of Object.keys(totals)) totals[k] += row[k];
+            console.log(`| ${label} | ${row.critical} | ${row.high} | ${row.moderate} | ${row.low} | ${row.info} |`);
+          }
+          console.log(`| **total** | **${totals.critical}** | **${totals.high}** | **${totals.moderate}** | **${totals.low}** | **${totals.info}** |`);
+          console.log('');
+          console.log('> Advisory only. The authoritative PR gate remains the `CI` workflow.');
+          console.log('> Raw reports: see the `security-audit-reports` artefact on this run.');
+          NODE
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-reports
+          path: audit-reports
+          if-no-files-found: warn

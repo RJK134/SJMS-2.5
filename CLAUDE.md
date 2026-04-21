@@ -553,10 +553,30 @@ See `docs/remediation/overnight-remediation-plan.md` for the full plan.
 **Strategic rule:** no further horizontal domain expansion until the core
 vertical journeys are rule-complete, tested, and evidenced.
 
-### Phase 14 follow-on — CI and repository hygiene hardening (IN FLIGHT)
+### Phase 15A — Security observability and supply-chain scanning (IN FLIGHT)
+
+**Branch:** `phase-15/security-observability`
+**Base:** `main` at PR #54 merge (commit `b9a2a58`)
+
+Reviewable slice of the original Phase 15 scope that is free of auth/roles/schema changes. Delivers static analysis, supply-chain scanning, disclosure policy, and code ownership — so the harder auth-surface work (Phase 15B) can be taken on separately with a design doc first.
+
+| Batch | Scope | Commit |
+|-------|-------|--------|
+| 15A.1 | CodeQL `security-extended` workflow on PR/push/weekly schedule | `119e73f` |
+| 15A.2 | Dependabot config — npm (3 workspaces) and github-actions | `f70b4d2` |
+| 15A.3 | `.github/workflows/security-audit.yml` — npm audit across workspaces, severity summary + raw JSON artefact | `953529c` |
+| 15A.4 | `SECURITY.md` — coordinated-disclosure policy with GitHub PVR as preferred channel | `b20100e` |
+| 15A.5 | `.github/CODEOWNERS` — governance docs, workflows, auth surface, schema, nginx | `e967c2b` |
+| 15A.6 | Control-doc alignment for Phase 15A | this PR |
+| 15A.7 | Phase 15A closeout | this PR |
+
+**Phase 15B STOP-gate:** MFA enforcement, Redis identity cache, auth fallback review, and finance retention safeguards all require changes to `server/src/middleware/auth.ts`, `server/src/constants/roles.ts`, the Keycloak realm JSON, or established Prisma models. Per CLAUDE.md STOP condition #6, these will not ship without Richard's explicit approval of the approach — a design doc lands on `phase-15/auth-hardening` before any code change.
+
+### Phase 14 follow-on — CI and repository hygiene hardening (COMPLETE)
 
 **Branch:** `claude/sjms-enterprise-readiness-T2ukl`
 **Base:** `main` at PR #53 merge (commit `8062ed6`)
+**Merged as:** PR #54 → main commit `b9a2a58`
 
 Targeted closeout of batches that were marked PENDING in `docs/BUILD-QUEUE.md` when the Phase 14 baseline PR merged:
 

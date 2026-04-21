@@ -24,8 +24,9 @@ The current delivery roadmap is now controlled by
 | KI-P12-001 — enrolment cascade repository cleanup | Phase 16 (folded into module-registration focus) |
 | KI-P14-001 — ESLint toolchain bootstrap | `chore/tooling-eslint-bootstrap` before Phase 16 |
 | KI-P14-002 — ratchet server coverage thresholds | Phase 17 |
-| MFA enforcement in Keycloak | Phase 15 |
-| Redis-backed identity cache | Phase 15 |
+| KI-P15-001 — npm audit baseline triage | Phase 15B (or a fix/ branch if urgent) |
+| MFA enforcement in Keycloak | Phase 15B |
+| Redis-backed identity cache | Phase 15B |
 | KI-P10b-001 — finance sub-domains | Phase 18 / 18A |
 | n8n workflow activation | Phase 20 |
 | KI-P10b-002 — MinIO presigned uploads | Phase 21 |
@@ -272,6 +273,25 @@ grep -n "prisma.moduleRegistration" server/src/api/enrolments/enrolments.service
 **Detection command:**
 ```bash
 cd /home/runner/work/SJMS-2.5/SJMS-2.5 && npm run lint
+```
+
+---
+
+### KI-P15-001: npm audit baseline not yet triaged — OPEN 2026-04-21
+
+**Severity:** AMBER  
+**Phase introduced:** Phase 15A — Security observability and supply-chain scanning  
+**File(s):** supply-chain; findings surface in the `security-audit-reports` artefact produced by `.github/workflows/security-audit.yml`.  
+**Problem:** The npm audit workflow introduced in Phase 15A will produce a baseline of HIGH/CRITICAL findings on its first run because the tree has never been systematically audited. Until the baseline is triaged, the scan publishes severity counts to the step summary but does not gate merges. Leaving an unknown number of HIGH transitive vulnerabilities in production dependencies indefinitely is not an enterprise-acceptable posture.  
+**Deferral reason:** Some HIGH findings are likely to be false positives against our actual call graph, and some will require coordinated upgrades that touch the runtime (Prisma, Express, Keycloak client). Both types of fix are safer inside a dedicated triage PR rather than bundled with the workflow-introduction PR.  
+**Resolution plan:** Phase 15B or a dedicated `fix/npm-audit-baseline` branch if urgent. Triage the baseline, upgrade or justify each HIGH, then ratchet the workflow to fail on new HIGHs above the baseline (using `overrides` in each workspace package.json or a `npm-audit-resolver` config).
+
+**Detection command:**
+```bash
+# Run locally to inspect the current baseline
+(cd server && npm audit --omit=dev)
+(cd client && npm audit --omit=dev)
+(cd .      && npm audit --omit=dev)
 ```
 
 ---
