@@ -150,8 +150,15 @@ describe('communications.service', () => {
         expect.objectContaining({ id: 'tmpl-1' }),
         fakeReq,
       );
-      // Communications service uses the legacy two-argument emitEvent form
-      expect(mockedEmitEvent).toHaveBeenCalledWith('communications.created', { id: 'tmpl-1' });
+      // Communications service uses the canonical WebhookPayload object form.
+      expect(mockedEmitEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'communications.created',
+          entityType: 'CommunicationTemplate',
+          entityId: 'tmpl-1',
+          actorId: 'user-1',
+        }),
+      );
       expect(result.id).toBe('tmpl-1');
     });
   });
@@ -175,7 +182,14 @@ describe('communications.service', () => {
         updated,
         fakeReq,
       );
-      expect(mockedEmitEvent).toHaveBeenCalledWith('communications.updated', { id: 'tmpl-1' });
+      expect(mockedEmitEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'communications.updated',
+          entityType: 'CommunicationTemplate',
+          entityId: 'tmpl-1',
+          actorId: 'user-1',
+        }),
+      );
       expect(result.title).toBe('Updated Title');
     });
   });
@@ -198,7 +212,14 @@ describe('communications.service', () => {
         null,
         fakeReq,
       );
-      expect(mockedEmitEvent).toHaveBeenCalledWith('communications.deleted', { id: 'tmpl-1' });
+      expect(mockedEmitEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'communications.deleted',
+          entityType: 'CommunicationTemplate',
+          entityId: 'tmpl-1',
+          actorId: 'user-1',
+        }),
+      );
     });
 
     it('should throw NotFoundError if template does not exist before deletion', async () => {
