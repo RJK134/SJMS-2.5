@@ -36,45 +36,72 @@
 **Objective:** Establish a trustworthy delivery baseline before any new product expansion.
 
 ### Batch 14A — Delivery control set refresh
-**Status:** CURRENT
+**Status:** DONE — PR #53 merged 2026-04-21
 **Scope:**
-- Reconcile `CLAUDE.md`, `.claude/CLAUDE.md`, `docs/BUILD-QUEUE.md`, and `docs/KNOWN_ISSUES.md` with the post-Phase 13b reality.
-- Replace stale phase summaries with the enterprise-readiness roadmap.
-- Record the current verification baseline and known control gaps.
+- Reconciled `CLAUDE.md`, `.claude/CLAUDE.md`, `docs/BUILD-QUEUE.md`, and `docs/KNOWN_ISSUES.md` with the post-Phase 13b reality.
+- Replaced stale phase summaries with the enterprise-readiness roadmap.
+- Recorded the current verification baseline and known control gaps.
 
 ### Batch 14B — Enterprise-readiness plan publication
-**Status:** CURRENT
+**Status:** DONE — PR #53 merged 2026-04-21
 **Scope:**
-- Publish the phase-by-phase plan for Claude Code delivery.
-- Define the operating model, phase gates, BugBot loop, branch naming, and PR conventions.
-- Sequence open backlog items to the target phase where they should be addressed.
+- Published the phase-by-phase plan for Claude Code delivery.
+- Defined the operating model, phase gates, BugBot loop, branch naming, and PR conventions.
+- Sequenced open backlog items to the target phase where they should be addressed.
 
 ### Batch 14C — CI gate uplift
-**Status:** CURRENT
+**Status:** DONE — PR #53 merged 2026-04-21 + Phase 14 follow-on (see Batch 14C.2)
 **Scope:**
 - Keep PR gating mandatory on `main`.
 - Extend CI beyond the existing typecheck/test baseline with server coverage publication and clearer quality-job structure.
 - Log the lint-tooling gap explicitly rather than pretending lint is enforced.
 
-### Batch 14D — PR/review automation hygiene
-**Status:** PENDING
+### Batch 14C.2 — CI reporting hardening (follow-on)
+**Status:** DONE — commit 0d570c0
 **Scope:**
-- Update the PR template to the current phase-based delivery model.
-- Standardise reviewer instructions around HIGH/MEDIUM/LOW BugBot handling.
-- Ensure every phase PR carries batches completed, gates, and deferred KIs.
+- Made the server coverage summary publication step tolerant of a
+  missing or malformed `coverage-summary.json`. It now annotates the
+  step summary with a reporting-only note instead of failing a valid
+  test run.
+- Added `if: always()` to the publish and upload steps so evidence is
+  produced on both pass and fail paths.
+- Softened the coverage artefact upload from `if-no-files-found: error`
+  to `warn`; the unit-test step remains the authoritative gate.
+
+### Batch 14D — PR/review automation hygiene
+**Status:** DONE — commit in this PR
+**Scope:**
+- Updated `.github/pull_request_template.md` to remove the placeholder
+  `Batch 1/2/3` list in favour of a populated batches/commit-SHA list,
+  added a repository-hygiene acceptance gate, and added an explicit
+  pointer to the coverage artefact as testing evidence.
 
 ### Batch 14E — Low-effort follow-on cleanup
-**Status:** PENDING
+**Status:** DONE — commits 49cd99e, 6853543
 **Scope:**
-- Close doc/process drift identified in the Phase 13 comparative review.
-- Triage KI-P12-001 and any documentation-only inaccuracies safe to resolve without widening scope.
-- Either implement or formally defer the lint-tooling bootstrap tracked under KI-P14-001.
+- Removed 891 tracked files under `.claude/worktrees/` plus three
+  dangling gitlinks (`gallant-poincare`, `suspicious-beaver`,
+  `suspicious-robinson`) and two stray chat transcripts leaked into
+  `.claude/`. Extended `.gitignore` with `.claude/worktrees/` and
+  `.claude/*.txt` so the situation cannot recur.
+- Reconciled coverage policy: vitest thresholds are now authoritative
+  in `server/vitest.config.ts`, CI no longer overrides them, and the
+  previous aspirational-but-unenforced 60/60/50 numbers have been
+  retired. Current enforcement posture is honest (0 everywhere,
+  monitor-only) with a clear ratchet point in Phase 17.
+- KI-P14-001 (ESLint toolchain bootstrap) intentionally deferred to a
+  dedicated `chore/tooling-eslint-bootstrap` branch per its own
+  resolution plan; widening scope here would risk destabilising the
+  governance baseline PR.
+- KI-P12-001 (enrolment cascade repository bypass) left open; its fix
+  touches shared infrastructure and belongs inside Phase 16 where the
+  module-registration path is already the focus.
 
 ### Batch 14F — Phase closeout
-**Status:** PENDING
+**Status:** IN PROGRESS — this PR
 **Acceptance:**
 - Control docs internally consistent.
-- CI workflow updated and green.
+- CI workflow updated and green (reporting steps cannot falsely fail).
 - BugBot HIGH findings resolved.
 - Remaining AMBER/LOW items logged in `docs/KNOWN_ISSUES.md`.
 - Next phase branch ready: `phase-15/security-hardening`.

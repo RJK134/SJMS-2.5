@@ -40,9 +40,10 @@
 <!-- e.g. phase-14/governance-baseline -->
 
 **Batches completed:**
-- [ ] Batch 1
-- [ ] Batch 2
-- [ ] Batch 3
+<!-- List each batch with its scope and commit SHA, for example:
+- Batch 1A — CI workflow hardening (0d570c0)
+- Batch 1B — .claude/worktrees cleanup (49cd99e)
+-->
 
 ## Acceptance gates
 
@@ -53,6 +54,7 @@
 - [ ] Relevant Vitest suites pass
 - [ ] Relevant Playwright suites pass (when user journeys are touched)
 - [ ] `docs/VERIFICATION-PROTOCOL.md` gates reviewed
+- [ ] Repository hygiene: no new `.claude/worktrees/` entries, no stray chat transcripts, no dangling gitlinks (`git ls-files -s | awk '$1=="160000"'` empty)
 - [ ] BugBot HIGH findings: 0 open
 - [ ] GitGuardian / secret checks: no blocking findings
 
@@ -66,7 +68,11 @@
 
 ## Testing evidence
 
-<!-- List the exact commands run and their outcomes -->
+<!--
+List the exact commands run and their outcomes. For CI-only changes,
+point at the CI run URL and, where relevant, the coverage artefact
+published from the `server-coverage` upload step.
+-->
 
 ## Reviewer notes
 

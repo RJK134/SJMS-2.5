@@ -46,33 +46,54 @@ jobs:
 
       - name: Unit tests with coverage (server)
         working-directory: server
-        run: >
-          npx vitest run --config vitest.config.ts --coverage --reporter=default
-          --coverage.thresholds.lines=0
-          --coverage.thresholds.functions=0
-          --coverage.thresholds.branches=0
+        # Coverage thresholds are owned by server/vitest.config.ts so
+        # local runs match CI exactly. Do not add CLI overrides here.
+        run: npx vitest run --config vitest.config.ts --coverage --reporter=default
 
       - name: Publish server coverage summary
+        if: always()
         run: |
+          set -u
+          SUMMARY_PATH=server/coverage/coverage-summary.json
+          if [ ! -s "$SUMMARY_PATH" ]; then
+            {
+              echo '## Server coverage'
+              echo ''
+              echo "> Coverage summary not found at \`$SUMMARY_PATH\`."
+              echo '> The unit-test step above is the authoritative gate; this is reporting-only.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
-          const fs = require('fs')
-          const summary = JSON.parse(fs.readFileSync('server/coverage/coverage-summary.json', 'utf8'))
-          const total = summary.total
-          console.log('## Server coverage')
-          console.log('| Metric | Coverage |')
-          console.log('| --- | ---: |')
-          console.log(`| Lines | ${total.lines.pct}% |`)
-          console.log(`| Statements | ${total.statements.pct}% |`)
-          console.log(`| Functions | ${total.functions.pct}% |`)
-          console.log(`| Branches | ${total.branches.pct}% |`)
+          const fs = require('fs');
+          const path = 'server/coverage/coverage-summary.json';
+          try {
+            const summary = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const total = summary.total ?? {};
+            const pct = (m) => (m && typeof m.pct === 'number') ? `${m.pct}%` : 'n/a';
+            console.log('## Server coverage');
+            console.log('');
+            console.log('| Metric | Coverage |');
+            console.log('| --- | ---: |');
+            console.log(`| Lines | ${pct(total.lines)} |`);
+            console.log(`| Statements | ${pct(total.statements)} |`);
+            console.log(`| Functions | ${pct(total.functions)} |`);
+            console.log(`| Branches | ${pct(total.branches)} |`);
+          } catch (err) {
+            console.log('## Server coverage');
+            console.log('');
+            console.log('> Coverage summary could not be parsed: ' + err.message);
+            console.log('> The unit-test step above is the authoritative gate; this is reporting-only.');
+          }
           NODE
 
       - name: Upload server coverage artefact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: server-coverage
           path: server/coverage
-          if-no-files-found: error
+          if-no-files-found: warn
 
   client-quality:
     name: Client quality gate

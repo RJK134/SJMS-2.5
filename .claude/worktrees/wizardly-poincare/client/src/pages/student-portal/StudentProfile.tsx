@@ -1,4 +1,0 @@
-import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/contexts/AuthContext';
-export default function StudentProfile() { const { user } = useAuth(); return (<div className="space-y-6"><PageHeader title="My Profile" subtitle="Update your contact details and preferences" /><Card><CardHeader><CardTitle>Personal Details</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p><span className="text-muted-foreground">Name:</span> <span className="ml-2">{user?.firstName} {user?.lastName}</span></p><p><span className="text-muted-foreground">Email:</span> <span className="ml-2">{user?.email}</span></p><p className="text-xs text-muted-foreground mt-4">To change your name or date of birth, please contact the Registry office.</p></CardContent></Card></div>); }

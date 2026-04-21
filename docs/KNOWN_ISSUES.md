@@ -21,7 +21,9 @@ The current delivery roadmap is now controlled by
 
 | Item | Target phase |
 |---|---|
-| KI-P12-001 — enrolment cascade repository cleanup | Phase 14 |
+| KI-P12-001 — enrolment cascade repository cleanup | Phase 16 (folded into module-registration focus) |
+| KI-P14-001 — ESLint toolchain bootstrap | `chore/tooling-eslint-bootstrap` before Phase 16 |
+| KI-P14-002 — ratchet server coverage thresholds | Phase 17 |
 | MFA enforcement in Keycloak | Phase 15 |
 | Redis-backed identity cache | Phase 15 |
 | KI-P10b-001 — finance sub-domains | Phase 18 / 18A |
@@ -249,7 +251,7 @@ Flagged by BugBot as NON-BLOCKING.
 **Deferral reason:** Refactoring into a `moduleRegistrationRepo.updateForEnrolmentCascade()`
 helper would touch shared infrastructure; intentionally deferred to avoid scope creep in
 the BugBot remediation PR.
-**Resolution plan:** Phase 14 — Governance, truth baseline, and release discipline. Fold the cleanup into the low-effort follow-on batch unless a broader repository refactor becomes necessary.
+**Resolution plan:** Phase 16 — Admissions to enrolment golden journey. The module-registration service is already the direct focus of that phase, so the repository-bypass cleanup and the prerequisite/credit-limit coverage land together rather than as a drive-by edit during governance work.
 
 **Detection command:**
 ```bash
@@ -264,12 +266,42 @@ grep -n "prisma.moduleRegistration" server/src/api/enrolments/enrolments.service
 **Phase introduced:** Phase 14 — Governance, truth baseline, and release discipline  
 **File(s):** `package.json`, `server/package.json`, `client/package.json`  
 **Problem:** The repository declares workspace lint scripts (`npm run lint`, `eslint src/ ...`) but does not currently include a working ESLint toolchain or committed ESLint configuration. The current validation baseline therefore cannot execute the advertised lint gate, and CI cannot honestly enforce it yet.  
-**Deferral reason:** Selecting and wiring a durable ESLint configuration for both the Express TypeScript server and the React TypeScript client is tooling work that would widen the scope of this governance PR.  
-**Resolution plan:** Phase 14 follow-on tooling batch or a dedicated `chore/tooling-eslint-bootstrap` branch before lint is added as a blocking CI gate.
+**Deferral reason:** Selecting and wiring a durable ESLint configuration for both the Express TypeScript server and the React TypeScript client is tooling work that would widen the scope of this governance PR. Bootstrapping it was explicitly kept out of the Phase 14 follow-on batches so the governance PR could stay narrowly reviewable.  
+**Resolution plan:** Dedicated `chore/tooling-eslint-bootstrap` branch before lint is added as a blocking CI gate. Expected to land before or alongside Phase 16 so the golden-journey PRs benefit from static analysis.
 
 **Detection command:**
 ```bash
 cd /home/runner/work/SJMS-2.5/SJMS-2.5 && npm run lint
+```
+
+---
+
+### KI-P14-002: Server test coverage thresholds intentionally set to 0 — OPEN 2026-04-21
+
+**Severity:** LOW  
+**Phase introduced:** Phase 14 follow-on — CI and repository hygiene hardening  
+**File(s):** `server/vitest.config.ts`, `.github/workflows/ci.yml`  
+**Problem:** Coverage thresholds were previously declared at 60/60/50 (lines/functions/branches) in `server/vitest.config.ts` but silently overridden to 0/0/0 by CI CLI flags. The aspirational numbers were therefore a false control — local runs failed while CI passed. Phase 14 follow-on resolved the inconsistency by making `server/vitest.config.ts` the single source of truth with explicit 0 thresholds and removing the CLI overrides from CI.
+
+This leaves the server with no enforced coverage floor. That is the
+honest current state — the Vitest suite was built organically phase by
+phase and has not been sized against an agreed minimum.
+
+**Deferral reason:** Raising thresholds without evidence of current
+coverage risks turning green builds red for unrelated reasons. The
+correct sequencing is to introduce thresholds alongside the phase that
+adds the most rule-heavy code (assessment/progression/award logic in
+Phase 17).
+
+**Resolution plan:** Phase 17 — as the assessment rules engine is
+built, ratchet server thresholds up to a floor supported by the new
+tests. First target: lines 60, functions 60, branches 50 (reverting to
+the pre-removal aspiration once the suite actually supports them).
+Subsequent ratchets may increase further in Phase 18/19.
+
+**Detection command:**
+```bash
+grep -E 'lines:\s*0|functions:\s*0|branches:\s*0' server/vitest.config.ts
 ```
 
 ---

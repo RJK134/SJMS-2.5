@@ -109,6 +109,39 @@ New routers without Zod validation are AMBER.
 
 ---
 
+## Gate 9: Repository Hygiene (RED if violations found)
+
+```bash
+# No dangling submodule-like entries (gitlinks) in the tree
+git ls-files -s | awk '$1=="160000"'
+
+# No tracked agent worktrees
+git ls-files .claude/worktrees/ 2>/dev/null
+
+# No chat transcripts leaked to .claude root
+git ls-files ".claude/*.txt" 2>/dev/null
+```
+
+All three must return empty output. A non-empty result is RED because
+it breaks `actions/checkout` post-cleanup, bloats clones, or leaks
+session content into the tracked tree.
+
+---
+
+## Gate 10: Coverage Evidence (AMBER only)
+
+```bash
+# Config is the single source of truth — CI must not override
+grep -E 'coverage\.thresholds' .github/workflows/ci.yml
+# Expect: no hits (config-file-only policy)
+```
+
+Coverage thresholds in `server/vitest.config.ts` are authoritative.
+CI publishing is reporting-only — the unit-test step is the
+enforcement point. See KI-P14-002 for the ratchet plan.
+
+---
+
 ## Quick Run Script
 
 Run all gates in sequence:
@@ -130,6 +163,12 @@ echo "=== GATE 7: Security ===" && \
 grep -rL "requireRole" server/src/api/*/[!i]*.router.ts 2>/dev/null && \
 echo "=== GATE 8: Zod ===" && \
 grep -rL "validate" server/src/api/*/*.router.ts 2>/dev/null && \
+echo "=== GATE 9: Repository Hygiene ===" && \
+git ls-files -s | awk '$1=="160000"' && \
+git ls-files .claude/worktrees/ 2>/dev/null && \
+git ls-files ".claude/*.txt" 2>/dev/null && \
+echo "=== GATE 10: Coverage policy ===" && \
+grep -E 'coverage\.thresholds' .github/workflows/ci.yml && \
 echo "=== ALL GATES COMPLETE ==="
 ```
 
