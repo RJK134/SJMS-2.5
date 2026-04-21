@@ -82,7 +82,12 @@ async function validatePrerequisites(moduleId: string, enrolmentId: string): Pro
   }
 }
 
-async function validateCreditLimit(moduleId: string, enrolmentId: string, academicYear: string): Promise<void> {
+async function validateCreditLimit(
+  moduleId: string,
+  enrolmentId: string,
+  academicYear: string,
+  excludeRegistrationId?: string,
+): Promise<void> {
   const [targetModule, enrolment] = await Promise.all([
     prisma.module.findUnique({
       where: { id: moduleId },
@@ -97,6 +102,7 @@ async function validateCreditLimit(moduleId: string, enrolmentId: string, academ
 
   const existingRegistrations = await prisma.moduleRegistration.findMany({
     where: {
+      ...(excludeRegistrationId ? { id: { not: excludeRegistrationId } } : {}),
       enrolmentId,
       academicYear,
       status: { in: ['REGISTERED', 'COMPLETED'] },
@@ -174,7 +180,7 @@ export async function update(id: string, data: Prisma.ModuleRegistrationUpdateIn
     (newModuleId && newModuleId !== previous.moduleId) ||
     (newAcademicYear && newAcademicYear !== previous.academicYear)
   ) {
-    await validateCreditLimit(effectiveModuleId, previous.enrolmentId, effectiveAcademicYear);
+    await validateCreditLimit(effectiveModuleId, previous.enrolmentId, effectiveAcademicYear, id);
   }
 
   const result = await repo.update(id, data);

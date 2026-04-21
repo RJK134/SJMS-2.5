@@ -334,6 +334,67 @@ describe('module-registrations.service', () => {
       expect(mockedPrisma.modulePrerequisite.findMany).not.toHaveBeenCalled();
     });
 
+    it('allows PATCH swapping module in the same academic year within the credit limit', async () => {
+      mockedRepo.getById.mockResolvedValue(existingReg as any);
+      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([]);
+      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+        studentId: 'stu-1',
+        modeOfStudy: 'FULL_TIME',
+        programme: { level: 'LEVEL_6' },
+      });
+      mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
+      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 15 });
+      mockedPrisma.moduleRegistration.findMany.mockImplementation(({ where }: any) => {
+        if (where.id?.not === 'reg-1') {
+          return [
+            { moduleId: 'mod-a' },
+            { moduleId: 'mod-b' },
+            { moduleId: 'mod-c' },
+            { moduleId: 'mod-d' },
+            { moduleId: 'mod-e' },
+          ];
+        }
+
+        return [
+          { moduleId: 'mod-original' },
+          { moduleId: 'mod-a' },
+          { moduleId: 'mod-b' },
+          { moduleId: 'mod-c' },
+          { moduleId: 'mod-d' },
+          { moduleId: 'mod-e' },
+        ];
+      });
+      mockedPrisma.module.findMany.mockResolvedValue([
+        { id: 'mod-original', credits: 20 },
+        { id: 'mod-a', credits: 20 },
+        { id: 'mod-b', credits: 20 },
+        { id: 'mod-c', credits: 20 },
+        { id: 'mod-d', credits: 20 },
+        { id: 'mod-e', credits: 20 },
+      ]);
+      mockedRepo.update.mockResolvedValue({ ...existingReg, moduleId: 'mod-target' } as any);
+
+      await expect(
+        service.update(
+          'reg-1',
+          { module: { connect: { id: 'mod-target' } } } as any,
+          'user-1',
+          fakeReq,
+        ),
+      ).resolves.toMatchObject({ moduleId: 'mod-target' });
+
+      expect(mockedPrisma.moduleRegistration.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { not: 'reg-1' },
+          enrolmentId: 'enr-1',
+          academicYear: '2025/26',
+          status: { in: ['REGISTERED', 'COMPLETED'] },
+          deletedAt: null,
+        },
+        select: { moduleId: true },
+      });
+    });
+
     it('blocks PATCH to a different academic year that would breach credit limit', async () => {
       mockedRepo.getById.mockResolvedValue(existingReg as any);
       // No prereq change because moduleId unchanged; but academic year flipped
