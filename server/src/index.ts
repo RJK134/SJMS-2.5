@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { errorHandler } from "./middleware/error-handler";
 import { apiLimiter, authLimiter } from "./middleware/rate-limit";
+import { requestId } from "./middleware/request-id";
 import { apiV1Router } from "./api";
 import swaggerUi from "swagger-ui-express";
 import { openApiSpec } from "./utils/openapi";
@@ -17,18 +18,23 @@ const PORT = parseInt(process.env.PORT || "3001", 10);
 
 // ── Core middleware ──────────────────────────────────────────────────────
 app.use(helmet());
+app.use(requestId);
 app.use(
   cors({
     origin: process.env.NODE_ENV === "production"
       ? (process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173"])
       : true,
     credentials: true,
+    exposedHeaders: ["x-request-id"],
   })
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+// Morgan token + format that carries the request id alongside the HTTP line so
+// Winston transport and Morgan share one correlation value per request.
+morgan.token("reqid", (req) => (req as unknown as { requestId?: string }).requestId ?? "-");
 app.use(
-  morgan("short", {
+  morgan(':method :url :status :res[content-length] - :response-time ms reqid=:reqid', {
     stream: { write: (msg: string) => logger.info(msg.trim()) },
   })
 );
