@@ -20,8 +20,7 @@
       "Bash(npm run:*)",
       "Bash(gh pr create --title 'fix: add missing ACADEMIC_STAFF role group' --body ':*)"
     ]
-  }
-{
+  },
   "env": {
     "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING": "1",
     "CLAUDE_CODE_EFFORT_LEVEL": "high"
