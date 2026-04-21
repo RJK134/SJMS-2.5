@@ -46,11 +46,9 @@ jobs:
 
       - name: Unit tests with coverage (server)
         working-directory: server
-        run: >
-          npx vitest run --config vitest.config.ts --coverage --reporter=default
-          --coverage.thresholds.lines=0
-          --coverage.thresholds.functions=0
-          --coverage.thresholds.branches=0
+        # Coverage thresholds are owned by server/vitest.config.ts so
+        # local runs match CI exactly. Do not add CLI overrides here.
+        run: npx vitest run --config vitest.config.ts --coverage --reporter=default
 
       - name: Publish server coverage summary
         if: always()
