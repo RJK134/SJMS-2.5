@@ -2,7 +2,7 @@
 
 > **Owner:** Richard Knapp · Future Horizons Education (FHE)
 > **Last updated:** 2026-04-21
-> **Current delivery state:** Post-Phase 13b remediation baseline, entering Phase 14 enterprise-readiness governance
+> **Current delivery state:** Phase 14 governance baseline merged (PR #53). Phase 14 follow-on in flight on `claude/sjms-enterprise-readiness-T2ukl` — CI reporting hardening, `.claude/worktrees/` cleanup, coverage-policy reconciliation, control-doc alignment.
 
 ---
 
@@ -55,6 +55,9 @@ Read these before every phase:
 
 - MFA enforcement → Phase 15
 - Redis-backed identity cache → Phase 15
+- ESLint toolchain bootstrap → `chore/tooling-eslint-bootstrap` before Phase 16 (KI-P14-001)
+- Server coverage threshold ratchet → Phase 17 (KI-P14-002)
+- KI-P12-001 — enrolment cascade repository bypass → Phase 16 (folded into module-registration focus)
 - Finance sub-domains (Sponsors, Bursaries, Refunds) → Phase 18
 - n8n workflow activation → Phase 20
 - MinIO presigned uploads → Phase 21
@@ -67,7 +70,9 @@ Read these before every phase:
 - Client typecheck: passing
 - Prisma validate/generate: passing
 - Server Vitest suite: passing
-- Linting: scripted but not operational yet (`eslint` tooling gap tracked in `docs/KNOWN_ISSUES.md`)
+- Coverage enforcement: 0/0/0 floor (monitor-only) in `server/vitest.config.ts`; ratchet sequenced to Phase 17 (KI-P14-002)
+- Linting: scripted but not operational yet (`eslint` tooling gap tracked as KI-P14-001)
+- Repository hygiene: no gitlinks, no tracked `.claude/worktrees/`, no stray `.claude/*.txt` (Gate 9 in `docs/VERIFICATION-PROTOCOL.md`)
 
 ## Strategic rule
 

@@ -533,8 +533,8 @@ See `docs/remediation/overnight-remediation-plan.md` for the full plan.
 
 ## Phase 14+ — Enterprise Readiness Programme (PLANNED)
 
-**Current Phase:** 14 — Governance, Truth Baseline, and Release Discipline  
-**Planned branch:** `phase-14/governance-baseline`  
+**Current Phase:** 14 — Governance, Truth Baseline, and Release Discipline (follow-on hardening in flight)
+**Planned branch:** `phase-14/governance-baseline` (initial baseline merged as PR #53, follow-on on `claude/sjms-enterprise-readiness-T2ukl`)
 **Programme plan:** `docs/delivery-plan/enterprise-readiness-plan.md`
 
 | Phase | Branch | Focus |
@@ -552,3 +552,23 @@ See `docs/remediation/overnight-remediation-plan.md` for the full plan.
 
 **Strategic rule:** no further horizontal domain expansion until the core
 vertical journeys are rule-complete, tested, and evidenced.
+
+### Phase 14 follow-on — CI and repository hygiene hardening (IN FLIGHT)
+
+**Branch:** `claude/sjms-enterprise-readiness-T2ukl`
+**Base:** `main` at PR #53 merge (commit `8062ed6`)
+
+Targeted closeout of batches that were marked PENDING in `docs/BUILD-QUEUE.md` when the Phase 14 baseline PR merged:
+
+| Batch | Scope | Commit |
+|-------|-------|--------|
+| 14C.2 | CI coverage reporting steps tolerant of missing/malformed summaries; `if: always()` on publish + upload; soften `if-no-files-found` to `warn`. Unit test step remains the enforcement gate. | `0d570c0` |
+| 14E-hygiene | Remove 891 tracked files under `.claude/worktrees/` (including 3 dangling gitlinks `gallant-poincare`, `suspicious-beaver`, `suspicious-robinson`) and 2 stray chat transcripts. Extend `.gitignore` with `.claude/worktrees/` and `.claude/*.txt`. | `49cd99e` |
+| 14E-coverage | Make `server/vitest.config.ts` the single source of truth for coverage thresholds (0 everywhere, monitor-only). Remove the silent CI CLI overrides. Log KI-P14-002 for the Phase 17 ratchet. | `6853543` |
+| 14D | Update `.github/pull_request_template.md` batches list, add repo-hygiene acceptance gate, reference the coverage artefact as evidence. | this PR |
+| 14F | Phase closeout after BugBot review. | this PR |
+
+**Verification posture (documented in `docs/VERIFICATION-PROTOCOL.md`):**
+
+- Gate 9 — repository hygiene: `git ls-files -s | awk '$1=="160000"'`, worktree-tracked-files check, and stray-`.claude/*.txt` check all empty.
+- Gate 10 — coverage policy: `grep coverage.thresholds .github/workflows/ci.yml` empty (config-only policy).
