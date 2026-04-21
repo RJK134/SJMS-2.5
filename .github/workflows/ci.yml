@@ -3,52 +3,96 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  server:
-    name: Server — tsc + vitest + prisma validate
+  server-quality:
+    name: Server quality gate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
-      - name: Install root workspace
+
+      - name: Install workspace dependencies
         run: npm ci --no-audit --no-fund
+
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
+
       - name: Validate Prisma schema
         env:
-          # prisma validate requires DATABASE_URL to be resolvable at validation
-          # time but does not connect to the database.
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npx prisma validate --schema=prisma/schema.prisma
+
       - name: TypeScript check (server)
         working-directory: server
         run: npx tsc --noEmit
-      - name: Unit tests (server)
-        run: npm run test --workspace=server -- --reporter=default
 
-  client:
-    name: Client — tsc
+      - name: Unit tests with coverage (server)
+        working-directory: server
+        run: >
+          npx vitest run --config vitest.config.ts --coverage --reporter=default
+          --coverage.thresholds.lines=0
+          --coverage.thresholds.functions=0
+          --coverage.thresholds.branches=0
+
+      - name: Publish server coverage summary
+        run: |
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs')
+          const summary = JSON.parse(fs.readFileSync('server/coverage/coverage-summary.json', 'utf8'))
+          const total = summary.total
+          console.log('## Server coverage')
+          console.log('| Metric | Coverage |')
+          console.log('| --- | ---: |')
+          console.log(`| Lines | ${total.lines.pct}% |`)
+          console.log(`| Statements | ${total.statements.pct}% |`)
+          console.log(`| Functions | ${total.functions.pct}% |`)
+          console.log(`| Branches | ${total.branches.pct}% |`)
+          NODE
+
+      - name: Upload server coverage artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage
+          path: server/coverage
+          if-no-files-found: error
+
+  client-quality:
+    name: Client quality gate
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
-      - name: Install root workspace
+
+      - name: Install workspace dependencies
         run: npm ci --no-audit --no-fund
+
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
+
       - name: TypeScript check (client)
         working-directory: client
         run: npx tsc --noEmit
