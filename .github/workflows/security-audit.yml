@@ -49,7 +49,6 @@ jobs:
         run: |
           set -u
           mkdir -p audit-reports
-          AUDIT_FAIL=0
 
           run_audit() {
             local label="$1"
@@ -68,8 +67,6 @@ jobs:
           run_audit root .
           run_audit server server
           run_audit client client
-
-          echo "AUDIT_FAIL=${AUDIT_FAIL}" >> "$GITHUB_OUTPUT"
 
       - name: Publish audit summary
         if: always()
