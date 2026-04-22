@@ -35,51 +35,10 @@ updates:
           - minor
           - patch
 
-  - package-ecosystem: npm
-    directory: /server
-    schedule:
-      interval: weekly
-      day: monday
-      time: '07:00'
-      timezone: Europe/London
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: chore
-      prefix-development: chore
-      include: scope
-    labels:
-      - dependencies
-      - npm
-      - server
-    groups:
-      server-minor-and-patch:
-        applies-to: version-updates
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /client
-    schedule:
-      interval: weekly
-      day: monday
-      time: '07:00'
-      timezone: Europe/London
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: chore
-      prefix-development: chore
-      include: scope
-    labels:
-      - dependencies
-      - npm
-      - client
-    groups:
-      client-minor-and-patch:
-        applies-to: version-updates
-        update-types:
-          - minor
-          - patch
+  # npm updates must run from the workspace root because the repository
+  # has a single root package-lock.json for both `/client` and `/server`.
+  # Per-workspace Dependabot entries update nested package.json files
+  # without regenerating the root lockfile, which breaks `npm ci` in CI.
 
   - package-ecosystem: github-actions
     directory: /
