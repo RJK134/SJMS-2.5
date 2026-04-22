@@ -27,7 +27,7 @@
 | `DATABASE_URL=... npx prisma validate --schema=prisma/schema.prisma` | ✅ pass | Schema valid |
 | `npx prisma generate --schema=prisma/schema.prisma` | ✅ pass | Client generated |
 | `npm run test --workspace=server` | ✅ pass | 136 tests passing |
-| `npm run lint` | ⚠️ blocked | `eslint` command missing — tracked as KI-P14-001 |
+| `npm run lint` | ⚠️ advisory | Toolchain bootstrapped on `chore/tooling-eslint-bootstrap` (KI-P14-001 closeout). CI runs as `Lint (advisory)` with `continue-on-error: true`; ratchet to blocking tracked under KI-P15-002. |
 
 ---
 
@@ -144,13 +144,46 @@ The original Phase 15 plan (MFA, Redis identity cache, CSP/CORS, scanning, finan
 **Scope:** Update `docs/BUILD-QUEUE.md`, `docs/KNOWN_ISSUES.md`, `docs/VERIFICATION-PROTOCOL.md`, `CLAUDE.md`, `.claude/CLAUDE.md` to record Phase 15A delivery and the Phase 15B sequencing decision.
 
 ### Batch 15A.7 — Phase 15A closeout
+**Status:** DONE — PR #55 merged 2026-04-21 as `953ed77`
+**Acceptance:**
+- BugBot review returned with no HIGH findings. ✅
+- GitGuardian clean. ✅
+- CodeQL workflow runs against the PR and returns a result (pass or advisory findings) rather than infrastructure failure. ✅
+- npm audit workflow runs against the PR and publishes a summary. ✅
+- Control docs list Phase 15B as the next phase-15 branch with explicit STOP-gate note. ✅
+
+---
+
+## Chore — ESLint Toolchain Bootstrap (KI-P14-001 closeout)
+
+**Branch:** `chore/tooling-eslint-bootstrap`
+**Sequencing rationale:** CLAUDE.md sequences this as a pre-Phase-16 chore so the golden-journey PRs benefit from static analysis. Splitting the toolchain introduction from the baseline triage keeps the toolchain PR narrowly reviewable; ratcheting to a blocking gate is tracked separately under **KI-P15-002**.
+
+### Batch ELB.1 — Bootstrap toolchain and CI hook
+**Status:** IN PROGRESS — this PR
+**Scope:**
+- Add ESLint v9 + `@eslint/js` + `typescript-eslint` v8 to both server and client devDependencies.
+- Add `eslint-plugin-react` and `eslint-plugin-react-hooks` to client devDependencies.
+- Commit flat configs at `server/eslint.config.mjs` and `client/eslint.config.mjs` with a deliberately narrow rule set: TS unused-vars (`warn`, `^_` ignored), `no-explicit-any` (`warn`), React Hooks rules (`error`/`warn`), no stylistic rules, no type-aware rules. Ignores cover `dist/`, `coverage/`, `node_modules/`, `playwright-report/`, and `*.d.ts`.
+- Switch the existing `npm run lint` workspace scripts to flat-config invocation (`eslint src`, drops the legacy `--ext` flag) and add `lint:fix` siblings.
+- Add a third CI job `Lint (advisory)` to `.github/workflows/ci.yml`. Runs both workspaces with `continue-on-error: true`, writes JSON reports to `.lint-reports/`, publishes a summary table (errors/warnings per workspace) to the step summary, and uploads the reports as the `lint-reports` artefact.
+
+### Batch ELB.2 — Control-doc alignment
+**Status:** IN PROGRESS — this PR
+**Scope:**
+- Update `docs/KNOWN_ISSUES.md`: KI-P14-001 → OPEN-PARTIAL (toolchain landed, ratchet pending); add KI-P15-002 (lint baseline triage and ratchet to blocking).
+- Update `docs/VERIFICATION-PROTOCOL.md`: add Gate 12 (lint toolchain operational); extend the quick-run script.
+- Update `docs/BUILD-QUEUE.md`: rewrite the validation-baseline row for `npm run lint`; add this chore section.
+- Update `CLAUDE.md` and `.claude/CLAUDE.md`: record the chore branch and the KI-P15-002 follow-on; refresh the reference status.
+
+### Batch ELB.3 — Closeout
 **Status:** PENDING — closes on PR merge.
 **Acceptance:**
-- BugBot review returned with no HIGH findings.
+- `Lint (advisory)` job runs against the PR and publishes a summary (pass or advisory findings).
+- Server typecheck and client typecheck remain ✅ (existing gates unaffected).
+- BugBot review returns no HIGH findings.
 - GitGuardian clean.
-- CodeQL workflow runs against the PR and returns a result (pass or advisory findings) rather than infrastructure failure.
-- npm audit workflow runs against the PR and publishes a summary.
-- Control docs list Phase 15B as the next phase-15 branch with explicit STOP-gate note.
+- KI-P14-001 marked OPEN-PARTIAL with the resolution-status update; KI-P15-002 logged.
 
 ---
 
