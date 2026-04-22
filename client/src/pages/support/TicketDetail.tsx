@@ -31,20 +31,29 @@ interface Interaction {
   createdBy: string | null;
 }
 
+interface SupportTicketDetail {
+  subject: string;
+  description: string;
+  priority: string;
+  status: string;
+  interactions?: Interaction[];
+}
+
 export default function TicketDetail() {
+  const [, params] = useRoute('/admin/support/tickets/:id');
+  const { data, isLoading } = useDetail<SupportTicketDetail>('tickets', '/v1/support', params?.id);
+  const ticket = data?.data;
+  const interactions: Interaction[] = ticket?.interactions ?? [];
+
   return (
     <div className="space-y-6">
       <PageHeader title="Ticket Detail" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Support',href:'/admin/support/tickets'},{label:'Ticket'}]} />
-      {(() => {
-        const [, params] = useRoute('/admin/support/tickets/:id');
-        const { data, isLoading } = useDetail<any>('tickets', '/v1/support', params?.id);
-        const t = data?.data;
-        if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-        if (!t) return <p className="text-muted-foreground">Ticket not found</p>;
-        const interactions: Interaction[] = t.interactions ?? [];
-        return (<>
-          <div className="flex items-center gap-3 mb-4"><StatusBadge status={t.priority} /><StatusBadge status={t.status} /></div>
-          <Card><CardHeader><CardTitle>{t.subject}</CardTitle></CardHeader><CardContent><p className="text-sm">{t.description}</p></CardContent></Card>
+      {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : null}
+      {!isLoading && !ticket ? <p className="text-muted-foreground">Ticket not found</p> : null}
+      {!isLoading && ticket ? (
+        <>
+          <div className="flex items-center gap-3 mb-4"><StatusBadge status={ticket.priority} /><StatusBadge status={ticket.status} /></div>
+          <Card><CardHeader><CardTitle>{ticket.subject}</CardTitle></CardHeader><CardContent><p className="text-sm">{ticket.description}</p></CardContent></Card>
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Interactions ({interactions.length})</CardTitle></CardHeader>
             <CardContent>
@@ -72,8 +81,8 @@ export default function TicketDetail() {
               )}
             </CardContent>
           </Card>
-        </>);
-      })()}
+        </>
+      ) : null}
     </div>
   );
 }
