@@ -13,12 +13,13 @@ import { useCreate } from '@/hooks/useApi';
 import { Loader2, Send } from 'lucide-react';
 
 const schema = z.object({ subject: z.string().min(1, 'Subject is required'), category: z.enum(['ACADEMIC','FINANCIAL','WELLBEING','ACCOMMODATION','IT','OTHER']), description: z.string().min(10, 'Please provide more detail') });
-type FormData = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormData = z.output<typeof schema>;
 
 export default function RaiseTicket() {
   const [, navigate] = useLocation();
   const createTicket = useCreate('my-tickets', '/v1/support');
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormInput, undefined, FormData>({ resolver: zodResolver(schema) });
   const onSubmit = async (data: FormData) => {
     createTicket.mutate(
       { ...data, priority: 'NORMAL' },
@@ -32,7 +33,7 @@ export default function RaiseTicket() {
         <Card><CardHeader><CardTitle>Ticket Details</CardTitle></CardHeader><CardContent className="space-y-4">
           <FormField label="Subject" error={errors.subject?.message} required><Input {...register('subject')} placeholder="Brief description of your query" /></FormField>
           <FormField label="Category" error={errors.category?.message} required>
-            <Select onValueChange={v => setValue('category', v as FormData['category'])}><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+            <Select onValueChange={(v: string) => setValue('category', v as FormData['category'])}><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
               <SelectContent><SelectItem value="ACADEMIC">Academic</SelectItem><SelectItem value="FINANCIAL">Financial</SelectItem><SelectItem value="WELLBEING">Wellbeing</SelectItem><SelectItem value="ACCOMMODATION">Accommodation</SelectItem><SelectItem value="IT">IT</SelectItem><SelectItem value="OTHER">Other</SelectItem></SelectContent></Select>
           </FormField>
           <FormField label="Description" error={errors.description?.message} required><textarea {...register('description')} className="w-full min-h-[120px] rounded-md border px-3 py-2 text-sm" placeholder="Please describe your query in detail..." /></FormField>

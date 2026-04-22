@@ -22,13 +22,14 @@ const schema = z.object({
   entryRoute: z.enum(['UCAS', 'DIRECT', 'CLEARING', 'INTERNATIONAL', 'INTERNAL_TRANSFER']),
 });
 
-type FormData = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormData = z.output<typeof schema>;
 
 export default function StudentCreate() {
   const [, navigate] = useLocation();
   const createStudent = useCreate('students', '/v1/students');
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormInput, undefined, FormData>({
     resolver: zodResolver(schema),
     defaultValues: { feeStatus: 'HOME', entryRoute: 'UCAS' },
   });
@@ -77,7 +78,7 @@ export default function StudentCreate() {
               <Input type="date" {...register('dateOfBirth')} />
             </FormField>
             <FormField label="Gender">
-              <Select onValueChange={v => setValue('gender', v)}>
+              <Select onValueChange={(v: string) => setValue('gender', v)}>
                 <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="MALE">Male</SelectItem>
@@ -94,7 +95,7 @@ export default function StudentCreate() {
           <CardHeader><CardTitle>Enrolment Details</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
             <FormField label="Fee Status" error={errors.feeStatus?.message} required>
-              <Select defaultValue="HOME" onValueChange={v => setValue('feeStatus', v as FormData['feeStatus'])}>
+              <Select defaultValue="HOME" onValueChange={(v: string) => setValue('feeStatus', v as FormData['feeStatus'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="HOME">Home</SelectItem>
@@ -106,7 +107,7 @@ export default function StudentCreate() {
               </Select>
             </FormField>
             <FormField label="Entry Route" error={errors.entryRoute?.message} required>
-              <Select defaultValue="UCAS" onValueChange={v => setValue('entryRoute', v as FormData['entryRoute'])}>
+              <Select defaultValue="UCAS" onValueChange={(v: string) => setValue('entryRoute', v as FormData['entryRoute'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="UCAS">UCAS</SelectItem>
