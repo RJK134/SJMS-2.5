@@ -74,7 +74,7 @@ export default function AdmissionsDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }: { name?: string; value?: number | string }) => `${name ?? ''}: ${value ?? 0}`}>
                   {pieData.map((_, i) => <Cell key={i} fill={COLOURS[i % COLOURS.length]} />)}
                 </Pie>
                 <Tooltip />

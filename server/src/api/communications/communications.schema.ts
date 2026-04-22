@@ -28,7 +28,7 @@ export const sendSchema = z.object({
     z.enum(['EMAIL', 'SMS', 'PORTAL', 'LETTER', 'PUSH']),
   ).default('EMAIL'),
   recipientId: z.string().optional(),
-  data: z.union([z.record(z.unknown()), z.string()]).optional().transform((v) =>
+  data: z.union([z.record(z.string(), z.unknown()), z.string()]).optional().transform((v) =>
     typeof v === 'string' ? JSON.parse(v) as Record<string, unknown> : v,
   ),
   bulk: z.coerce.boolean().optional(),

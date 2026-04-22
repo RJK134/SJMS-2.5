@@ -22,13 +22,14 @@ const schema = z.object({
   startDate: z.string().min(1, 'Start date is required'),
   feeStatus: z.enum(['HOME', 'OVERSEAS', 'EU_TRANSITIONAL', 'ISLANDS', 'CHANNEL_ISLANDS']),
 });
-type FormData = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormData = z.output<typeof schema>;
 
 export default function EnrolmentCreate() {
   const [, navigate] = useLocation();
   const create = useCreate('enrolments', '/v1/enrolments');
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormInput, undefined, FormData>({
     resolver: zodResolver(schema),
     defaultValues: { academicYear: '2025/26', yearOfStudy: 1, modeOfStudy: 'FULL_TIME', feeStatus: 'HOME' },
   });
@@ -63,12 +64,12 @@ export default function EnrolmentCreate() {
             <FormField label="Year of Study" error={errors.yearOfStudy?.message} required><Input type="number" {...register('yearOfStudy')} /></FormField>
             <FormField label="Start Date" error={errors.startDate?.message} required><Input type="date" {...register('startDate')} /></FormField>
             <FormField label="Mode of Study">
-              <Select defaultValue="FULL_TIME" onValueChange={v => setValue('modeOfStudy', v as FormData['modeOfStudy'])}><SelectTrigger><SelectValue /></SelectTrigger>
+              <Select defaultValue="FULL_TIME" onValueChange={(v: string) => setValue('modeOfStudy', v as FormData['modeOfStudy'])}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="FULL_TIME">Full-time</SelectItem><SelectItem value="PART_TIME">Part-time</SelectItem><SelectItem value="SANDWICH">Sandwich</SelectItem></SelectContent>
               </Select>
             </FormField>
             <FormField label="Fee Status">
-              <Select defaultValue="HOME" onValueChange={v => setValue('feeStatus', v as FormData['feeStatus'])}><SelectTrigger><SelectValue /></SelectTrigger>
+              <Select defaultValue="HOME" onValueChange={(v: string) => setValue('feeStatus', v as FormData['feeStatus'])}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="HOME">Home</SelectItem><SelectItem value="OVERSEAS">Overseas</SelectItem><SelectItem value="EU_TRANSITIONAL">EU Transitional</SelectItem></SelectContent>
               </Select>
             </FormField>
