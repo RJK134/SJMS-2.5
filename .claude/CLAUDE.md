@@ -2,7 +2,7 @@
 
 > **Owner:** Richard Knapp · Future Horizons Education (FHE)
 > **Last updated:** 2026-04-21
-> **Current delivery state:** Phase 14 follow-on merged (PR #54, commit `b9a2a58`). **Phase 15A — Security observability and supply-chain scanning** in flight on `phase-15/security-observability`. Phase 15B (auth/MFA/identity-cache/retention) deferred behind a STOP-gate and a design doc.
+> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). **ESLint toolchain bootstrap** (KI-P14-001 closeout) in flight on `chore/tooling-eslint-bootstrap`. Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc.
 
 ---
 
@@ -55,7 +55,8 @@ Read these before every phase:
 
 - MFA enforcement → Phase 15B (STOP-gated)
 - Redis-backed identity cache → Phase 15B (STOP-gated)
-- ESLint toolchain bootstrap → `chore/tooling-eslint-bootstrap` before Phase 16 (KI-P14-001)
+- ESLint toolchain bootstrap → `chore/tooling-eslint-bootstrap` (KI-P14-001 — bootstrap in flight; ratchet tracked as KI-P15-002)
+- ESLint baseline triage and ratchet to blocking → KI-P15-002 (Phase 15B or dedicated `fix/eslint-baseline` branch)
 - Server coverage threshold ratchet → Phase 17 (KI-P14-002)
 - npm audit baseline triage → Phase 15B or dedicated `fix/` branch (KI-P15-001)
 - KI-P12-001 — enrolment cascade repository bypass → Phase 16 (folded into module-registration focus)
@@ -72,7 +73,7 @@ Read these before every phase:
 - Prisma validate/generate: passing
 - Server Vitest suite: passing
 - Coverage enforcement: 0/0/0 floor (monitor-only) in `server/vitest.config.ts`; ratchet sequenced to Phase 17 (KI-P14-002)
-- Linting: scripted but not operational yet (`eslint` tooling gap tracked as KI-P14-001)
+- Linting: toolchain bootstrapped on `chore/tooling-eslint-bootstrap` (ESLint v9 flat config in both workspaces, advisory CI job); baseline triage and ratchet-to-blocking tracked as KI-P15-002 (Gate 12 in `docs/VERIFICATION-PROTOCOL.md`)
 - Repository hygiene: no gitlinks, no tracked `.claude/worktrees/`, no stray `.claude/*.txt` (Gate 9 in `docs/VERIFICATION-PROTOCOL.md`)
 - Security observability: CodeQL, npm audit, Dependabot, SECURITY.md, CODEOWNERS all present (Gate 11); npm audit baseline not yet triaged (KI-P15-001)
 
