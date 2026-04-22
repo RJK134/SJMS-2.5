@@ -1,8 +1,9 @@
 # SJMS 2.5 — Enterprise Readiness Plan
 
 > **Purpose:** Direct Claude Code through the next delivery programme in controlled phases.
-> **Baseline:** Post-Phase 13b remediation on `main`.
+> **Baseline:** Post-Phase 15A on `main`.
 > **Programme goal:** Move SJMS 2.5 from a strong enterprise scaffold to a pilot-ready UK HE student records system aligned with HERM and credible against the core operating expectations set by SITS, Banner, and Workday Student.
+> **Operating model:** Canonical rules for how every phase is delivered live in `docs/delivery-plan/enterprise-delivery-operating-model.md`. This plan names the work; the operating model governs how the work is executed.
 
 ---
 

@@ -3,7 +3,8 @@
 
 > **Organisation:** Future Horizons Education (FHE)
 > **Project Lead:** Richard Knapp — Lead Developer / Architect
-> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-21
+> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-22
+> **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical for Phases 16–23.
 
 ---
 
@@ -94,14 +95,18 @@ Every code change follows this pipeline:
 
 ### Delivery Control Set
 - `CLAUDE.md`
+- `.claude/CLAUDE.md`
 - `docs/BUILD-QUEUE.md`
 - `docs/VERIFICATION-PROTOCOL.md`
 - `docs/KNOWN_ISSUES.md`
 - `docs/delivery-plan/enterprise-readiness-plan.md`
+- `docs/delivery-plan/enterprise-delivery-operating-model.md`
 
 These documents must be updated together at every phase closeout. Phase 14+
 uses them as the source of truth for what is current, what is deferred, and
-what may be started next.
+what may be started next. From Phase 16 onward, the operating-model document
+is the canonical rule set for how every phase is delivered — where it
+conflicts with earlier informal practice, the operating model wins.
 
 ### Phase Delivery Model
 - One active phase branch at a time from `main`
@@ -573,20 +578,28 @@ Reviewable slice of the original Phase 15 scope that is free of auth/roles/schem
 
 **Phase 15B STOP-gate:** MFA enforcement, Redis identity cache, auth fallback review, and finance retention safeguards all require changes to `server/src/middleware/auth.ts`, `server/src/constants/roles.ts`, the Keycloak realm JSON, or established Prisma models. Per CLAUDE.md STOP condition #6, these will not ship without Richard's explicit approval of the approach — a design doc lands on `phase-15/auth-hardening` before any code change.
 
-### Chore — ESLint Toolchain Bootstrap (KI-P14-001 closeout, IN FLIGHT)
+### Chore — ESLint Toolchain Bootstrap (KI-P14-001 closeout, COMPLETE)
 
 **Branch:** `chore/tooling-eslint-bootstrap`
 **Base:** `main` at PR #55 merge (commit `953ed77`)
+**Merged as:** PR #88 → main commit `67df18f` (2026-04-21)
 
-Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain gap. Adds ESLint v9 flat config to both workspaces, switches the existing `npm run lint` scripts to flat-config invocation, and wires an advisory CI lint job (`continue-on-error: true`). The follow-on baseline triage and ratchet-to-blocking work is logged as KI-P15-002.
+Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain gap. Added ESLint v9 flat config to both workspaces, switched the existing `npm run lint` scripts to flat-config invocation, and wired an advisory CI lint job (`continue-on-error: true`). The follow-on baseline triage and ratchet-to-blocking work is tracked as KI-P15-002.
 
 | Batch | Scope | Commit |
 |-------|-------|--------|
-| ELB.1 | Bootstrap toolchain and CI hook (configs, deps, lint scripts, advisory CI job) | this PR |
-| ELB.2 | Control-doc alignment (KI-P14-001 → OPEN-PARTIAL, log KI-P15-002, Gate 12, BUILD-QUEUE row) | this PR |
-| ELB.3 | Closeout | on PR merge |
+| ELB.1 | Bootstrap toolchain and CI hook (configs, deps, lint scripts, advisory CI job) | PR #88 |
+| ELB.2 | Control-doc alignment (KI-P14-001 → CLOSED, log KI-P15-002, Gate 12, BUILD-QUEUE row) | PR #88 |
+| ELB.3 | Closeout | PR #88 merge |
 
-**Why a chore branch and not a numbered phase:** the work has no business-rule, schema, or auth surface and does not advance any of the golden journeys; bundling it into Phase 16 would inflate that PR and delay golden-journey signal.
+**Why a chore branch and not a numbered phase:** the work had no business-rule, schema, or auth surface and did not advance any of the golden journeys; bundling it into Phase 16 would have inflated that PR and delayed golden-journey signal.
+
+### Governance batch — Enterprise delivery operating model (2026-04-22, IN FLIGHT)
+
+**Branch:** `claude/enterprise-delivery-model-3GtVY`
+**Base:** `main @ 0f4eaf0`
+
+Docs-only governance batch that codifies the canonical operating model for Phases 16–23 and refreshes the delivery control set to reflect the merged state of Phase 15A and the ESLint toolchain chore. No source, schema, or CI changes. Publishes `docs/delivery-plan/enterprise-delivery-operating-model.md` as the new canonical rule set for every phase from 16 onward.
 
 ### Phase 14 follow-on — CI and repository hygiene hardening (COMPLETE)
 
