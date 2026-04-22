@@ -146,7 +146,7 @@ export default function EngagementDashboard() {
             </div>
             <div className="w-48">
               <label className="text-sm font-medium block mb-1">Risk Level</label>
-              <Select value={riskLevel} onValueChange={v => { setRiskLevel(v); setCursor(null); }}>
+              <Select value={riskLevel} onValueChange={(v: string) => { setRiskLevel(v); setCursor(null); }}>
                 <SelectTrigger><SelectValue placeholder="All levels" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="green">Green (On Track)</SelectItem>

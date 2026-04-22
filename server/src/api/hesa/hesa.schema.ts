@@ -16,10 +16,10 @@ export const createSchema = z.object({
   entityType: z.string().min(1),
   entityId: z.string().min(1),
   changeType: z.string().min(1),
-  payload: z.record(z.unknown()).optional(),
+  payload: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const updateSchema = z.object({
   status: z.enum(['PENDING', 'SUBMITTED', 'ACKNOWLEDGED', 'REJECTED']).optional(),
-  payload: z.record(z.unknown()).optional(),
+  payload: z.record(z.string(), z.unknown()).optional(),
 });

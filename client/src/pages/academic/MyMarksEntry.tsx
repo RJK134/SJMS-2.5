@@ -178,7 +178,7 @@ export default function MyMarksEntry() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Module</label>
-              <Select value={selectedModule} onValueChange={v => { setSelectedModule(v); setSelectedAssessment(''); setMarks({}); setSubmitted(false); }}>
+              <Select value={selectedModule} onValueChange={(v: string) => { setSelectedModule(v); setSelectedAssessment(''); setMarks({}); setSubmitted(false); }}>
                 <SelectTrigger><SelectValue placeholder="Select module" /></SelectTrigger>
                 <SelectContent>
                   {(modules?.data ?? []).map(m => (
@@ -189,7 +189,7 @@ export default function MyMarksEntry() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Assessment</label>
-              <Select value={selectedAssessment} onValueChange={v => { setSelectedAssessment(v); setMarks({}); setSubmitted(false); }}>
+              <Select value={selectedAssessment} onValueChange={(v: string) => { setSelectedAssessment(v); setMarks({}); setSubmitted(false); }}>
                 <SelectTrigger><SelectValue placeholder="Select assessment" /></SelectTrigger>
                 <SelectContent>
                   {(assessments?.data ?? []).map(a => (
