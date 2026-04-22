@@ -22,7 +22,7 @@ The current delivery roadmap is now controlled by
 | Item | Target phase |
 |---|---|
 | KI-P12-001 — enrolment cascade repository cleanup | Phase 16 (folded into module-registration focus) |
-| KI-P14-001 — ESLint toolchain bootstrap | Bootstrap landed on `chore/tooling-eslint-bootstrap`; ratchet to blocking gate sequenced via KI-P15-002 |
+| KI-P14-001 — ESLint toolchain bootstrap | CLOSED 2026-04-21 via PR #88; ratchet to blocking gate tracked under KI-P15-002 |
 | KI-P14-002 — ratchet server coverage thresholds | Phase 17 |
 | KI-P15-001 — npm audit baseline triage | Phase 15B (or a fix/ branch if urgent) |
 | KI-P15-002 — ESLint baseline triage and ratchet to blocking | Phase 15B or dedicated `fix/eslint-baseline` branch |
@@ -262,30 +262,19 @@ grep -n "prisma.moduleRegistration" server/src/api/enrolments/enrolments.service
 
 ---
 
-### KI-P14-001: Lint scripts defined but ESLint toolchain absent — OPEN-PARTIAL 2026-04-21
+### KI-P14-001: Lint scripts defined but ESLint toolchain absent — CLOSED 2026-04-21
 
-**Severity:** AMBER  
-**Phase introduced:** Phase 14 — Governance, truth baseline, and release discipline  
-**File(s):** `package.json`, `server/package.json`, `client/package.json`, `server/eslint.config.mjs`, `client/eslint.config.mjs`, `.github/workflows/ci.yml`  
-**Problem:** The repository declares workspace lint scripts (`npm run lint`, `eslint src/ ...`) but does not currently include a working ESLint toolchain or committed ESLint configuration. The current validation baseline therefore cannot execute the advertised lint gate, and CI cannot honestly enforce it yet.  
-**Deferral reason:** Selecting and wiring a durable ESLint configuration for both the Express TypeScript server and the React TypeScript client is tooling work that would widen the scope of this governance PR. Bootstrapping it was explicitly kept out of the Phase 14 follow-on batches so the governance PR could stay narrowly reviewable.  
-**Resolution plan:** Dedicated `chore/tooling-eslint-bootstrap` branch before lint is added as a blocking CI gate. Expected to land before or alongside Phase 16 so the golden-journey PRs benefit from static analysis.
+**Severity:** AMBER
+**Phase introduced:** Phase 14 — Governance, truth baseline, and release discipline
+**File(s):** `package.json`, `server/package.json`, `client/package.json`, `server/eslint.config.mjs`, `client/eslint.config.mjs`, `.github/workflows/ci.yml`
+**Problem (original):** The repository declared workspace lint scripts (`npm run lint`, `eslint src/ ...`) but did not include a working ESLint toolchain or committed ESLint configuration. The validation baseline could not execute the advertised lint gate, and CI could not honestly enforce it.
 
-**Status update — 2026-04-21:** Bootstrap delivered on `chore/tooling-eslint-bootstrap`.
-ESLint v9 flat configs are now committed at `server/eslint.config.mjs` and
-`client/eslint.config.mjs`; `eslint`, `@eslint/js`, `typescript-eslint`, and
-the React plugins are pinned in the relevant workspace devDependencies; the
-existing `npm run lint` scripts now invoke flat-config ESLint; and the
-`Lint (advisory)` job in `.github/workflows/ci.yml` runs both workspaces on
-every PR (with `continue-on-error: true`) and uploads the JSON reports as the
-`lint-reports` artefact. The original gap (no toolchain, no config, no CI
-hook) is now closed. What remains is converting the gate from advisory to
-blocking once the baseline is triaged — that work is tracked separately under
-**KI-P15-002**.
+**CLOSED:** 2026-04-21 — PR #88 merged as `67df18f`. ESLint v9 flat configs live at `server/eslint.config.mjs` and `client/eslint.config.mjs`; `eslint`, `@eslint/js`, `typescript-eslint`, and the React plugins are pinned in the relevant workspace devDependencies; the `npm run lint` scripts now invoke flat-config ESLint in each workspace; the `Lint (advisory)` job in `.github/workflows/ci.yml` runs both workspaces on every PR (with `continue-on-error: true`) and uploads the JSON reports as the `lint-reports` artefact. The original gap (no toolchain, no config, no CI hook) is resolved. Converting the gate from advisory to blocking once the baseline is triaged is tracked separately under **KI-P15-002**.
 
-**Detection command:**
+**Verification:**
 ```bash
-cd /home/runner/work/SJMS-2.5/SJMS-2.5 && npm run lint
+test -f server/eslint.config.mjs && test -f client/eslint.config.mjs && \
+  grep -E '^[[:space:]]+lint-advisory:' .github/workflows/ci.yml
 ```
 
 ---

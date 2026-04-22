@@ -1,8 +1,9 @@
 # SJMS 2.5 — Claude Code Master Context
 
 > **Owner:** Richard Knapp · Future Horizons Education (FHE)
-> **Last updated:** 2026-04-21
-> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). **ESLint toolchain bootstrap** (KI-P14-001 closeout) in flight on `chore/tooling-eslint-bootstrap`. Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc.
+> **Last updated:** 2026-04-22
+> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). ESLint toolchain bootstrap (KI-P14-001 closeout) merged (PR #88, commit `67df18f`). Governance batch codifying the enterprise-delivery operating model in flight on `claude/enterprise-delivery-model-3GtVY`. Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc. Next active phase after this governance batch merges: **Phase 16 — Admissions to Enrolment** on `phase-16/admissions-to-enrolment`.
+> **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical for every phase from 16 onward.
 
 ---
 
@@ -17,10 +18,12 @@ The remaining gap is **enterprise readiness through business-rule depth and oper
 Read these before every phase:
 
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/CLAUDE.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/.claude/CLAUDE.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/BUILD-QUEUE.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/VERIFICATION-PROTOCOL.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/KNOWN_ISSUES.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/delivery-plan/enterprise-readiness-plan.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical operating model for Phases 16–23
 - relevant review/remediation docs under `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/review/` and `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/remediation/`
 
 ## Non-negotiable delivery rules
@@ -55,7 +58,7 @@ Read these before every phase:
 
 - MFA enforcement → Phase 15B (STOP-gated)
 - Redis-backed identity cache → Phase 15B (STOP-gated)
-- ESLint toolchain bootstrap → `chore/tooling-eslint-bootstrap` (KI-P14-001 — bootstrap in flight; ratchet tracked as KI-P15-002)
+- ESLint toolchain bootstrap → MERGED (PR #88, commit `67df18f`); KI-P14-001 closed
 - ESLint baseline triage and ratchet to blocking → KI-P15-002 (Phase 15B or dedicated `fix/eslint-baseline` branch)
 - Server coverage threshold ratchet → Phase 17 (KI-P14-002)
 - npm audit baseline triage → Phase 15B or dedicated `fix/` branch (KI-P15-001)
@@ -73,7 +76,7 @@ Read these before every phase:
 - Prisma validate/generate: passing
 - Server Vitest suite: passing
 - Coverage enforcement: 0/0/0 floor (monitor-only) in `server/vitest.config.ts`; ratchet sequenced to Phase 17 (KI-P14-002)
-- Linting: toolchain bootstrapped on `chore/tooling-eslint-bootstrap` (ESLint v9 flat config in both workspaces, advisory CI job); baseline triage and ratchet-to-blocking tracked as KI-P15-002 (Gate 12 in `docs/VERIFICATION-PROTOCOL.md`)
+- Linting: ESLint v9 flat config live in both workspaces (PR #88 merged); `Lint (advisory)` CI job runs with `continue-on-error: true`; baseline triage and ratchet-to-blocking tracked as KI-P15-002 (Gate 12 in `docs/VERIFICATION-PROTOCOL.md`)
 - Repository hygiene: no gitlinks, no tracked `.claude/worktrees/`, no stray `.claude/*.txt` (Gate 9 in `docs/VERIFICATION-PROTOCOL.md`)
 - Security observability: CodeQL, npm audit, Dependabot, SECURITY.md, CODEOWNERS all present (Gate 11); npm audit baseline not yet triaged (KI-P15-001)
 
