@@ -14,17 +14,22 @@ vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
 vi.mock('../../api/applications/applications.service', () => ({
   evaluateOfferConditionsAndAutoPromote: vi.fn(),
 }));
+vi.mock('../../utils/logger', () => ({
+  default: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import * as offersService from '../../api/offers/offers.service';
 import * as repo from '../../repositories/offerCondition.repository';
 import * as applicationsService from '../../api/applications/applications.service';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
+import logger from '../../utils/logger';
 
 const mockedRepo = vi.mocked(repo);
 const mockedApplicationsService = vi.mocked(applicationsService);
 const mockedLogAudit = vi.mocked(logAudit);
 const mockedEmitEvent = vi.mocked(emitEvent);
+const mockedLogger = vi.mocked(logger);
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 const fakeCondition = {
@@ -167,6 +172,90 @@ describe('offers.service', () => {
       expect(
         mockedApplicationsService.evaluateOfferConditionsAndAutoPromote,
       ).toHaveBeenCalledWith('app-1', 'user-42', fakeReq);
+    });
+  });
+
+  // The auto-promotion evaluator is an in-process backstop. By the time
+  // it runs, the offer-condition mutation has already been committed and
+  // its event has already been emitted. A failure inside the evaluator
+  // (e.g. the application was concurrently moved into a terminal state
+  // and the state-machine guard rejects the promotion) must not be
+  // surfaced to the HTTP caller — that would prompt a retry and produce
+  // a duplicate condition write. The cases below pin the fail-soft
+  // contract for create() / update() / remove().
+  describe('evaluator fail-soft contract', () => {
+    it('create() returns the new condition and logs a warning when the evaluator throws', async () => {
+      mockedRepo.create.mockResolvedValue(fakeCondition as any);
+      mockedApplicationsService.evaluateOfferConditionsAndAutoPromote.mockRejectedValueOnce(
+        new Error('state-machine guard rejected promotion'),
+      );
+
+      const result = await offersService.create(
+        {
+          applicationId: 'app-1',
+          conditionType: 'ACADEMIC',
+          description: 'A in Maths',
+          status: 'PENDING',
+        } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result).toEqual(fakeCondition);
+      expect(mockedLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Offer-condition auto-promotion evaluation failed'),
+        expect.objectContaining({
+          applicationId: 'app-1',
+          error: 'state-machine guard rejected promotion',
+        }),
+      );
+    });
+
+    it('update() returns the updated condition and logs a warning when the evaluator throws', async () => {
+      const previous = { ...fakeCondition, status: 'PENDING' };
+      const updated = { ...fakeCondition, status: 'MET' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+      mockedApplicationsService.evaluateOfferConditionsAndAutoPromote.mockRejectedValueOnce(
+        new Error('application withdrawn during evaluation'),
+      );
+
+      const result = await offersService.update(
+        'cond-1',
+        { status: 'MET' } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result).toEqual(updated);
+      expect(mockedLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Offer-condition auto-promotion evaluation failed'),
+        expect.objectContaining({
+          applicationId: 'app-1',
+          error: 'application withdrawn during evaluation',
+        }),
+      );
+    });
+
+    it('remove() completes the soft-delete and logs a warning when the evaluator throws', async () => {
+      mockedRepo.getById.mockResolvedValue(fakeCondition as any);
+      mockedRepo.softDelete.mockResolvedValue(undefined as any);
+      mockedApplicationsService.evaluateOfferConditionsAndAutoPromote.mockRejectedValueOnce(
+        new Error('database unavailable'),
+      );
+
+      await expect(
+        offersService.remove('cond-1', 'user-42', fakeReq),
+      ).resolves.toBeUndefined();
+
+      expect(mockedRepo.softDelete).toHaveBeenCalledWith('cond-1');
+      expect(mockedLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Offer-condition auto-promotion evaluation failed'),
+        expect.objectContaining({
+          applicationId: 'app-1',
+          error: 'database unavailable',
+        }),
+      );
     });
   });
 });
