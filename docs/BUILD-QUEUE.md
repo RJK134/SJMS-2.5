@@ -1,33 +1,38 @@
 # SJMS 2.5 — Build Queue
 
-> **Current Phase:** 14 — Governance, Truth Baseline, and Release Discipline
-> **Planned branch:** `phase-14/governance-baseline`
-> **Base:** `main` (post-Phase 13b remediation baseline)
-> **Started:** 2026-04-21
+> **Current Phase:** 16 — Golden Journey 1: Admissions to Enrolment (IN FLIGHT)
+> **Active branch:** `phase-16/admissions-to-enrolment` (opened from `main @ 75e43c6`, post-governance)
+> **Base:** `main` (post-Phase 15A + ESLint toolchain bootstrap + governance batch PR #92)
+> **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` (canonical, effective 2026-04-22)
 > **Programme reference:** `docs/delivery-plan/enterprise-readiness-plan.md`
+> **Governance batch:** `claude/enterprise-delivery-model-3GtVY` merged as PR #92, commit `75e43c6`, 2026-04-22.
 
 ---
 
 ## Enterprise-delivery operating model (applies to every phase)
 
-1. Read the delivery control set before work starts: `CLAUDE.md`, `docs/BUILD-QUEUE.md`, `docs/VERIFICATION-PROTOCOL.md`, `docs/KNOWN_ISSUES.md`, and any phase-specific remediation or review documents.
+The full operating model is canonical in `docs/delivery-plan/enterprise-delivery-operating-model.md`. The summary below is kept for quick reference only; the doc wins on any conflict.
+
+1. Read the delivery control set before work starts: `CLAUDE.md`, `docs/BUILD-QUEUE.md`, `docs/VERIFICATION-PROTOCOL.md`, `docs/KNOWN_ISSUES.md`, `docs/delivery-plan/enterprise-delivery-operating-model.md`, `docs/delivery-plan/enterprise-readiness-plan.md`, and any phase-specific remediation or review documents.
 2. Work from one active phase branch at a time from `main`.
 3. Break each phase into 3–8 reviewable batches.
 4. Call `report_progress` before the first edit and after every meaningful batch.
 5. Run the verification protocol after each batch, plus the existing unit and E2E suites when the touched scope warrants them.
 6. Push changes through `report_progress`, open or update the PR, request BugBot review, fix HIGH findings, then re-run validation.
 7. Do not begin the next phase until the current phase is merged and the control set is updated.
+8. PR titles describe the business outcome, not the technical action.
 
-## Validation baseline at Phase 14 start
+## Validation baseline at Phase 16 start
 
 | Check | Result | Notes |
 |---|---|---|
-| `cd server && npx tsc --noEmit` | ✅ pass | 0 errors |
-| `cd client && npx tsc --noEmit` | ✅ pass | 0 errors |
+| `cd server && npx tsc --noEmit` | 🟠 pre-existing | 1 error — TS5101 on `baseUrl` deprecation introduced by the TypeScript 6.0 dependabot bump (PR #69). Not caused by Phase 16A. Logged as **KI-P16-001**. Phase 16A introduces 0 new tsc errors. |
+| `cd client && npx tsc --noEmit` | 🟡 noisy-green | Same TS5101 diagnostic; exit code 0 because of the client's tsconfig posture. Tracked under KI-P16-001. |
 | `DATABASE_URL=... npx prisma validate --schema=prisma/schema.prisma` | ✅ pass | Schema valid |
-| `npx prisma generate --schema=prisma/schema.prisma` | ✅ pass | Client generated |
-| `npm run test --workspace=server` | ✅ pass | 136 tests passing |
-| `npm run lint` | ⚠️ blocked | `eslint` command missing — tracked as KI-P14-001 |
+| `npx prisma generate --schema=prisma/schema.prisma` | 🟠 pre-existing | Runtime `Cannot find module '.../query_engine_bg.postgresql.wasm-base64.js'` after Prisma 7.7 client bump (PR #64) while the CLI is still on 6.19.3. Logged as **KI-P16-002**. Unit suite unaffected (tests mock Prisma). |
+| `npm run test --workspace=server` | ✅ pass | Full Vitest suite — 159/159 tests passing on `phase-16/admissions-to-enrolment` after Batches 16A + 16B (up from 133 on main; +11 state-machine tests in 16A, +15 evaluator / offers-service tests in 16B). |
+| `npm run lint` | ⚠️ advisory | ESLint v9 flat config live in both workspaces (PR #88). CI runs `Lint (advisory)` with `continue-on-error: true`; ratchet to blocking tracked under KI-P15-002. |
+| Verification protocol Gates 1–12 | 🟠 mixed | Gates 2–12 green. Gate 1 (server tsc clean) is red on `main` today because of KI-P16-001; Phase 16A/16B ship non-regression rather than a new fix. |
 
 ---
 
@@ -144,13 +149,41 @@ The original Phase 15 plan (MFA, Redis identity cache, CSP/CORS, scanning, finan
 **Scope:** Update `docs/BUILD-QUEUE.md`, `docs/KNOWN_ISSUES.md`, `docs/VERIFICATION-PROTOCOL.md`, `CLAUDE.md`, `.claude/CLAUDE.md` to record Phase 15A delivery and the Phase 15B sequencing decision.
 
 ### Batch 15A.7 — Phase 15A closeout
-**Status:** PENDING — closes on PR merge.
+**Status:** DONE — PR #55 merged 2026-04-21 as `953ed77`
 **Acceptance:**
-- BugBot review returned with no HIGH findings.
-- GitGuardian clean.
-- CodeQL workflow runs against the PR and returns a result (pass or advisory findings) rather than infrastructure failure.
-- npm audit workflow runs against the PR and publishes a summary.
-- Control docs list Phase 15B as the next phase-15 branch with explicit STOP-gate note.
+- BugBot review returned with no HIGH findings. ✅
+- GitGuardian clean. ✅
+- CodeQL workflow runs against the PR and returns a result (pass or advisory findings) rather than infrastructure failure. ✅
+- npm audit workflow runs against the PR and publishes a summary. ✅
+- Control docs list Phase 15B as the next phase-15 branch with explicit STOP-gate note. ✅
+
+---
+
+## Chore — ESLint Toolchain Bootstrap (KI-P14-001 closeout) — DONE
+
+**Branch:** `chore/tooling-eslint-bootstrap`
+**PR:** #88 — merged 2026-04-21 as `67df18f`
+**Outcome:** ESLint v9 flat configs live at `server/eslint.config.mjs` and `client/eslint.config.mjs`. The `Lint (advisory)` CI job runs both workspaces on every PR with `continue-on-error: true` and uploads JSON reports as the `lint-reports` artefact. KI-P14-001 closed (toolchain bootstrap). Ratchet to blocking gate remains open under KI-P15-002.
+
+---
+
+## Governance batch — Enterprise delivery operating model (in flight)
+
+**Branch:** `claude/enterprise-delivery-model-3GtVY`
+**Base:** `main @ 0f4eaf0`
+**Scope:** codify the canonical operating model for Phases 16–23 and refresh the delivery control set to reflect the merged state of Phase 15A and the ESLint toolchain chore. Docs-only.
+
+**Deliverables:**
+- `docs/delivery-plan/enterprise-delivery-operating-model.md` — new canonical operating model.
+- `docs/delivery-plan/enterprise-readiness-plan.md` — baseline updated, operating-model pointer added.
+- `docs/BUILD-QUEUE.md` — current phase advanced to Phase 16, ESLint chore marked DONE, Phase 16 batch plan aligned to operating-model spec.
+- `docs/KNOWN_ISSUES.md` — KI-P14-001 fully closed; remaining items left open with target phases.
+- `CLAUDE.md`, `.claude/CLAUDE.md` — state refreshed, pointer to operating model added.
+
+**Acceptance:**
+- Verification-protocol Gates 9 and 11 pass (docs-only change must not regress hygiene or security observability).
+- No touches to source code, schema, or CI workflows.
+- Control set is internally consistent after the merge.
 
 ---
 
@@ -172,70 +205,74 @@ The original Phase 15 plan (MFA, Redis identity cache, CSP/CORS, scanning, finan
 - 15B.6 Phase closeout and review findings remediation
 
 ### Phase 16 — Golden Journey 1: Admissions to Enrolment
-**Planned branch:** `phase-16/admissions-to-enrolment`
+**Active branch:** `phase-16/admissions-to-enrolment`
 **HERM uplift:** Learner Recruitment & Admissions, Enrolment & Registration
 **Priority outcomes:** application lifecycle, offer condition logic, route handling, enrolment progression rules, finance handoff hooks, applicant/admin portal completion for the journey.
-**Candidate batches:**
-- 16A Application and offer lifecycle rules
-- 16B Enrolment progression and conversion orchestration
-- 16C Module-registration edge cases and fee-status hooks
-- 16D Applicant/admin portal completion
-- 16E Tests, walkthrough evidence, and closeout
+**Canonical batches (per `docs/delivery-plan/enterprise-delivery-operating-model.md` §10):**
+- 16A **Application lifecycle and state enforcement — DONE** (canonical state machine in `server/src/api/applications/applications.service.ts`; `status` exposed on `applications.updateSchema`; institutional-decision states auto-stamp `decisionDate`/`decisionBy`; `application.updated` event added; 11 new Vitest cases; KI-P16-001 and KI-P16-002 logged for pre-existing TS5101 / Prisma 7 baseline regressions that are out-of-scope for this batch)
+- 16B **Offer condition evaluation and admissions route handling — DONE** (exported `evaluateOfferConditionsAndAutoPromote(applicationId, userId, req)` in the applications service; auto-promotes `CONDITIONAL_OFFER → UNCONDITIONAL_OFFER` when every live condition is `MET` or `WAIVED`; routes the promotion through `applications.service.update` so the state-machine guard, audit log, `decisionDate`/`decisionBy` stamping, and `application.updated`/`application.status_changed` events all fire naturally; dedicated `application.offer_conditions_met` event on its own webhook path; `offers.service` `create`/`update`/`remove` call the evaluator after their own audit + event emission as an in-process backstop so promotion does not depend on n8n being live; +9 admissions-service cases for the helper, +6 new cases in new `offers.service.test.ts` for the offer-condition mutations)
+- 16C Applicant-to-student conversion and enrolment orchestration
+- 16D Module-registration edge cases and finance handoff hooks (folds in KI-P12-001)
+- 16E Applicant/admin portal completion for this journey
+- 16F Evidence, tests, and closeout
 
 ### Phase 17 — Golden Journey 2: Assessment to Progression to Award
 **Planned branch:** `phase-17/assessment-to-award`
 **HERM uplift:** Assessment, Moderation, Progression, Awards
 **Priority outcomes:** marks pipeline rules, moderation/ratification states, module result generation, progression decisioning, award/classification logic, transcript-ready outputs.
-**Candidate batches:**
+**Canonical batches (per operating model §10):**
 - 17A Marks aggregation and grade-boundary application
 - 17B Moderation and ratification state machine
-- 17C Progression and classification engine
-- 17D Award/transcript outputs and portal wiring
-- 17E Tests, BugBot remediation, and closeout
+- 17C Module result generation
+- 17D Progression decisioning and classification
+- 17E Award/transcript outputs and portal reflection
+- 17F Evidence, tests, and closeout (includes server coverage ratchet — KI-P14-002)
 
 ### Phase 18 — Golden Journey 3: Fees, invoicing, payments, and finance controls
 **Planned branch:** `phase-18/finance-readiness`
 **HERM uplift:** Finance & Fees Management
 **Priority outcomes:** fee calculation engine, automated invoices/charges, payment allocation, account balances, finance auditability, staged finance sub-domains.
-**Candidate batches:**
-- 18A Fee assessment and invoice generation
-- 18B Payment allocation and account balance rules
-- 18C Finance UI completion and event emissions
-- 18D Sponsors/Bursaries/Refunds decision batch
-- 18E Reconciliation evidence and closeout
+**Canonical batches (per operating model §10):**
+- 18A Fee calculation engine
+- 18B Invoice and charge generation on enrolment states
+- 18C Payment allocation and account-balance logic
+- 18D Payment plans and finance auditability improvements
+- 18E Sponsors / Bursaries / Refunds decision batch (or Phase 18a sub-phase cut-out) — closes KI-P10b-001
+- 18F Evidence and closeout
 
 ### Phase 19 — Statutory and regulatory execution
 **Planned branch:** `phase-19/statutory-compliance`
 **HERM uplift:** Compliance, reporting, regulatory operations
 **Priority outcomes:** HESA mapping and validation, UKVI escalation workflows, EC/appeals downstream actions, regulatory audit outputs.
-**Candidate batches:**
-- 19A HESA mapping layer
-- 19B HESA validation and export preparation
-- 19C UKVI monitoring and escalation automation
-- 19D EC/appeals downstream actioning and dashboards
-- 19E Compliance sign-off and closeout
+**Canonical batches (per operating model §10):**
+- 19A HESA Data Futures mapping layer
+- 19B HESA validation executor and export preparation
+- 19C UKVI attendance / compliance escalation workflow completion
+- 19D EC claims and appeals downstream actions / reporting
+- 19E Compliance dashboards, evidence trails, and closeout
 
 ### Phase 20 — Integration activation and workflow orchestration
 **Planned branch:** `phase-20/integration-activation`
 **HERM uplift:** External Integration, Student Communications
 **Priority outcomes:** activate the 15 n8n workflows, improve provisioning/promotion, deliver the first live external connectors (UCAS and SLC first), and add monitoring/replay discipline.
-**Candidate batches:**
-- 20A Workflow activation and observability
-- 20B Provisioning/promotion hardening
+**Canonical batches (per operating model §10):**
+- 20A Activate and observe the 15 n8n workflows
+- 20B Harden workflow provisioning and environment promotion
 - 20C UCAS integration slice
-- 20D SLC integration slice
-- 20E Failure handling, replay, and closeout
+- 20D Student Loans Company integration slice
+- 20E Failure handling, replay discipline, and closeout
 
 ### Phase 21 — Portal completion, academic scoping, and UX/accessibility
 **Planned branch:** `phase-21/portal-completion`
 **HERM uplift:** Student Self-Service, Teaching support, accessibility
 **Priority outcomes:** remove priority `ComingSoon` pages, add teaching-assignment scoping, implement presigned uploads, improve communications UX, evidence WCAG 2.1 AA.
-**Candidate batches:**
-- 21A Academic scoping model and guards
-- 21B Document upload completion (MinIO presigned uploads)
-- 21C Priority portal page completion
-- 21D Accessibility remediation and evidence
-- 21E Closeout and deferred-item review
+**Canonical batches (per operating model §10):**
+- 21A Teaching-assignment model and academic scoping — closes KI-P10b-003
+- 21B MinIO presigned upload flow and document completion — closes KI-P10b-002
+- 21C Replace high-value `ComingSoon` pages
+- 21D Applicant / student / staff notification surface improvements
+- 21E WCAG 2.1 AA remediation and evidence
+- 21F Closeout
 
 ### Phase 22 — Analytics, reporting, BI, and operational observability
 **Planned branch:** `phase-22/analytics-operability`

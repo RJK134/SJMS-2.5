@@ -1,8 +1,9 @@
 # SJMS 2.5 — Claude Code Master Context
 
 > **Owner:** Richard Knapp · Future Horizons Education (FHE)
-> **Last updated:** 2026-04-21
-> **Current delivery state:** Phase 14 follow-on merged (PR #54, commit `b9a2a58`). **Phase 15A — Security observability and supply-chain scanning** in flight on `phase-15/security-observability`. Phase 15B (auth/MFA/identity-cache/retention) deferred behind a STOP-gate and a design doc.
+> **Last updated:** 2026-04-23
+> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). ESLint toolchain bootstrap (KI-P14-001 closeout) merged (PR #88, commit `67df18f`). Governance batch merged as PR #92 (commit `75e43c6`, 2026-04-22). **Phase 16 — Admissions to Enrolment is IN FLIGHT on `phase-16/admissions-to-enrolment` (draft PR #96); Batches 16A (application lifecycle state machine) and 16B (offer-condition auto-promotion) delivered.** Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc.
+> **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical for every phase from 16 onward.
 
 ---
 
@@ -17,10 +18,12 @@ The remaining gap is **enterprise readiness through business-rule depth and oper
 Read these before every phase:
 
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/CLAUDE.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/.claude/CLAUDE.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/BUILD-QUEUE.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/VERIFICATION-PROTOCOL.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/KNOWN_ISSUES.md`
 - `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/delivery-plan/enterprise-readiness-plan.md`
+- `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical operating model for Phases 16–23
 - relevant review/remediation docs under `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/review/` and `/home/runner/work/SJMS-2.5/SJMS-2.5/docs/remediation/`
 
 ## Non-negotiable delivery rules
@@ -55,7 +58,8 @@ Read these before every phase:
 
 - MFA enforcement → Phase 15B (STOP-gated)
 - Redis-backed identity cache → Phase 15B (STOP-gated)
-- ESLint toolchain bootstrap → `chore/tooling-eslint-bootstrap` before Phase 16 (KI-P14-001)
+- ESLint toolchain bootstrap → MERGED (PR #88, commit `67df18f`); KI-P14-001 closed
+- ESLint baseline triage and ratchet to blocking → KI-P15-002 (Phase 15B or dedicated `fix/eslint-baseline` branch)
 - Server coverage threshold ratchet → Phase 17 (KI-P14-002)
 - npm audit baseline triage → Phase 15B or dedicated `fix/` branch (KI-P15-001)
 - KI-P12-001 — enrolment cascade repository bypass → Phase 16 (folded into module-registration focus)
@@ -72,7 +76,7 @@ Read these before every phase:
 - Prisma validate/generate: passing
 - Server Vitest suite: passing
 - Coverage enforcement: 0/0/0 floor (monitor-only) in `server/vitest.config.ts`; ratchet sequenced to Phase 17 (KI-P14-002)
-- Linting: scripted but not operational yet (`eslint` tooling gap tracked as KI-P14-001)
+- Linting: ESLint v9 flat config live in both workspaces (PR #88 merged); `Lint (advisory)` CI job runs with `continue-on-error: true`; baseline triage and ratchet-to-blocking tracked as KI-P15-002 (Gate 12 in `docs/VERIFICATION-PROTOCOL.md`)
 - Repository hygiene: no gitlinks, no tracked `.claude/worktrees/`, no stray `.claude/*.txt` (Gate 9 in `docs/VERIFICATION-PROTOCOL.md`)
 - Security observability: CodeQL, npm audit, Dependabot, SECURITY.md, CODEOWNERS all present (Gate 11); npm audit baseline not yet triaged (KI-P15-001)
 

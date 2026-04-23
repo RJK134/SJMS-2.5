@@ -34,7 +34,13 @@ let isRefreshing = false;
 let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: Error) => void }> = [];
 
 function processQueue(error: Error | null, token: string | null): void {
-  for (const p of failedQueue) { error ? p.reject(error) : p.resolve(token!); }
+  for (const p of failedQueue) {
+    if (error) {
+      p.reject(error);
+    } else {
+      p.resolve(token!);
+    }
+  }
   failedQueue = [];
 }
 

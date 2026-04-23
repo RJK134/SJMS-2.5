@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload server coverage artefact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-coverage
           path: server/coverage
@@ -100,10 +100,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -117,3 +117,98 @@ jobs:
       - name: TypeScript check (client)
         working-directory: client
         run: npx tsc --noEmit
+
+  lint-advisory:
+    name: Lint (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Advisory while the KI-P14-001 ESLint bootstrap is bedding in. The
+    # server and client typecheck jobs above remain the authoritative
+    # PR gates. A follow-on KI tracks the work to ratchet this gate to
+    # blocking once the baseline is triaged.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=prisma/schema.prisma
+
+      - name: Lint server (advisory)
+        working-directory: server
+        continue-on-error: true
+        run: |
+          set -u
+          mkdir -p ../.lint-reports
+          npx eslint src --format json --output-file ../.lint-reports/server.json || true
+          npx eslint src --format stylish || true
+
+      - name: Lint client (advisory)
+        working-directory: client
+        continue-on-error: true
+        run: |
+          set -u
+          mkdir -p ../.lint-reports
+          npx eslint src --format json --output-file ../.lint-reports/client.json || true
+          npx eslint src --format stylish || true
+
+      - name: Publish lint summary
+        if: always()
+        run: |
+          set -u
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs');
+          const path = require('path');
+          const targets = [
+            { name: 'Server', file: '.lint-reports/server.json' },
+            { name: 'Client', file: '.lint-reports/client.json' },
+          ];
+          console.log('## Lint (advisory)');
+          console.log('');
+          console.log('| Workspace | Files scanned | Errors | Warnings |');
+          console.log('| --- | ---: | ---: | ---: |');
+          for (const t of targets) {
+            try {
+              if (!fs.existsSync(t.file)) {
+                console.log(`| ${t.name} | _report missing_ | n/a | n/a |`);
+                continue;
+              }
+              const raw = fs.readFileSync(t.file, 'utf8').trim();
+              if (!raw) {
+                console.log(`| ${t.name} | _empty report_ | n/a | n/a |`);
+                continue;
+              }
+              const data = JSON.parse(raw);
+              const files = Array.isArray(data) ? data.length : 0;
+              let errors = 0, warnings = 0;
+              for (const f of (Array.isArray(data) ? data : [])) {
+                errors += (f.errorCount || 0);
+                warnings += (f.warningCount || 0);
+              }
+              console.log(`| ${t.name} | ${files} | ${errors} | ${warnings} |`);
+            } catch (err) {
+              console.log(`| ${t.name} | _parse error_ | n/a | n/a |`);
+              console.log('');
+              console.log('> ' + err.message);
+            }
+          }
+          console.log('');
+          console.log('> Advisory only. Typecheck and unit tests remain the authoritative gates.');
+          console.log('> Tracked under KI-P14-001 (bootstrap) and the follow-on baseline-triage KI.');
+          NODE
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lint-reports
+          path: .lint-reports
+          if-no-files-found: warn

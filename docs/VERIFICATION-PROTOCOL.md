@@ -167,6 +167,30 @@ security observability. See KI-P15-001 for the baseline-triage plan.
 
 ---
 
+## Gate 12: Lint Toolchain Operational (AMBER only)
+
+```bash
+# Flat configs present in both workspaces
+test -f server/eslint.config.mjs && echo "server config: OK"
+test -f client/eslint.config.mjs && echo "client config: OK"
+
+# Both workspaces declare eslint as a devDependency
+node -e "const p=require('./server/package.json'); process.exit(p.devDependencies?.eslint?0:1)" \
+  && echo "server eslint dep: OK"
+node -e "const p=require('./client/package.json'); process.exit(p.devDependencies?.eslint?0:1)" \
+  && echo "client eslint dep: OK"
+
+# CI exposes the lint job
+grep -E '^[[:space:]]+lint-advisory:' .github/workflows/ci.yml && echo "ci job: OK"
+```
+
+All four checks must pass. The `Lint (advisory)` CI job is intentionally
+non-blocking under KI-P14-001's bootstrap pass; ratcheting it to a
+blocking gate is tracked under KI-P15-002. Absence of any of the
+artefacts above is a regression in the bootstrap and should be RED.
+
+---
+
 ## Quick Run Script
 
 Run all gates in sequence:
@@ -200,6 +224,12 @@ test -f .github/workflows/security-audit.yml && \
 test -f .github/dependabot.yml && \
 test -f SECURITY.md && \
 test -f .github/CODEOWNERS && \
+echo "=== GATE 12: Lint toolchain ===" && \
+test -f server/eslint.config.mjs && \
+test -f client/eslint.config.mjs && \
+node -e "process.exit(require('./server/package.json').devDependencies?.eslint?0:1)" && \
+node -e "process.exit(require('./client/package.json').devDependencies?.eslint?0:1)" && \
+grep -E '^[[:space:]]+lint-advisory:' .github/workflows/ci.yml && \
 echo "=== ALL GATES COMPLETE ==="
 ```
 

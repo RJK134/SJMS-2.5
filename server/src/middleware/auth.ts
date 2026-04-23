@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { timingSafeEqual } from 'crypto';
 import jwt from 'jsonwebtoken';
 import jwksRsa from 'jwks-rsa';
@@ -7,11 +7,9 @@ import type { Role } from '../constants/roles';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JWTPayload;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: JWTPayload;
   }
 }
 
@@ -41,7 +39,6 @@ export interface JWTPayload {
 // downstream scoping middleware sees a plausible student identity instead
 // of the old super-admin short-circuit. See client/src/lib/auth.ts.
 if (process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV === 'production') {
-  // eslint-disable-next-line no-console
   console.error('[auth] FATAL: AUTH_BYPASS must not be enabled in production. Exiting.');
   process.exit(1);
 }
@@ -160,7 +157,6 @@ function resolveDevPersona(raw: string | string[] | undefined): DevPersona {
 }
 
 if (AUTH_BYPASS) {
-  // eslint-disable-next-line no-console
   console.warn(
     '[auth] AUTH_BYPASS is enabled — API requests are authenticated as one of ' +
       '4 dev personas (admin / academic / student / applicant), selected by the ' +

@@ -23,13 +23,14 @@ const schema = z.object({
   awardingBody: z.string().min(1),
   departmentId: z.string().min(1),
 });
-type FormData = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormData = z.output<typeof schema>;
 
 export default function ProgrammeCreate() {
   const [, navigate] = useLocation();
   const create = useCreate('programmes', '/v1/programmes');
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormInput, undefined, FormData>({
     resolver: zodResolver(schema),
     defaultValues: { level: 'LEVEL_6', modeOfStudy: 'FULL_TIME', awardingBody: 'Future Horizons Education', creditTotal: 360, duration: 3 },
   });
@@ -61,14 +62,14 @@ export default function ProgrammeCreate() {
             <FormField label="Programme Code" error={errors.programmeCode?.message} required><Input {...register('programmeCode')} placeholder="e.g. UG-CS-001" /></FormField>
             <FormField label="Title" error={errors.title?.message} required><Input {...register('title')} placeholder="e.g. BSc (Hons) Computer Science" /></FormField>
             <FormField label="Level" error={errors.level?.message} required>
-              <Select defaultValue="LEVEL_6" onValueChange={v => setValue('level', v as FormData['level'])}><SelectTrigger><SelectValue /></SelectTrigger>
+              <Select defaultValue="LEVEL_6" onValueChange={(v: string) => setValue('level', v as FormData['level'])}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{['3','4','5','6','7','8'].map(l => <SelectItem key={l} value={`LEVEL_${l}`}>Level {l}</SelectItem>)}</SelectContent>
               </Select>
             </FormField>
             <FormField label="Total Credits" error={errors.creditTotal?.message} required><Input type="number" {...register('creditTotal')} /></FormField>
             <FormField label="Duration (years)" error={errors.duration?.message} required><Input type="number" {...register('duration')} /></FormField>
             <FormField label="Mode of Study">
-              <Select defaultValue="FULL_TIME" onValueChange={v => setValue('modeOfStudy', v as FormData['modeOfStudy'])}><SelectTrigger><SelectValue /></SelectTrigger>
+              <Select defaultValue="FULL_TIME" onValueChange={(v: string) => setValue('modeOfStudy', v as FormData['modeOfStudy'])}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="FULL_TIME">Full-time</SelectItem><SelectItem value="PART_TIME">Part-time</SelectItem>
                   <SelectItem value="SANDWICH">Sandwich</SelectItem><SelectItem value="DISTANCE">Distance</SelectItem>

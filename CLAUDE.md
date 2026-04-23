@@ -3,7 +3,8 @@
 
 > **Organisation:** Future Horizons Education (FHE)
 > **Project Lead:** Richard Knapp — Lead Developer / Architect
-> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-21
+> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-22
+> **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical for Phases 16–23.
 
 ---
 
@@ -94,14 +95,18 @@ Every code change follows this pipeline:
 
 ### Delivery Control Set
 - `CLAUDE.md`
+- `.claude/CLAUDE.md`
 - `docs/BUILD-QUEUE.md`
 - `docs/VERIFICATION-PROTOCOL.md`
 - `docs/KNOWN_ISSUES.md`
 - `docs/delivery-plan/enterprise-readiness-plan.md`
+- `docs/delivery-plan/enterprise-delivery-operating-model.md`
 
 These documents must be updated together at every phase closeout. Phase 14+
 uses them as the source of truth for what is current, what is deferred, and
-what may be started next.
+what may be started next. From Phase 16 onward, the operating-model document
+is the canonical rule set for how every phase is delivered — where it
+conflicts with earlier informal practice, the operating model wins.
 
 ### Phase Delivery Model
 - One active phase branch at a time from `main`
@@ -553,10 +558,11 @@ See `docs/remediation/overnight-remediation-plan.md` for the full plan.
 **Strategic rule:** no further horizontal domain expansion until the core
 vertical journeys are rule-complete, tested, and evidenced.
 
-### Phase 15A — Security observability and supply-chain scanning (IN FLIGHT)
+### Phase 15A — Security observability and supply-chain scanning (COMPLETE)
 
 **Branch:** `phase-15/security-observability`
 **Base:** `main` at PR #54 merge (commit `b9a2a58`)
+**Merged as:** PR #55 → main commit `953ed77`
 
 Reviewable slice of the original Phase 15 scope that is free of auth/roles/schema changes. Delivers static analysis, supply-chain scanning, disclosure policy, and code ownership — so the harder auth-surface work (Phase 15B) can be taken on separately with a design doc first.
 
@@ -567,10 +573,85 @@ Reviewable slice of the original Phase 15 scope that is free of auth/roles/schem
 | 15A.3 | `.github/workflows/security-audit.yml` — npm audit across workspaces, severity summary + raw JSON artefact | `953529c` |
 | 15A.4 | `SECURITY.md` — coordinated-disclosure policy with GitHub PVR as preferred channel | `b20100e` |
 | 15A.5 | `.github/CODEOWNERS` — governance docs, workflows, auth surface, schema, nginx | `e967c2b` |
-| 15A.6 | Control-doc alignment for Phase 15A | this PR |
-| 15A.7 | Phase 15A closeout | this PR |
+| 15A.6 | Control-doc alignment for Phase 15A | `0c65786` |
+| 15A.7 | Phase 15A closeout | PR #55 merge |
 
 **Phase 15B STOP-gate:** MFA enforcement, Redis identity cache, auth fallback review, and finance retention safeguards all require changes to `server/src/middleware/auth.ts`, `server/src/constants/roles.ts`, the Keycloak realm JSON, or established Prisma models. Per CLAUDE.md STOP condition #6, these will not ship without Richard's explicit approval of the approach — a design doc lands on `phase-15/auth-hardening` before any code change.
+
+### Chore — ESLint Toolchain Bootstrap (KI-P14-001 closeout, COMPLETE)
+
+**Branch:** `chore/tooling-eslint-bootstrap`
+**Base:** `main` at PR #55 merge (commit `953ed77`)
+**Merged as:** PR #88 → main commit `67df18f` (2026-04-21)
+
+Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain gap. Added ESLint v9 flat config to both workspaces, switched the existing `npm run lint` scripts to flat-config invocation, and wired an advisory CI lint job (`continue-on-error: true`). The follow-on baseline triage and ratchet-to-blocking work is tracked as KI-P15-002.
+
+| Batch | Scope | Commit |
+|-------|-------|--------|
+| ELB.1 | Bootstrap toolchain and CI hook (configs, deps, lint scripts, advisory CI job) | PR #88 |
+| ELB.2 | Control-doc alignment (KI-P14-001 → CLOSED, log KI-P15-002, Gate 12, BUILD-QUEUE row) | PR #88 |
+| ELB.3 | Closeout | PR #88 merge |
+
+**Why a chore branch and not a numbered phase:** the work had no business-rule, schema, or auth surface and did not advance any of the golden journeys; bundling it into Phase 16 would have inflated that PR and delayed golden-journey signal.
+
+### Governance batch — Enterprise delivery operating model (COMPLETE)
+
+**Branch:** `claude/enterprise-delivery-model-3GtVY`
+**Base:** `main @ 0f4eaf0`
+**Merged as:** PR #92 → main commit `75e43c6` (2026-04-22)
+
+Docs-only governance batch that codifies the canonical operating model for Phases 16–23 and refreshes the delivery control set to reflect the merged state of Phase 15A and the ESLint toolchain chore. No source, schema, or CI changes. Publishes `docs/delivery-plan/enterprise-delivery-operating-model.md` as the new canonical rule set for every phase from 16 onward.
+
+### Phase 16 — Admissions to Enrolment (IN FLIGHT, Batches 16A–16B)
+
+**Active branch:** `phase-16/admissions-to-enrolment`
+**Base:** `main @ 75e43c6` (post-governance)
+**PR:** #96 (draft)
+
+First vertical golden journey. Batch 16A enforces the canonical admissions lifecycle at the service boundary, mirroring the pattern already used for appeals and EC claims. Batch 16B layers offer-condition evaluation on top so an application auto-promotes to `UNCONDITIONAL_OFFER` as soon as every live condition is satisfied.
+
+**Batch 16A — Application lifecycle state enforcement:**
+
+| File | Change |
+|---|---|
+| `server/src/api/applications/applications.service.ts` | `VALID_APPLICATION_TRANSITIONS` map (10 states, 3 terminal); `assertValidApplicationTransition` guard called in `update()` before the repo write; `decisionDate` / `decisionBy` auto-stamped on institutional-decision transitions (`CONDITIONAL_OFFER`, `UNCONDITIONAL_OFFER`, `REJECTED`) unless the caller supplies them; new `application.updated` event emitted on every update |
+| `server/src/api/applications/applications.schema.ts` | `applicationStatusEnum` (10 canonical values); `status` exposed on `updateSchema` so admissions staff can drive the lifecycle via `PATCH /applications/:id` (previously silently stripped by the schema) |
+| `server/src/utils/webhooks.ts` | `application.updated` → `/webhook/sjms/application/updated` added to `EVENT_ROUTES` |
+| `server/src/__tests__/unit/admissions.service.test.ts` | Existing `SUBMITTED → CONDITIONAL_OFFER` case retargeted to `UNDER_REVIEW → CONDITIONAL_OFFER` (that hop is no longer legal directly). 11 new cases: always-emit `application.updated`; reject invalid transition; reject transition out of terminal; allow `INSURANCE → FIRM` (results-day promotion); stamp on institutional decision; do NOT stamp on applicant-driven transition; respect explicit `decisionDate`/`decisionBy`; skip guard when no status supplied. |
+
+**Batch 16B — Offer-condition evaluation and auto-promotion:**
+
+| File | Change |
+|---|---|
+| `server/src/api/applications/applications.service.ts` | `QUALIFYING_CONDITION_STATUSES = {MET, WAIVED}`; new exported `evaluateOfferConditionsAndAutoPromote(applicationId, userId, req)` helper. When the target application is in `CONDITIONAL_OFFER`, has ≥ 1 non-deleted condition, and every non-deleted condition is `MET` or `WAIVED`, it routes a `{status: 'UNCONDITIONAL_OFFER'}` write through `update()` so the state-machine guard, audit log, `decisionDate` / `decisionBy` stamping, and `application.updated` / `application.status_changed` events all fire through their usual path. Adds a dedicated `application.offer_conditions_met` event carrying `{promotedFrom, promotedTo, conditionIds}` so n8n can distinguish an auto-promotion from a manual unconditional decision. |
+| `server/src/api/offers/offers.service.ts` | `create()`, `update()`, and `remove()` now invoke the evaluator after their own audit + event emission, so promotion does not depend on n8n being live. Called on every mutation (not only status flips) so that removing a blocking condition, or editing a description alongside a status change elsewhere, still drives auto-promotion. |
+| `server/src/utils/webhooks.ts` | `application.offer_conditions_met` → `/webhook/sjms/application/offer-conditions-met` added to `EVENT_ROUTES`. |
+| `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('evaluateOfferConditionsAndAutoPromote()')` block: 9 cases covering MET-only promotion, WAIVED-counts-as-satisfied, PENDING / NOT_MET blocks, soft-deleted conditions ignored, zero-conditions no-op, wrong-status no-op, event payload `conditionIds`, and NotFound propagation. |
+| `server/src/__tests__/unit/offers.service.test.ts` | **New file.** 6 cases exercising `getById` NotFound, `create()` evaluator invocation, `update()` status-change vs no-status-change event emission plus evaluator invocation on both paths, and `remove()` evaluator invocation. |
+
+**Transition map (UK HE with UCAS response states):**
+
+```
+SUBMITTED          → UNDER_REVIEW, WITHDRAWN, REJECTED
+UNDER_REVIEW       → INTERVIEW, CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
+INTERVIEW          → CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
+CONDITIONAL_OFFER  → UNCONDITIONAL_OFFER, FIRM, INSURANCE, DECLINED, WITHDRAWN
+UNCONDITIONAL_OFFER→ FIRM, INSURANCE, DECLINED, WITHDRAWN
+FIRM               → WITHDRAWN
+INSURANCE          → FIRM, WITHDRAWN   (results-day insurance promotion)
+DECLINED, WITHDRAWN, REJECTED          (terminal)
+```
+
+**Verification (Batches 16A + 16B):**
+- Server Vitest: **159/159** passing (up from 133 on `main`; +11 state-machine cases in 16A, +15 evaluator / offers.service cases in 16B)
+- `npx prisma validate`: pass
+- Server / client tsc: **0 new errors** — the one pre-existing `TS5101` diagnostic on each workspace is from the TypeScript 6.0 dependabot bump (PR #69) and is tracked separately under **KI-P16-001**
+- `npx prisma generate`: pre-existing runtime WASM error from the Prisma 7 client bump (PR #64) — tracked under **KI-P16-002**; unit suite unaffected because tests mock Prisma
+
+**Deliberately out-of-scope (sequenced to later batches of Phase 16):**
+- 16C — Applicant-to-Student conversion and enrolment creation on `FIRM`
+- 16D — Module-registration cascade repository cleanup (KI-P12-001) and finance handoff hooks
+- 16E — Portal completion for the applicant/admin sides of this journey
 
 ### Phase 14 follow-on — CI and repository hygiene hardening (COMPLETE)
 
