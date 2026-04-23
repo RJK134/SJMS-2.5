@@ -26,6 +26,8 @@ The current delivery roadmap is now controlled by
 | KI-P14-002 — ratchet server coverage thresholds | Phase 17 |
 | KI-P15-001 — npm audit baseline triage | Phase 15B (or a fix/ branch if urgent) |
 | KI-P15-002 — ESLint baseline triage and ratchet to blocking | Phase 15B or dedicated `fix/eslint-baseline` branch |
+| KI-P16-001 — server tsc fails on pre-existing TS5101 after TypeScript 6.0 bump | Dedicated `chore/tooling-ts6-deprecations` branch (or folded into Phase 17 closeout) |
+| KI-P16-002 — `prisma generate` runtime missing-module error after Prisma 7 bump | Dedicated `chore/tooling-prisma-7` branch (runs DB development; not blocking unit tests) |
 | MFA enforcement in Keycloak | Phase 15B |
 | Redis-backed identity cache | Phase 15B |
 | KI-P10b-001 — finance sub-domains | Phase 18 / 18A |
@@ -360,6 +362,40 @@ Subsequent ratchets may increase further in Phase 18/19.
 **Detection command:**
 ```bash
 grep -E 'lines:\s*0|functions:\s*0|branches:\s*0' server/vitest.config.ts
+```
+
+---
+
+### KI-P16-001: Server tsc fails on pre-existing TS5101 after TypeScript 6.0 bump — OPEN 2026-04-22
+
+**Severity:** LOW
+**Phase introduced:** Pre-Phase 16 (dependabot PR #69 bumped `typescript` 5.9.3 → 6.0.3 in `server/package.json`)
+**File(s):** `server/tsconfig.json` (and `client/tsconfig.json` carries the same construct but exits 0)
+**Problem:** TypeScript 6.0 escalates the `baseUrl` deprecation diagnostic (TS5101) to a blocking error unless `"ignoreDeprecations": "6.0"` is set in the compiler options. On the server workspace this currently makes `npx tsc --noEmit` exit with code 2 on a clean checkout of `main`. The error is purely about config migration — no real type errors are hidden behind it — but Gate 1 of `docs/VERIFICATION-PROTOCOL.md` ("server tsc clean") is technically red on `main`. Phase 16A's Batch 16A state machine work introduced **zero new tsc errors** — the same single TS5101 remains the only diagnostic — but the broken baseline makes it harder to evidence non-regression on future phases.
+**Deferral reason:** The fix is a one-line tsconfig addition (`"ignoreDeprecations": "6.0"`) but is unrelated to the admissions-to-enrolment journey. Widening Phase 16A's scope to include tooling hygiene would muddy a clean state-machine PR and defeat the operating-model principle of "batch for reviewability". The intended migration is to either set the flag or drop `baseUrl` entirely and rely on explicit path imports.
+**Resolution plan:** Dedicated `chore/tooling-ts6-deprecations` branch, or folded into the Phase 17 closeout pass. Whichever comes first.
+
+**Detection command:**
+```bash
+(cd server && npx tsc --noEmit 2>&1 | grep -c 'TS5101')
+# → 1 on main today
+```
+
+---
+
+### KI-P16-002: `prisma generate` runtime missing-module error after Prisma 7 bump — OPEN 2026-04-22
+
+**Severity:** LOW
+**Phase introduced:** Pre-Phase 16 (dependabot PR #64 bumped `@prisma/client` 6.19.3 → 7.7.0 in `server/package.json`; `prisma` CLI devDependency is still on 6.19.3)
+**File(s):** `server/package.json`, `package-lock.json`
+**Problem:** After `npm install` in the workspace, `npx prisma generate --schema=prisma/schema.prisma` reports `Cannot find module '.../node_modules/@prisma/client/runtime/query_engine_bg.postgresql.wasm-base64.js'`. Schema validation itself still succeeds (`npx prisma validate` returns "The schema at prisma/schema.prisma is valid 🚀") so unit tests that mock the Prisma client are unaffected. However, anything that needs a generated client — development runs, `prisma migrate`, integration tests — will hit this error until the CLI is aligned with the client major version.
+**Deferral reason:** Aligning the Prisma CLI to 7.x (or reverting the `@prisma/client` bump) is an infrastructure change that must be co-designed with the DB migration story and Prisma 7's auth/model-extension changes. It is not part of the admissions-to-enrolment business-rule work.
+**Resolution plan:** Dedicated `chore/tooling-prisma-7` branch. Either upgrade `prisma` CLI in `server/devDependencies` to 7.x (matching the client) and re-run `prisma generate`, or pin `@prisma/client` back to 6.19.x until the Prisma 7 migration path is planned.
+
+**Detection command:**
+```bash
+(cd /home/user/SJMS-2.5 && DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma generate --schema=prisma/schema.prisma 2>&1 | grep -c 'wasm-base64')
+# → 1 on main today
 ```
 
 ---

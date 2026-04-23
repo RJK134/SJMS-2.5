@@ -156,7 +156,8 @@ describe('applications.service', () => {
 
   describe('update()', () => {
     it('should update the application, log audit, and detect status change', async () => {
-      const previous = { ...fakeApplication, status: 'SUBMITTED' };
+      // UNDER_REVIEW → CONDITIONAL_OFFER is a valid institutional decision.
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW' };
       const updated = { ...fakeApplication, status: 'CONDITIONAL_OFFER' };
 
       mockedRepo.getById.mockResolvedValue(previous as any);
@@ -170,6 +171,7 @@ describe('applications.service', () => {
       const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
         typeof c[0] === 'object' ? c[0].event : c[0],
       );
+      expect(emittedEvents).toContain('application.updated');
       expect(emittedEvents).toContain('application.status_changed');
       expect(emittedEvents).toContain('application.offer_made');
     });
@@ -203,6 +205,149 @@ describe('applications.service', () => {
       );
       // offer_made should NOT fire — was already in an offer status
       expect(emittedEvents).not.toContain('application.offer_made');
+    });
+
+    it('should always emit application.updated, even when no status change', async () => {
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW', personalStatement: 'old' };
+      const updated = { ...fakeApplication, status: 'UNDER_REVIEW', personalStatement: 'new' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { personalStatement: 'new' } as any,
+        'user-1',
+        fakeReq,
+      );
+
+      const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(emittedEvents).toContain('application.updated');
+      expect(emittedEvents).not.toContain('application.status_changed');
+    });
+
+    it('should reject an invalid application status transition', async () => {
+      // SUBMITTED → FIRM skips UNDER_REVIEW and the offer decision; must fail.
+      const previous = { ...fakeApplication, status: 'SUBMITTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+
+      await expect(
+        applicationsService.update('app-1', { status: 'FIRM' } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(/Invalid application status transition/);
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should reject any transition out of a terminal state', async () => {
+      const previous = { ...fakeApplication, status: 'WITHDRAWN' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+
+      await expect(
+        applicationsService.update('app-1', { status: 'UNDER_REVIEW' } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(/Invalid application status transition/);
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should allow INSURANCE → FIRM (results-day insurance promotion)', async () => {
+      const previous = { ...fakeApplication, status: 'INSURANCE' };
+      const updated = { ...fakeApplication, status: 'FIRM' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update('app-1', { status: 'FIRM' } as any, 'user-1', fakeReq);
+
+      expect(mockedRepo.update).toHaveBeenCalledTimes(1);
+      const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(emittedEvents).toContain('application.status_changed');
+      // Applicant-driven transition — not an institutional decision.
+      expect(emittedEvents).not.toContain('application.offer_made');
+    });
+
+    it('should stamp decisionDate and decisionBy on institutional decision states', async () => {
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW' };
+      const updated = { ...fakeApplication, status: 'REJECTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { status: 'REJECTED' } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      expect(mockedRepo.update).toHaveBeenCalledWith(
+        'app-1',
+        expect.objectContaining({
+          status: 'REJECTED',
+          decisionDate: expect.any(Date),
+          decisionBy: 'user-42',
+        }),
+      );
+    });
+
+    it('should NOT stamp decisionDate/decisionBy on applicant-driven transitions', async () => {
+      const previous = { ...fakeApplication, status: 'CONDITIONAL_OFFER' };
+      const updated = { ...fakeApplication, status: 'FIRM' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { status: 'FIRM' } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      const writeArgs = mockedRepo.update.mock.calls[0][1] as Record<string, unknown>;
+      expect(writeArgs.status).toBe('FIRM');
+      expect(writeArgs).not.toHaveProperty('decisionDate');
+      expect(writeArgs).not.toHaveProperty('decisionBy');
+    });
+
+    it('should respect an explicitly supplied decisionDate/decisionBy', async () => {
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW' };
+      const updated = { ...fakeApplication, status: 'CONDITIONAL_OFFER' };
+      const explicitDate = new Date('2026-01-15T09:00:00Z');
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        {
+          status: 'CONDITIONAL_OFFER',
+          decisionDate: explicitDate,
+          decisionBy: 'panel-chair',
+        } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      expect(mockedRepo.update).toHaveBeenCalledWith(
+        'app-1',
+        expect.objectContaining({
+          decisionDate: explicitDate,
+          decisionBy: 'panel-chair',
+        }),
+      );
+    });
+
+    it('should skip the transition guard when no status supplied', async () => {
+      const previous = { ...fakeApplication, status: 'SUBMITTED' };
+      const updated = { ...fakeApplication, personalStatement: 'revised text' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { personalStatement: 'revised text' } as any,
+        'user-1',
+        fakeReq,
+      );
+
+      expect(mockedRepo.update).toHaveBeenCalledTimes(1);
     });
   });
 

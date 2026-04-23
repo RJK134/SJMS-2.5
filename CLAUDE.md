@@ -594,12 +594,52 @@ Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain ga
 
 **Why a chore branch and not a numbered phase:** the work had no business-rule, schema, or auth surface and did not advance any of the golden journeys; bundling it into Phase 16 would have inflated that PR and delayed golden-journey signal.
 
-### Governance batch — Enterprise delivery operating model (2026-04-22, IN FLIGHT)
+### Governance batch — Enterprise delivery operating model (COMPLETE)
 
 **Branch:** `claude/enterprise-delivery-model-3GtVY`
 **Base:** `main @ 0f4eaf0`
+**Merged as:** PR #92 → main commit `75e43c6` (2026-04-22)
 
 Docs-only governance batch that codifies the canonical operating model for Phases 16–23 and refreshes the delivery control set to reflect the merged state of Phase 15A and the ESLint toolchain chore. No source, schema, or CI changes. Publishes `docs/delivery-plan/enterprise-delivery-operating-model.md` as the new canonical rule set for every phase from 16 onward.
+
+### Phase 16 — Admissions to Enrolment (IN FLIGHT, Batch 16A)
+
+**Active branch:** `phase-16/admissions-to-enrolment`
+**Base:** `main @ 75e43c6` (post-governance)
+
+First vertical golden journey. Batch 16A enforces the canonical admissions lifecycle at the service boundary, mirroring the pattern already used for appeals and EC claims:
+
+| File | Change |
+|---|---|
+| `server/src/api/applications/applications.service.ts` | `VALID_APPLICATION_TRANSITIONS` map (10 states, 3 terminal); `assertValidApplicationTransition` guard called in `update()` before the repo write; `decisionDate` / `decisionBy` auto-stamped on institutional-decision transitions (`CONDITIONAL_OFFER`, `UNCONDITIONAL_OFFER`, `REJECTED`) unless the caller supplies them; new `application.updated` event emitted on every update |
+| `server/src/api/applications/applications.schema.ts` | `applicationStatusEnum` (10 canonical values); `status` exposed on `updateSchema` so admissions staff can drive the lifecycle via `PATCH /applications/:id` (previously silently stripped by the schema) |
+| `server/src/utils/webhooks.ts` | `application.updated` → `/webhook/sjms/application/updated` added to `EVENT_ROUTES` |
+| `server/src/__tests__/unit/admissions.service.test.ts` | Existing `SUBMITTED → CONDITIONAL_OFFER` case retargeted to `UNDER_REVIEW → CONDITIONAL_OFFER` (that hop is no longer legal directly). 11 new cases: always-emit `application.updated`; reject invalid transition; reject transition out of terminal; allow `INSURANCE → FIRM` (results-day promotion); stamp on institutional decision; do NOT stamp on applicant-driven transition; respect explicit `decisionDate`/`decisionBy`; skip guard when no status supplied. |
+
+**Transition map (UK HE with UCAS response states):**
+
+```
+SUBMITTED          → UNDER_REVIEW, WITHDRAWN, REJECTED
+UNDER_REVIEW       → INTERVIEW, CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
+INTERVIEW          → CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
+CONDITIONAL_OFFER  → UNCONDITIONAL_OFFER, FIRM, INSURANCE, DECLINED, WITHDRAWN
+UNCONDITIONAL_OFFER→ FIRM, INSURANCE, DECLINED, WITHDRAWN
+FIRM               → WITHDRAWN
+INSURANCE          → FIRM, WITHDRAWN   (results-day insurance promotion)
+DECLINED, WITHDRAWN, REJECTED          (terminal)
+```
+
+**Verification (Batch 16A):**
+- Server Vitest: **144/144** passing (up from 133 on `main`; +11 admissions state-machine cases)
+- `npx prisma validate`: pass
+- Server / client tsc: **0 new errors** — the one pre-existing `TS5101` diagnostic on each workspace is from the TypeScript 6.0 dependabot bump (PR #69) and is tracked separately under **KI-P16-001**
+- `npx prisma generate`: pre-existing runtime WASM error from the Prisma 7 client bump (PR #64) — tracked under **KI-P16-002**; unit suite unaffected because tests mock Prisma
+
+**Deliberately out-of-scope for Batch 16A (sequenced to later batches of Phase 16):**
+- Offer condition evaluation (auto-promote `CONDITIONAL_OFFER → UNCONDITIONAL_OFFER` when all `OfferCondition` rows are `MET`) → 16B
+- Applicant-to-Student conversion and enrolment creation on `FIRM` → 16C
+- Module-registration cascade repository cleanup (KI-P12-001) → 16D
+- Portal completion for the applicant/admin sides of this journey → 16E
 
 ### Phase 14 follow-on — CI and repository hygiene hardening (COMPLETE)
 
