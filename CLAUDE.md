@@ -3,7 +3,8 @@
 
 > **Organisation:** Future Horizons Education (FHE)
 > **Project Lead:** Richard Knapp — Lead Developer / Architect
-> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-21
+> **Classification:** CONFIDENTIAL | **Last Updated:** 2026-04-22
+> **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical for Phases 16–23.
 
 ---
 
@@ -94,14 +95,18 @@ Every code change follows this pipeline:
 
 ### Delivery Control Set
 - `CLAUDE.md`
+- `.claude/CLAUDE.md`
 - `docs/BUILD-QUEUE.md`
 - `docs/VERIFICATION-PROTOCOL.md`
 - `docs/KNOWN_ISSUES.md`
 - `docs/delivery-plan/enterprise-readiness-plan.md`
+- `docs/delivery-plan/enterprise-delivery-operating-model.md`
 
 These documents must be updated together at every phase closeout. Phase 14+
 uses them as the source of truth for what is current, what is deferred, and
-what may be started next.
+what may be started next. From Phase 16 onward, the operating-model document
+is the canonical rule set for how every phase is delivered — where it
+conflicts with earlier informal practice, the operating model wins.
 
 ### Phase Delivery Model
 - One active phase branch at a time from `main`
@@ -573,20 +578,94 @@ Reviewable slice of the original Phase 15 scope that is free of auth/roles/schem
 
 **Phase 15B STOP-gate:** MFA enforcement, Redis identity cache, auth fallback review, and finance retention safeguards all require changes to `server/src/middleware/auth.ts`, `server/src/constants/roles.ts`, the Keycloak realm JSON, or established Prisma models. Per CLAUDE.md STOP condition #6, these will not ship without Richard's explicit approval of the approach — a design doc lands on `phase-15/auth-hardening` before any code change.
 
-### Chore — ESLint Toolchain Bootstrap (KI-P14-001 closeout, IN FLIGHT)
+### Chore — ESLint Toolchain Bootstrap (KI-P14-001 closeout, COMPLETE)
 
 **Branch:** `chore/tooling-eslint-bootstrap`
 **Base:** `main` at PR #55 merge (commit `953ed77`)
+**Merged as:** PR #88 → main commit `67df18f` (2026-04-21)
 
-Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain gap. Adds ESLint v9 flat config to both workspaces, switches the existing `npm run lint` scripts to flat-config invocation, and wires an advisory CI lint job (`continue-on-error: true`). The follow-on baseline triage and ratchet-to-blocking work is logged as KI-P15-002.
+Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain gap. Added ESLint v9 flat config to both workspaces, switched the existing `npm run lint` scripts to flat-config invocation, and wired an advisory CI lint job (`continue-on-error: true`). The follow-on baseline triage and ratchet-to-blocking work is tracked as KI-P15-002.
 
 | Batch | Scope | Commit |
 |-------|-------|--------|
-| ELB.1 | Bootstrap toolchain and CI hook (configs, deps, lint scripts, advisory CI job) | this PR |
-| ELB.2 | Control-doc alignment (KI-P14-001 → OPEN-PARTIAL, log KI-P15-002, Gate 12, BUILD-QUEUE row) | this PR |
-| ELB.3 | Closeout | on PR merge |
+| ELB.1 | Bootstrap toolchain and CI hook (configs, deps, lint scripts, advisory CI job) | PR #88 |
+| ELB.2 | Control-doc alignment (KI-P14-001 → CLOSED, log KI-P15-002, Gate 12, BUILD-QUEUE row) | PR #88 |
+| ELB.3 | Closeout | PR #88 merge |
 
-**Why a chore branch and not a numbered phase:** the work has no business-rule, schema, or auth surface and does not advance any of the golden journeys; bundling it into Phase 16 would inflate that PR and delay golden-journey signal.
+**Why a chore branch and not a numbered phase:** the work had no business-rule, schema, or auth surface and did not advance any of the golden journeys; bundling it into Phase 16 would have inflated that PR and delayed golden-journey signal.
+
+### Governance batch — Enterprise delivery operating model (COMPLETE)
+
+**Branch:** `claude/enterprise-delivery-model-3GtVY`
+**Base:** `main @ 0f4eaf0`
+**Merged as:** PR #92 → main commit `75e43c6` (2026-04-22)
+
+Docs-only governance batch that codifies the canonical operating model for Phases 16–23 and refreshes the delivery control set to reflect the merged state of Phase 15A and the ESLint toolchain chore. No source, schema, or CI changes. Publishes `docs/delivery-plan/enterprise-delivery-operating-model.md` as the new canonical rule set for every phase from 16 onward.
+
+### Phase 16 — Admissions to Enrolment (IN FLIGHT, Batches 16A–16C)
+
+**Active branch:** `phase-16/admissions-to-enrolment` (16A+16B merged as PR #96); 16C on `copilot/sjms-2-5-next-build-phase`
+**Base:** `main @ 75e43c6` (post-governance)
+**PRs:** #96 (merged — 16A+16B), #98 (merged — offers.service fail-soft fix)
+
+First vertical golden journey. Batch 16A enforces the canonical admissions lifecycle at the service boundary. Batch 16B layers offer-condition evaluation and auto-promotion. Batch 16C delivers the applicant-to-student conversion endpoint that closes the Admissions → Enrolment handoff gap.
+
+**Batch 16A — Application lifecycle state enforcement:**
+
+| File | Change |
+|---|---|
+| `server/src/api/applications/applications.service.ts` | `VALID_APPLICATION_TRANSITIONS` map (10 states, 3 terminal); `assertValidApplicationTransition` guard called in `update()` before the repo write; `decisionDate` / `decisionBy` auto-stamped on institutional-decision transitions (`CONDITIONAL_OFFER`, `UNCONDITIONAL_OFFER`, `REJECTED`) unless the caller supplies them; new `application.updated` event emitted on every update |
+| `server/src/api/applications/applications.schema.ts` | `applicationStatusEnum` (10 canonical values); `status` exposed on `updateSchema` so admissions staff can drive the lifecycle via `PATCH /applications/:id` (previously silently stripped by the schema) |
+| `server/src/utils/webhooks.ts` | `application.updated` → `/webhook/sjms/application/updated` added to `EVENT_ROUTES` |
+| `server/src/__tests__/unit/admissions.service.test.ts` | Existing `SUBMITTED → CONDITIONAL_OFFER` case retargeted to `UNDER_REVIEW → CONDITIONAL_OFFER` (that hop is no longer legal directly). 11 new cases: always-emit `application.updated`; reject invalid transition; reject transition out of terminal; allow `INSURANCE → FIRM` (results-day promotion); stamp on institutional decision; do NOT stamp on applicant-driven transition; respect explicit `decisionDate`/`decisionBy`; skip guard when no status supplied. |
+
+**Batch 16B — Offer-condition evaluation and auto-promotion:**
+
+| File | Change |
+|---|---|
+| `server/src/api/applications/applications.service.ts` | `QUALIFYING_CONDITION_STATUSES = {MET, WAIVED}`; new exported `evaluateOfferConditionsAndAutoPromote(applicationId, userId, req)` helper. When the target application is in `CONDITIONAL_OFFER`, has ≥ 1 non-deleted condition, and every non-deleted condition is `MET` or `WAIVED`, it routes a `{status: 'UNCONDITIONAL_OFFER'}` write through `update()` so the state-machine guard, audit log, `decisionDate` / `decisionBy` stamping, and `application.updated` / `application.status_changed` events all fire through their usual path. Adds a dedicated `application.offer_conditions_met` event carrying `{promotedFrom, promotedTo, conditionIds}` so n8n can distinguish an auto-promotion from a manual unconditional decision. |
+| `server/src/api/offers/offers.service.ts` | `create()`, `update()`, and `remove()` now invoke the evaluator after their own audit + event emission, so promotion does not depend on n8n being live. Called on every mutation (not only status flips) so that removing a blocking condition, or editing a description alongside a status change elsewhere, still drives auto-promotion. |
+| `server/src/utils/webhooks.ts` | `application.offer_conditions_met` → `/webhook/sjms/application/offer-conditions-met` added to `EVENT_ROUTES`. |
+| `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('evaluateOfferConditionsAndAutoPromote()')` block: 9 cases covering MET-only promotion, WAIVED-counts-as-satisfied, PENDING / NOT_MET blocks, soft-deleted conditions ignored, zero-conditions no-op, wrong-status no-op, event payload `conditionIds`, and NotFound propagation. |
+| `server/src/__tests__/unit/offers.service.test.ts` | **New file.** 6 cases exercising `getById` NotFound, `create()` evaluator invocation, `update()` status-change vs no-status-change event emission plus evaluator invocation on both paths, and `remove()` evaluator invocation. |
+
+**Batch 16C — Applicant-to-student conversion and enrolment orchestration:**
+
+| File | Change |
+|---|---|
+| `server/src/repositories/student.repository.ts` | Added `getByPersonId(personId)` (idempotency guard — find existing Student for a person) and `countStudents()` (student number generation counter) |
+| `server/src/repositories/enrolment.repository.ts` | Added `findForJourney(studentId, programmeId, academicYear)` (idempotency guard — find existing Enrolment before creating) |
+| `server/src/api/applications/applications.service.ts` | `CONVERTIBLE_STATUSES = {FIRM, UNCONDITIONAL_OFFER}`; `APPLICATION_ROUTE_TO_ENTRY_ROUTE` map; `generateStudentNumber()` produces `STU-YYYY-NNNNN`; exported `convertToStudent(applicationId, input, userId, req)` — validates status, resolves personId from applicant, creates Student if not found (via `students.service.create`), creates Enrolment if not found (via `enrolments.service.create`), emits `application.converted`, writes audit log |
+| `server/src/api/applications/applications.schema.ts` | `convertSchema` — `yearOfStudy` (default 1), `modeOfStudy`, `startDate`, `feeStatus`, `originalEntryDate` (optional) |
+| `server/src/api/applications/applications.controller.ts` | `convert()` handler |
+| `server/src/api/applications/applications.router.ts` | `POST /:id/convert` route — REGISTRY role, uses `paramsSchema` + `convertSchema` |
+| `server/src/utils/webhooks.ts` | `application.converted` → `/webhook/sjms/application/converted` added to `EVENT_ROUTES` |
+| `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('convertToStudent()')` block: 12 cases covering new-student+enrolment happy path; UNCONDITIONAL_OFFER accepted; student idempotency; full idempotency (both exist); non-convertible status rejection; missing applicant/person rejection; UCAS route mapping; event payload correctness; audit log correctness; student number format; NotFound propagation |
+
+**Transition map (UK HE with UCAS response states):**
+
+```
+SUBMITTED          → UNDER_REVIEW, WITHDRAWN, REJECTED
+UNDER_REVIEW       → INTERVIEW, CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
+INTERVIEW          → CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
+CONDITIONAL_OFFER  → UNCONDITIONAL_OFFER, FIRM, INSURANCE, DECLINED, WITHDRAWN
+UNCONDITIONAL_OFFER→ FIRM, INSURANCE, DECLINED, WITHDRAWN
+FIRM               → WITHDRAWN
+INSURANCE          → FIRM, WITHDRAWN   (results-day insurance promotion)
+DECLINED, WITHDRAWN, REJECTED          (terminal)
+```
+
+**Conversion eligibility:** FIRM or UNCONDITIONAL_OFFER. FIRM is the primary path; UNCONDITIONAL_OFFER is accepted to support direct-entry and clearing routes.
+
+**Verification (Batches 16A + 16B + 16C):**
+- Server Vitest: **174/174** passing (up from 159 on main after 16A+16B; +15 conversion cases in 16C)
+- `npx prisma validate`: pre-existing P1012 error from Prisma 7 schema change (KI-P16-002 — non-regressive)
+- Server / client tsc: **0 new errors** — the one pre-existing `TS5101` diagnostic on each workspace is from the TypeScript 6.0 dependabot bump (PR #69) and is tracked under **KI-P16-001**
+- `npx prisma generate`: pre-existing WASM error from the Prisma 7 client bump (PR #64) — tracked under **KI-P16-002**; unit suite unaffected because tests mock Prisma
+
+**Deliberately out-of-scope (sequenced to later batches of Phase 16):**
+- 16D — Module-registration cascade repository cleanup (KI-P12-001) and finance handoff hooks
+- 16E — Portal completion for the applicant/admin sides of this journey
 
 ### Phase 14 follow-on — CI and repository hygiene hardening (COMPLETE)
 

@@ -103,3 +103,20 @@ export async function getModuleRegistrations(enrolmentId: string) {
     orderBy: { module: { moduleCode: 'asc' } },
   });
 }
+
+/**
+ * Find the first non-deleted enrolment for a given student, programme, and
+ * academic year. Used during applicant-to-student conversion to establish
+ * whether an initial enrolment already exists before attempting to create
+ * one (idempotency guard).
+ */
+export async function findForJourney(
+  studentId: string,
+  programmeId: string,
+  academicYear: string,
+) {
+  return prisma.enrolment.findFirst({
+    where: { studentId, programmeId, academicYear, deletedAt: null },
+    include: defaultInclude,
+  });
+}

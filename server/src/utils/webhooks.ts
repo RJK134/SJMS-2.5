@@ -54,10 +54,13 @@ const EVENT_ROUTES: Record<string, string> = {
   // ── Admissions (unique path per workflow) ──────────────────────────────
   'enquiry.created':                  '/webhook/sjms/enquiry/created',
   'application.created':              '/webhook/sjms/application/created',
+  'application.updated':              '/webhook/sjms/application/updated',
   'application.status_changed':       '/webhook/sjms/application/status-changed',
   'application.offer_made':           '/webhook/sjms/offer/decision-made',
+  'application.offer_conditions_met': '/webhook/sjms/application/offer-conditions-met',
   'application.withdrawn':            '/webhook/sjms/application/withdrawn',
   'application.deleted':              '/webhook/sjms/application/deleted',
+  'application.converted':            '/webhook/sjms/application/converted',
 
   // ── Enrolment ─────────────────────────────────────────────────────────
   'enrolment.created':                '/webhook/sjms/enrolment/created',
