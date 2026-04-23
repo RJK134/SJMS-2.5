@@ -5,6 +5,34 @@ import * as applicationsService from '../applications/applications.service';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
+import logger from '../../utils/logger';
+
+// Fail-soft wrapper around the auto-promotion evaluator. The condition
+// mutation, audit log, and events have already been committed by the
+// caller; surfacing an evaluator failure to the HTTP client would prompt
+// retries and produce duplicate writes. Mirrors the attendance-threshold
+// backstop pattern in attendance.service.ts.
+async function safeEvaluateOfferConditions(
+  applicationId: string,
+  userId: string,
+  req: Request,
+): Promise<void> {
+  try {
+    await applicationsService.evaluateOfferConditionsAndAutoPromote(
+      applicationId,
+      userId,
+      req,
+    );
+  } catch (err) {
+    logger.warn(
+      'Offer-condition auto-promotion evaluation failed; the underlying offer-condition mutation succeeded',
+      {
+        applicationId,
+        error: (err as Error).message,
+      },
+    );
+  }
+}
 
 export interface OfferListQuery {
   cursor?: string;
@@ -46,12 +74,9 @@ export async function create(data: Prisma.OfferConditionUncheckedCreateInput, us
   });
   // Back-stop auto-promotion in case the newly created condition was
   // recorded directly as MET or WAIVED (e.g. a backfill of a known-
-  // satisfied condition).
-  await applicationsService.evaluateOfferConditionsAndAutoPromote(
-    result.applicationId,
-    userId,
-    req,
-  );
+  // satisfied condition). Fail-soft: a backstop must not roll back the
+  // condition mutation that has already been committed.
+  await safeEvaluateOfferConditions(result.applicationId, userId, req);
   return result;
 }
 
@@ -88,12 +113,9 @@ export async function update(id: string, data: Prisma.OfferConditionUpdateInput,
   // that edits which clear a blocking condition through a different
   // field — e.g. a description or targetGrade correction that happens
   // alongside a status change elsewhere — still drive the parent
-  // application's auto-promotion.
-  await applicationsService.evaluateOfferConditionsAndAutoPromote(
-    result.applicationId,
-    userId,
-    req,
-  );
+  // application's auto-promotion. Fail-soft: a backstop must not roll
+  // back the condition mutation that has already been committed.
+  await safeEvaluateOfferConditions(result.applicationId, userId, req);
   return result;
 }
 
@@ -112,9 +134,7 @@ export async function remove(id: string, userId: string, req: Request) {
   });
   // Soft-deleting a PENDING or NOT_MET condition removes it from the
   // set being evaluated and can therefore unblock auto-promotion.
-  await applicationsService.evaluateOfferConditionsAndAutoPromote(
-    previous.applicationId,
-    userId,
-    req,
-  );
+  // Fail-soft: a backstop must not roll back the soft-delete that has
+  // already been committed.
+  await safeEvaluateOfferConditions(previous.applicationId, userId, req);
 }
