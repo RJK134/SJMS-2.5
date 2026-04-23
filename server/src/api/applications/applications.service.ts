@@ -54,6 +54,13 @@ const INSTITUTIONAL_DECISION_STATES = new Set([
   'REJECTED',
 ]);
 
+// OfferCondition statuses that count as satisfied for the purposes of
+// auto-promoting a conditional offer to unconditional. WAIVED conditions
+// have been formally discounted by an admissions decision and no longer
+// need evidencing; MET conditions have been satisfied outright. PENDING
+// and NOT_MET block promotion.
+const QUALIFYING_CONDITION_STATUSES = new Set(['MET', 'WAIVED']);
+
 function assertValidApplicationTransition(from: string, to: string): void {
   if (from === to) return;
   const allowed = VALID_APPLICATION_TRANSITIONS[from] ?? [];
@@ -252,4 +259,59 @@ export async function remove(id: string, userId: string, req: Request) {
       status: 'DELETED',
     },
   });
+}
+
+// Auto-promotion backstop invoked from offers.service after every
+// OfferCondition mutation. When every non-deleted condition on a
+// CONDITIONAL_OFFER application has reached a qualifying status (MET
+// or WAIVED), promote the application to UNCONDITIONAL_OFFER by routing
+// through update() so the state-machine guard, audit, decisionDate /
+// decisionBy stamping, and downstream events all fire through their
+// usual path. An additional application.offer_conditions_met event is
+// emitted so n8n workflows can tell an auto-promotion apart from a
+// manually driven unconditional decision. Returns the promoted
+// application, or null when the preconditions are not met (wrong
+// status, zero live conditions, or any condition still PENDING /
+// NOT_MET).
+export async function evaluateOfferConditionsAndAutoPromote(
+  applicationId: string,
+  userId: string,
+  req: Request,
+) {
+  const application = await getById(applicationId);
+
+  if (application.status !== 'CONDITIONAL_OFFER') return null;
+
+  const conditions = (application as { conditions?: Array<{ id: string; status: string; deletedAt?: Date | null }> }).conditions ?? [];
+  const liveConditions = conditions.filter((c) => c.deletedAt == null);
+
+  if (liveConditions.length === 0) return null;
+
+  const allSatisfied = liveConditions.every((c) =>
+    QUALIFYING_CONDITION_STATUSES.has(c.status),
+  );
+  if (!allSatisfied) return null;
+
+  const promoted = await update(
+    applicationId,
+    { status: 'UNCONDITIONAL_OFFER' },
+    userId,
+    req,
+  );
+
+  emitEvent({
+    event: 'application.offer_conditions_met',
+    entityType: 'Application',
+    entityId: applicationId,
+    actorId: userId,
+    data: {
+      applicantId: promoted.applicantId,
+      programmeId: promoted.programmeId,
+      promotedFrom: 'CONDITIONAL_OFFER',
+      promotedTo: 'UNCONDITIONAL_OFFER',
+      conditionIds: liveConditions.map((c) => c.id),
+    },
+  });
+
+  return promoted;
 }

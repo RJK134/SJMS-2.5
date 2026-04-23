@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import * as repo from '../../repositories/offerCondition.repository';
+import * as applicationsService from '../applications/applications.service';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
@@ -43,6 +44,14 @@ export async function create(data: Prisma.OfferConditionUncheckedCreateInput, us
       status: result.status,
     },
   });
+  // Back-stop auto-promotion in case the newly created condition was
+  // recorded directly as MET or WAIVED (e.g. a backfill of a known-
+  // satisfied condition).
+  await applicationsService.evaluateOfferConditionsAndAutoPromote(
+    result.applicationId,
+    userId,
+    req,
+  );
   return result;
 }
 
@@ -75,6 +84,16 @@ export async function update(id: string, data: Prisma.OfferConditionUpdateInput,
       },
     });
   }
+  // Evaluate after every condition mutation (not only status flips) so
+  // that edits which clear a blocking condition through a different
+  // field — e.g. a description or targetGrade correction that happens
+  // alongside a status change elsewhere — still drive the parent
+  // application's auto-promotion.
+  await applicationsService.evaluateOfferConditionsAndAutoPromote(
+    result.applicationId,
+    userId,
+    req,
+  );
   return result;
 }
 
@@ -91,4 +110,11 @@ export async function remove(id: string, userId: string, req: Request) {
       applicationId: previous.applicationId,
     },
   });
+  // Soft-deleting a PENDING or NOT_MET condition removes it from the
+  // set being evaluated and can therefore unblock auto-promotion.
+  await applicationsService.evaluateOfferConditionsAndAutoPromote(
+    previous.applicationId,
+    userId,
+    req,
+  );
 }

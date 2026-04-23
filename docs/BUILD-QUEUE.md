@@ -30,9 +30,9 @@ The full operating model is canonical in `docs/delivery-plan/enterprise-delivery
 | `cd client && npx tsc --noEmit` | 🟡 noisy-green | Same TS5101 diagnostic; exit code 0 because of the client's tsconfig posture. Tracked under KI-P16-001. |
 | `DATABASE_URL=... npx prisma validate --schema=prisma/schema.prisma` | ✅ pass | Schema valid |
 | `npx prisma generate --schema=prisma/schema.prisma` | 🟠 pre-existing | Runtime `Cannot find module '.../query_engine_bg.postgresql.wasm-base64.js'` after Prisma 7.7 client bump (PR #64) while the CLI is still on 6.19.3. Logged as **KI-P16-002**. Unit suite unaffected (tests mock Prisma). |
-| `npm run test --workspace=server` | ✅ pass | Full Vitest suite — 144/144 tests passing on `phase-16/admissions-to-enrolment` Batch 16A (up from 133 on main; +11 new admissions-state-machine tests). |
+| `npm run test --workspace=server` | ✅ pass | Full Vitest suite — 159/159 tests passing on `phase-16/admissions-to-enrolment` after Batches 16A + 16B (up from 133 on main; +11 state-machine tests in 16A, +15 evaluator / offers-service tests in 16B). |
 | `npm run lint` | ⚠️ advisory | ESLint v9 flat config live in both workspaces (PR #88). CI runs `Lint (advisory)` with `continue-on-error: true`; ratchet to blocking tracked under KI-P15-002. |
-| Verification protocol Gates 1–12 | 🟠 mixed | Gates 2–12 green. Gate 1 (server tsc clean) is red on `main` today because of KI-P16-001; Phase 16A ships non-regression rather than a new fix. |
+| Verification protocol Gates 1–12 | 🟠 mixed | Gates 2–12 green. Gate 1 (server tsc clean) is red on `main` today because of KI-P16-001; Phase 16A/16B ship non-regression rather than a new fix. |
 
 ---
 
@@ -209,8 +209,8 @@ The original Phase 15 plan (MFA, Redis identity cache, CSP/CORS, scanning, finan
 **HERM uplift:** Learner Recruitment & Admissions, Enrolment & Registration
 **Priority outcomes:** application lifecycle, offer condition logic, route handling, enrolment progression rules, finance handoff hooks, applicant/admin portal completion for the journey.
 **Canonical batches (per `docs/delivery-plan/enterprise-delivery-operating-model.md` §10):**
-- 16A **Application lifecycle and state enforcement — IN FLIGHT** (canonical state machine in `server/src/api/applications/applications.service.ts`; `status` exposed on `applications.updateSchema`; institutional-decision states auto-stamp `decisionDate`/`decisionBy`; `application.updated` event added; 11 new Vitest cases; KI-P16-001 and KI-P16-002 logged for pre-existing TS5101 / Prisma 7 baseline regressions that are out-of-scope for this batch)
-- 16B Offer condition evaluation and admissions route handling
+- 16A **Application lifecycle and state enforcement — DONE** (canonical state machine in `server/src/api/applications/applications.service.ts`; `status` exposed on `applications.updateSchema`; institutional-decision states auto-stamp `decisionDate`/`decisionBy`; `application.updated` event added; 11 new Vitest cases; KI-P16-001 and KI-P16-002 logged for pre-existing TS5101 / Prisma 7 baseline regressions that are out-of-scope for this batch)
+- 16B **Offer condition evaluation and admissions route handling — DONE** (exported `evaluateOfferConditionsAndAutoPromote(applicationId, userId, req)` in the applications service; auto-promotes `CONDITIONAL_OFFER → UNCONDITIONAL_OFFER` when every live condition is `MET` or `WAIVED`; routes the promotion through `applications.service.update` so the state-machine guard, audit log, `decisionDate`/`decisionBy` stamping, and `application.updated`/`application.status_changed` events all fire naturally; dedicated `application.offer_conditions_met` event on its own webhook path; `offers.service` `create`/`update`/`remove` call the evaluator after their own audit + event emission as an in-process backstop so promotion does not depend on n8n being live; +9 admissions-service cases for the helper, +6 new cases in new `offers.service.test.ts` for the offer-condition mutations)
 - 16C Applicant-to-student conversion and enrolment orchestration
 - 16D Module-registration edge cases and finance handoff hooks (folds in KI-P12-001)
 - 16E Applicant/admin portal completion for this journey
