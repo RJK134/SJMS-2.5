@@ -2,6 +2,23 @@ import { z } from 'zod';
 
 export const paramsSchema = z.object({ id: z.string().min(1) });
 
+// The 10 canonical ApplicationStatus values. Must mirror the Prisma enum
+// declared in prisma/schema.prisma. A new value cannot be accepted here
+// without a coordinated Prisma migration and a state-machine update in
+// applications.service.ts.
+export const applicationStatusEnum = z.enum([
+  'SUBMITTED',
+  'UNDER_REVIEW',
+  'INTERVIEW',
+  'CONDITIONAL_OFFER',
+  'UNCONDITIONAL_OFFER',
+  'FIRM',
+  'INSURANCE',
+  'DECLINED',
+  'WITHDRAWN',
+  'REJECTED',
+]);
+
 export const querySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(25),
@@ -28,4 +45,10 @@ export const createSchema = z.object({
     personalStatement: z.string().optional(),
 });
 
-export const updateSchema = createSchema.partial();
+// The status field is exposed on update so admissions staff can move the
+// application through its lifecycle via PATCH /applications/:id. The
+// service layer (applications.service.update) enforces the canonical
+// transition map on top of this enum check.
+export const updateSchema = createSchema.partial().extend({
+  status: applicationStatusEnum.optional(),
+});

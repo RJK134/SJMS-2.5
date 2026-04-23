@@ -1,8 +1,8 @@
 # SJMS 2.5 — Claude Code Master Context
 
 > **Owner:** Richard Knapp · Future Horizons Education (FHE)
-> **Last updated:** 2026-04-22
-> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). ESLint toolchain bootstrap (KI-P14-001 closeout) merged (PR #88, commit `67df18f`). Governance batch codifying the enterprise-delivery operating model in flight on `claude/enterprise-delivery-model-3GtVY`. Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc. Next active phase after this governance batch merges: **Phase 16 — Admissions to Enrolment** on `phase-16/admissions-to-enrolment`.
+> **Last updated:** 2026-04-23
+> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). ESLint toolchain bootstrap (KI-P14-001 closeout) merged (PR #88, commit `67df18f`). Governance batch merged as PR #92 (commit `75e43c6`, 2026-04-22). **Phase 16 — Admissions to Enrolment is IN FLIGHT on `phase-16/admissions-to-enrolment` (draft PR #96); Batches 16A (application lifecycle state machine) and 16B (offer-condition auto-promotion) delivered.** Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc.
 > **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical for every phase from 16 onward.
 
 ---

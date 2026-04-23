@@ -156,7 +156,8 @@ describe('applications.service', () => {
 
   describe('update()', () => {
     it('should update the application, log audit, and detect status change', async () => {
-      const previous = { ...fakeApplication, status: 'SUBMITTED' };
+      // UNDER_REVIEW → CONDITIONAL_OFFER is a valid institutional decision.
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW' };
       const updated = { ...fakeApplication, status: 'CONDITIONAL_OFFER' };
 
       mockedRepo.getById.mockResolvedValue(previous as any);
@@ -170,6 +171,7 @@ describe('applications.service', () => {
       const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
         typeof c[0] === 'object' ? c[0].event : c[0],
       );
+      expect(emittedEvents).toContain('application.updated');
       expect(emittedEvents).toContain('application.status_changed');
       expect(emittedEvents).toContain('application.offer_made');
     });
@@ -204,6 +206,149 @@ describe('applications.service', () => {
       // offer_made should NOT fire — was already in an offer status
       expect(emittedEvents).not.toContain('application.offer_made');
     });
+
+    it('should always emit application.updated, even when no status change', async () => {
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW', personalStatement: 'old' };
+      const updated = { ...fakeApplication, status: 'UNDER_REVIEW', personalStatement: 'new' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { personalStatement: 'new' } as any,
+        'user-1',
+        fakeReq,
+      );
+
+      const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(emittedEvents).toContain('application.updated');
+      expect(emittedEvents).not.toContain('application.status_changed');
+    });
+
+    it('should reject an invalid application status transition', async () => {
+      // SUBMITTED → FIRM skips UNDER_REVIEW and the offer decision; must fail.
+      const previous = { ...fakeApplication, status: 'SUBMITTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+
+      await expect(
+        applicationsService.update('app-1', { status: 'FIRM' } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(/Invalid application status transition/);
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should reject any transition out of a terminal state', async () => {
+      const previous = { ...fakeApplication, status: 'WITHDRAWN' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+
+      await expect(
+        applicationsService.update('app-1', { status: 'UNDER_REVIEW' } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(/Invalid application status transition/);
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should allow INSURANCE → FIRM (results-day insurance promotion)', async () => {
+      const previous = { ...fakeApplication, status: 'INSURANCE' };
+      const updated = { ...fakeApplication, status: 'FIRM' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update('app-1', { status: 'FIRM' } as any, 'user-1', fakeReq);
+
+      expect(mockedRepo.update).toHaveBeenCalledTimes(1);
+      const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(emittedEvents).toContain('application.status_changed');
+      // Applicant-driven transition — not an institutional decision.
+      expect(emittedEvents).not.toContain('application.offer_made');
+    });
+
+    it('should stamp decisionDate and decisionBy on institutional decision states', async () => {
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW' };
+      const updated = { ...fakeApplication, status: 'REJECTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { status: 'REJECTED' } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      expect(mockedRepo.update).toHaveBeenCalledWith(
+        'app-1',
+        expect.objectContaining({
+          status: 'REJECTED',
+          decisionDate: expect.any(Date),
+          decisionBy: 'user-42',
+        }),
+      );
+    });
+
+    it('should NOT stamp decisionDate/decisionBy on applicant-driven transitions', async () => {
+      const previous = { ...fakeApplication, status: 'CONDITIONAL_OFFER' };
+      const updated = { ...fakeApplication, status: 'FIRM' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { status: 'FIRM' } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      const writeArgs = mockedRepo.update.mock.calls[0][1] as Record<string, unknown>;
+      expect(writeArgs.status).toBe('FIRM');
+      expect(writeArgs).not.toHaveProperty('decisionDate');
+      expect(writeArgs).not.toHaveProperty('decisionBy');
+    });
+
+    it('should respect an explicitly supplied decisionDate/decisionBy', async () => {
+      const previous = { ...fakeApplication, status: 'UNDER_REVIEW' };
+      const updated = { ...fakeApplication, status: 'CONDITIONAL_OFFER' };
+      const explicitDate = new Date('2026-01-15T09:00:00Z');
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        {
+          status: 'CONDITIONAL_OFFER',
+          decisionDate: explicitDate,
+          decisionBy: 'panel-chair',
+        } as any,
+        'user-42',
+        fakeReq,
+      );
+
+      expect(mockedRepo.update).toHaveBeenCalledWith(
+        'app-1',
+        expect.objectContaining({
+          decisionDate: explicitDate,
+          decisionBy: 'panel-chair',
+        }),
+      );
+    });
+
+    it('should skip the transition guard when no status supplied', async () => {
+      const previous = { ...fakeApplication, status: 'SUBMITTED' };
+      const updated = { ...fakeApplication, personalStatement: 'revised text' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await applicationsService.update(
+        'app-1',
+        { personalStatement: 'revised text' } as any,
+        'user-1',
+        fakeReq,
+      );
+
+      expect(mockedRepo.update).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('remove()', () => {
@@ -235,6 +380,212 @@ describe('applications.service', () => {
         .toThrow(NotFoundError);
 
       expect(mockedRepo.softDelete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('evaluateOfferConditionsAndAutoPromote()', () => {
+    // Build an application-with-conditions fixture in the shape that
+    // admissions.repository.getById returns (conditions are hydrated by
+    // defaultInclude).
+    const appWithConditions = (
+      status: string,
+      conditions: Array<{ id: string; status: string; deletedAt?: Date | null }>,
+    ) => ({
+      ...fakeApplication,
+      status,
+      conditions,
+    });
+
+    it('promotes CONDITIONAL_OFFER to UNCONDITIONAL_OFFER when every live condition is MET', async () => {
+      const initial = appWithConditions('CONDITIONAL_OFFER', [
+        { id: 'c1', status: 'MET' },
+        { id: 'c2', status: 'MET' },
+      ]);
+      const promoted = { ...initial, status: 'UNCONDITIONAL_OFFER' };
+      // getById is called twice: once by evaluate(), once internally by update().
+      mockedRepo.getById
+        .mockResolvedValueOnce(initial as any)
+        .mockResolvedValueOnce(initial as any);
+      mockedRepo.update.mockResolvedValue(promoted as any);
+
+      const result = await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result?.status).toBe('UNCONDITIONAL_OFFER');
+      expect(mockedRepo.update).toHaveBeenCalledTimes(1);
+      expect(mockedRepo.update).toHaveBeenCalledWith(
+        'app-1',
+        expect.objectContaining({ status: 'UNCONDITIONAL_OFFER' }),
+      );
+
+      const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(emittedEvents).toContain('application.offer_conditions_met');
+      expect(emittedEvents).toContain('application.status_changed');
+      // CONDITIONAL_OFFER → UNCONDITIONAL_OFFER is offer → offer, so
+      // application.offer_made must NOT fire again.
+      expect(emittedEvents).not.toContain('application.offer_made');
+    });
+
+    it('treats WAIVED conditions as satisfied for promotion purposes', async () => {
+      const initial = appWithConditions('CONDITIONAL_OFFER', [
+        { id: 'c1', status: 'MET' },
+        { id: 'c2', status: 'WAIVED' },
+      ]);
+      const promoted = { ...initial, status: 'UNCONDITIONAL_OFFER' };
+      mockedRepo.getById
+        .mockResolvedValueOnce(initial as any)
+        .mockResolvedValueOnce(initial as any);
+      mockedRepo.update.mockResolvedValue(promoted as any);
+
+      const result = await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result?.status).toBe('UNCONDITIONAL_OFFER');
+    });
+
+    it('does not promote when any condition is still PENDING', async () => {
+      const initial = appWithConditions('CONDITIONAL_OFFER', [
+        { id: 'c1', status: 'MET' },
+        { id: 'c2', status: 'PENDING' },
+      ]);
+      mockedRepo.getById.mockResolvedValue(initial as any);
+
+      const result = await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result).toBeNull();
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+      const emittedEvents = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? (c[0] as { event: string }).event : c[0],
+      );
+      expect(emittedEvents).not.toContain('application.offer_conditions_met');
+    });
+
+    it('does not promote when any condition is NOT_MET', async () => {
+      const initial = appWithConditions('CONDITIONAL_OFFER', [
+        { id: 'c1', status: 'MET' },
+        { id: 'c2', status: 'NOT_MET' },
+      ]);
+      mockedRepo.getById.mockResolvedValue(initial as any);
+
+      const result = await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result).toBeNull();
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('ignores soft-deleted conditions when computing the set', async () => {
+      // The one PENDING condition is soft-deleted, so only the MET
+      // condition is evaluated → promotion fires.
+      const initial = appWithConditions('CONDITIONAL_OFFER', [
+        { id: 'c1', status: 'MET' },
+        { id: 'c2', status: 'PENDING', deletedAt: new Date('2026-04-01') },
+      ]);
+      const promoted = { ...initial, status: 'UNCONDITIONAL_OFFER' };
+      mockedRepo.getById
+        .mockResolvedValueOnce(initial as any)
+        .mockResolvedValueOnce(initial as any);
+      mockedRepo.update.mockResolvedValue(promoted as any);
+
+      const result = await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result?.status).toBe('UNCONDITIONAL_OFFER');
+    });
+
+    it('does not promote when the application has zero live conditions', async () => {
+      const initial = appWithConditions('CONDITIONAL_OFFER', []);
+      mockedRepo.getById.mockResolvedValue(initial as any);
+
+      const result = await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result).toBeNull();
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('does not promote when the application is not in CONDITIONAL_OFFER', async () => {
+      // An already-unconditional application — no further promotion
+      // required even though every condition is MET.
+      const initial = appWithConditions('UNCONDITIONAL_OFFER', [
+        { id: 'c1', status: 'MET' },
+      ]);
+      mockedRepo.getById.mockResolvedValue(initial as any);
+
+      const result = await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      expect(result).toBeNull();
+      expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('emits application.offer_conditions_met with the evaluated condition ids', async () => {
+      const initial = appWithConditions('CONDITIONAL_OFFER', [
+        { id: 'cond-a', status: 'MET' },
+        { id: 'cond-b', status: 'WAIVED' },
+      ]);
+      const promoted = { ...initial, status: 'UNCONDITIONAL_OFFER' };
+      mockedRepo.getById
+        .mockResolvedValueOnce(initial as any)
+        .mockResolvedValueOnce(initial as any);
+      mockedRepo.update.mockResolvedValue(promoted as any);
+
+      await applicationsService.evaluateOfferConditionsAndAutoPromote(
+        'app-1',
+        'user-42',
+        fakeReq,
+      );
+
+      const metCall = mockedEmitEvent.mock.calls.find(
+        (c) =>
+          typeof c[0] === 'object' &&
+          (c[0] as { event: string }).event === 'application.offer_conditions_met',
+      );
+      expect(metCall).toBeDefined();
+      const payload = metCall![0] as {
+        event: string;
+        data: { promotedFrom: string; promotedTo: string; conditionIds: string[] };
+      };
+      expect(payload.data.promotedFrom).toBe('CONDITIONAL_OFFER');
+      expect(payload.data.promotedTo).toBe('UNCONDITIONAL_OFFER');
+      expect(payload.data.conditionIds).toEqual(['cond-a', 'cond-b']);
+    });
+
+    it('throws NotFoundError when the application does not exist', async () => {
+      mockedRepo.getById.mockResolvedValue(null);
+
+      await expect(
+        applicationsService.evaluateOfferConditionsAndAutoPromote(
+          'missing-id',
+          'user-42',
+          fakeReq,
+        ),
+      ).rejects.toThrow(NotFoundError);
+      expect(mockedRepo.update).not.toHaveBeenCalled();
     });
   });
 });
