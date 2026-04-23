@@ -52,3 +52,22 @@ export const createSchema = z.object({
 export const updateSchema = createSchema.partial().extend({
   status: applicationStatusEnum.optional(),
 });
+
+// Schema for the POST /applications/:id/convert endpoint (Batch 16C).
+// Carries the enrolment-specific fields that cannot be derived from the
+// application row alone. All fields drive both the initial Student record
+// (when the person has not been converted before) and the first Enrolment.
+export const convertSchema = z.object({
+  // Year of study at point of enrolment — 1 for a standard first-year
+  // intake, 2+ for advanced standing or direct entry to later years.
+  yearOfStudy: z.coerce.number().int().min(1).max(6).default(1),
+  modeOfStudy: z.enum(['FULL_TIME', 'PART_TIME', 'SANDWICH', 'DISTANCE', 'BLOCK_RELEASE']),
+  // Date the enrolment (and the corresponding student record) takes effect.
+  startDate: z.coerce.date(),
+  // Fee status required for both the Student and the Enrolment row.
+  feeStatus: z.enum(['HOME', 'OVERSEAS', 'EU_TRANSITIONAL', 'ISLANDS', 'CHANNEL_ISLANDS']),
+  // Original entry date for the Student record. Defaults to startDate when
+  // omitted. Typically equals startDate for first-time entrants but may
+  // differ for transfers where the student's original entry to HE was earlier.
+  originalEntryDate: z.coerce.date().optional(),
+});
