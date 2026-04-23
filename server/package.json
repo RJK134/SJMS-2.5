@@ -43,7 +43,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@vitest/coverage-v8": "^4.1.4",
     "eslint": "^9.18.0",
-    "prisma": "^6.5.0",
+    "prisma": "^7.8.0",
     "tsx": "^4.19.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.20.0",
