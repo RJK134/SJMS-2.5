@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, ValidationError } from '../../utils/errors';
 
 // ── Mock dependencies before importing the service under test ──────────────
 vi.mock('../../repositories/admissions.repository', () => ({
@@ -9,15 +9,36 @@ vi.mock('../../repositories/admissions.repository', () => ({
   update: vi.fn(),
   softDelete: vi.fn(),
 }));
+vi.mock('../../repositories/student.repository', () => ({
+  getByPersonId: vi.fn(),
+  countStudents: vi.fn(),
+}));
+vi.mock('../../repositories/enrolment.repository', () => ({
+  findForJourney: vi.fn(),
+}));
+vi.mock('../../api/students/students.service', () => ({
+  create: vi.fn(),
+}));
+vi.mock('../../api/enrolments/enrolments.service', () => ({
+  create: vi.fn(),
+}));
 vi.mock('../../utils/audit', () => ({ logAudit: vi.fn() }));
 vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
 
 import * as applicationsService from '../../api/applications/applications.service';
 import * as repo from '../../repositories/admissions.repository';
+import * as studentRepo from '../../repositories/student.repository';
+import * as enrolmentRepo from '../../repositories/enrolment.repository';
+import * as studentsService from '../../api/students/students.service';
+import * as enrolmentsService from '../../api/enrolments/enrolments.service';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 
 const mockedRepo = vi.mocked(repo);
+const mockedStudentRepo = vi.mocked(studentRepo);
+const mockedEnrolmentRepo = vi.mocked(enrolmentRepo);
+const mockedStudentsService = vi.mocked(studentsService);
+const mockedEnrolmentsService = vi.mocked(enrolmentsService);
 const mockedLogAudit = vi.mocked(logAudit);
 const mockedEmitEvent = vi.mocked(emitEvent);
 
@@ -586,6 +607,199 @@ describe('applications.service', () => {
         ),
       ).rejects.toThrow(NotFoundError);
       expect(mockedRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── convertToStudent() ────────────────────────────────────────────────────
+  describe('convertToStudent()', () => {
+    const firmApplication = {
+      ...fakeApplication,
+      status: 'FIRM',
+      applicationRoute: 'UCAS',
+      applicant: { personId: 'per-1' },
+    };
+
+    const fakeStudent = {
+      id: 'stu-new',
+      studentNumber: 'STU-2025-00001',
+      personId: 'per-1',
+      feeStatus: 'HOME',
+      entryRoute: 'UCAS',
+      originalEntryDate: new Date('2025-09-01'),
+    };
+
+    const fakeEnrolment = {
+      id: 'enr-new',
+      studentId: 'stu-new',
+      programmeId: 'prog-1',
+      academicYear: '2025/26',
+      status: 'ENROLLED',
+    };
+
+    const conversionInput = {
+      modeOfStudy: 'FULL_TIME' as const,
+      startDate: new Date('2025-09-22'),
+      feeStatus: 'HOME' as const,
+      yearOfStudy: 1,
+    };
+
+    beforeEach(() => {
+      // Default: application is FIRM, no existing student or enrolment
+      mockedRepo.getById.mockResolvedValue(firmApplication as any);
+      mockedStudentRepo.getByPersonId.mockResolvedValue(null);
+      mockedStudentRepo.countStudents.mockResolvedValue(0);
+      mockedStudentsService.create.mockResolvedValue(fakeStudent as any);
+      mockedEnrolmentRepo.findForJourney.mockResolvedValue(null);
+      mockedEnrolmentsService.create.mockResolvedValue(fakeEnrolment as any);
+    });
+
+    it('creates a new student and enrolment for a FIRM application', async () => {
+      const result = await applicationsService.convertToStudent(
+        'app-1',
+        conversionInput,
+        'user-reg',
+        fakeReq,
+      );
+
+      expect(mockedStudentsService.create).toHaveBeenCalledTimes(1);
+      expect(mockedEnrolmentsService.create).toHaveBeenCalledTimes(1);
+      expect(result.isNewStudent).toBe(true);
+      expect(result.isNewEnrolment).toBe(true);
+      expect(result.studentId).toBe('stu-new');
+      expect(result.enrolmentId).toBe('enr-new');
+    });
+
+    it('accepts UNCONDITIONAL_OFFER status as a convertible state', async () => {
+      const unconditionalApp = { ...firmApplication, status: 'UNCONDITIONAL_OFFER' };
+      mockedRepo.getById.mockResolvedValue(unconditionalApp as any);
+
+      const result = await applicationsService.convertToStudent(
+        'app-1',
+        conversionInput,
+        'user-reg',
+        fakeReq,
+      );
+
+      expect(result.isNewStudent).toBe(true);
+      expect(result.isNewEnrolment).toBe(true);
+    });
+
+    it('reuses an existing student record (idempotency — student already exists)', async () => {
+      mockedStudentRepo.getByPersonId.mockResolvedValue(fakeStudent as any);
+
+      const result = await applicationsService.convertToStudent(
+        'app-1',
+        conversionInput,
+        'user-reg',
+        fakeReq,
+      );
+
+      expect(mockedStudentsService.create).not.toHaveBeenCalled();
+      expect(result.isNewStudent).toBe(false);
+      expect(result.studentId).toBe('stu-new');
+    });
+
+    it('reuses an existing enrolment (idempotency — enrolment already exists)', async () => {
+      mockedStudentRepo.getByPersonId.mockResolvedValue(fakeStudent as any);
+      mockedEnrolmentRepo.findForJourney.mockResolvedValue(fakeEnrolment as any);
+
+      const result = await applicationsService.convertToStudent(
+        'app-1',
+        conversionInput,
+        'user-reg',
+        fakeReq,
+      );
+
+      expect(mockedStudentsService.create).not.toHaveBeenCalled();
+      expect(mockedEnrolmentsService.create).not.toHaveBeenCalled();
+      expect(result.isNewStudent).toBe(false);
+      expect(result.isNewEnrolment).toBe(false);
+    });
+
+    it('rejects a non-convertible application status with ValidationError', async () => {
+      const underReviewApp = { ...firmApplication, status: 'UNDER_REVIEW' };
+      mockedRepo.getById.mockResolvedValue(underReviewApp as any);
+
+      await expect(
+        applicationsService.convertToStudent('app-1', conversionInput, 'user-reg', fakeReq),
+      ).rejects.toThrow(ValidationError);
+
+      expect(mockedStudentsService.create).not.toHaveBeenCalled();
+      expect(mockedEnrolmentsService.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a SUBMITTED application with a status-specific message', async () => {
+      const submittedApp = { ...firmApplication, status: 'SUBMITTED' };
+      mockedRepo.getById.mockResolvedValue(submittedApp as any);
+
+      await expect(
+        applicationsService.convertToStudent('app-1', conversionInput, 'user-reg', fakeReq),
+      ).rejects.toThrow(/SUBMITTED/);
+    });
+
+    it('rejects conversion when the applicant has no linked person record', async () => {
+      const noPersonApp = { ...firmApplication, applicant: {} };
+      mockedRepo.getById.mockResolvedValue(noPersonApp as any);
+
+      await expect(
+        applicationsService.convertToStudent('app-1', conversionInput, 'user-reg', fakeReq),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('maps UCAS application route to UCAS entry route on the student record', async () => {
+      await applicationsService.convertToStudent('app-1', conversionInput, 'user-reg', fakeReq);
+
+      const studentCreateArgs = mockedStudentsService.create.mock.calls[0]?.[0] as any;
+      expect(studentCreateArgs.entryRoute).toBe('UCAS');
+    });
+
+    it('emits application.converted event with correct payload', async () => {
+      await applicationsService.convertToStudent('app-1', conversionInput, 'user-reg', fakeReq);
+
+      const conversionEvent = mockedEmitEvent.mock.calls.find(
+        (c) => typeof c[0] === 'object' && (c[0] as any).event === 'application.converted',
+      );
+      expect(conversionEvent).toBeDefined();
+      const payload = conversionEvent![0] as any;
+      expect(payload.entityType).toBe('Application');
+      expect(payload.entityId).toBe('app-1');
+      expect(payload.actorId).toBe('user-reg');
+      expect(payload.data.studentId).toBe('stu-new');
+      expect(payload.data.enrolmentId).toBe('enr-new');
+      expect(payload.data.isNewStudent).toBe(true);
+      expect(payload.data.isNewEnrolment).toBe(true);
+    });
+
+    it('writes an audit log entry for the conversion', async () => {
+      await applicationsService.convertToStudent('app-1', conversionInput, 'user-reg', fakeReq);
+
+      expect(mockedLogAudit).toHaveBeenCalledWith(
+        'Application',
+        'app-1',
+        'UPDATE',
+        'user-reg',
+        expect.objectContaining({ id: 'app-1' }),
+        expect.objectContaining({ convertedStudentId: 'stu-new', convertedEnrolmentId: 'enr-new' }),
+        fakeReq,
+      );
+    });
+
+    it('generates a student number in STU-YYYY-NNNNN format', async () => {
+      mockedStudentRepo.countStudents.mockResolvedValue(42);
+
+      await applicationsService.convertToStudent('app-1', conversionInput, 'user-reg', fakeReq);
+
+      const studentCreateArgs = mockedStudentsService.create.mock.calls[0]?.[0] as any;
+      const year = new Date().getFullYear();
+      expect(studentCreateArgs.studentNumber).toBe(`STU-${year}-00043`);
+    });
+
+    it('throws NotFoundError when the application does not exist', async () => {
+      mockedRepo.getById.mockResolvedValue(null);
+
+      await expect(
+        applicationsService.convertToStudent('missing-id', conversionInput, 'user-reg', fakeReq),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 });

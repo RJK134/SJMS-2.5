@@ -60,6 +60,7 @@ const EVENT_ROUTES: Record<string, string> = {
   'application.offer_conditions_met': '/webhook/sjms/application/offer-conditions-met',
   'application.withdrawn':            '/webhook/sjms/application/withdrawn',
   'application.deleted':              '/webhook/sjms/application/deleted',
+  'application.converted':            '/webhook/sjms/application/converted',
 
   // ── Enrolment ─────────────────────────────────────────────────────────
   'enrolment.created':                '/webhook/sjms/enrolment/created',
