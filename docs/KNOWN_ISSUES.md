@@ -21,13 +21,15 @@ The current delivery roadmap is now controlled by
 
 | Item | Target phase |
 |---|---|
-| KI-P12-001 — enrolment cascade repository cleanup | Phase 16 (folded into module-registration focus) |
+| KI-P12-001 — enrolment cascade repository cleanup | CLOSED 2026-04-24 via Batch 16D — repository helper introduced |
 | KI-P14-001 — ESLint toolchain bootstrap | CLOSED 2026-04-21 via PR #88; ratchet to blocking gate tracked under KI-P15-002 |
 | KI-P14-002 — ratchet server coverage thresholds | Phase 17 |
 | KI-P15-001 — npm audit baseline triage | Phase 15B (or a fix/ branch if urgent) |
 | KI-P15-002 — ESLint baseline triage and ratchet to blocking | Phase 15B or dedicated `fix/eslint-baseline` branch |
-| KI-P16-001 — server tsc fails on pre-existing TS5101 after TypeScript 6.0 bump | Dedicated `chore/tooling-ts6-deprecations` branch (or folded into Phase 17 closeout) |
-| KI-P16-002 — `prisma generate` runtime missing-module error after Prisma 7 bump | Dedicated `chore/tooling-prisma-7` branch (runs DB development; not blocking unit tests) |
+| KI-P16-001 — server tsc fails on pre-existing TS5101 after TypeScript 6.0 bump | CLOSED 2026-04-24 via `chore/tooling-tsc-baseline` (combined fix with KI-P16-002 — they were coupled) |
+| KI-P16-002 — `prisma generate` runtime missing-module error after Prisma 7 bump | CLOSED 2026-04-24 via `chore/tooling-tsc-baseline` (Prisma pinned back to ~6.19.3; Prisma 7 migration sequenced to a future `chore/prisma-7-migration` branch with explicit adapter design) |
+| KI-P16C-001 — applicant-to-student converter defaults feeStatus to `HOME` | Phase 18 — proper fee assessment logic against residence / immigration data |
+| KI-P16C-002 — applicant-to-student conversion is not transactional | Phase 16D or Phase 18 — if Student creation succeeds and Enrolment creation fails, operators must re-trigger; the converter is idempotent, so recovery is safe |
 | MFA enforcement in Keycloak | Phase 15B |
 | Redis-backed identity cache | Phase 15B |
 | KI-P10b-001 — finance sub-domains | Phase 18 / 18A |
@@ -244,22 +246,24 @@ grep -rn "emitEvent('" server/src/api --include="*.service.ts" | grep -v "emitEv
 
 ---
 
-### KI-P12-001: Enrolment cascade bypasses module registration repository — OPEN 2026-04-16
+### KI-P12-001: Enrolment cascade bypasses module registration repository — CLOSED 2026-04-24
 
 **Severity:** LOW
 **Phase introduced:** Phase 12 (inherited from PR #41 P0 fixes)
-**File(s):** `server/src/api/enrolments/enrolments.service.ts:90-93`
-**Problem:** The enrolment status cascade calls `prisma.moduleRegistration.update()` directly
-from the enrolments service, bypassing the repository pattern that all 44 modules follow.
-Flagged by BugBot as NON-BLOCKING.
-**Deferral reason:** Refactoring into a `moduleRegistrationRepo.updateForEnrolmentCascade()`
-helper would touch shared infrastructure; intentionally deferred to avoid scope creep in
-the BugBot remediation PR.
-**Resolution plan:** Phase 16 — Admissions to enrolment golden journey. The module-registration service is already the direct focus of that phase, so the repository-bypass cleanup and the prerequisite/credit-limit coverage land together rather than as a drive-by edit during governance work.
+**File(s):** `server/src/api/enrolments/enrolments.service.ts`, `server/src/repositories/moduleRegistration.repository.ts`
+**Problem (original):** The enrolment status cascade called `prisma.moduleRegistration.findMany()` and `prisma.moduleRegistration.update()` directly from the enrolments service, bypassing the repository pattern that all 44 modules follow. Flagged by BugBot as NON-BLOCKING.
 
-**Detection command:**
+**CLOSED:** 2026-04-24 — Batch 16D on `claude/enterprise-build-step-mWIOJ`. Two helpers were added to `server/src/repositories/moduleRegistration.repository.ts`:
+
+- `findActiveByEnrolment(enrolmentId)` — projection of `{ id, moduleId }` for every active (`status: REGISTERED`, non-deleted) registration.
+- `cascadeStatusForEnrolment(registrationId, newStatus, userId)` — narrow status patch for the cascade path.
+
+`enrolments.service.update()` now invokes both helpers instead of touching `prisma.moduleRegistration` directly. Audit + event emission per cascaded registration is unchanged (per-row `module_registration.status_changed` event still fires). Four new Vitest cases cover WITHDRAWN, INTERRUPTED→DEFERRED, no-cascade-on-active-status, and no-cascade-on-empty-set.
+
+**Verification:**
 ```bash
-grep -n "prisma.moduleRegistration" server/src/api/enrolments/enrolments.service.ts
+grep -n "prisma\.moduleRegistration" server/src/api/enrolments/enrolments.service.ts
+# → 0 matches
 ```
 
 ---
@@ -366,36 +370,42 @@ grep -E 'lines:\s*0|functions:\s*0|branches:\s*0' server/vitest.config.ts
 
 ---
 
-### KI-P16-001: Server tsc fails on pre-existing TS5101 after TypeScript 6.0 bump — OPEN 2026-04-22
+### KI-P16-001: Server tsc fails on pre-existing TS5101 after TypeScript 6.0 bump — CLOSED 2026-04-24
 
 **Severity:** LOW
 **Phase introduced:** Pre-Phase 16 (dependabot PR #69 bumped `typescript` 5.9.3 → 6.0.3 in `server/package.json`)
-**File(s):** `server/tsconfig.json` (and `client/tsconfig.json` carries the same construct but exits 0)
-**Problem:** TypeScript 6.0 escalates the `baseUrl` deprecation diagnostic (TS5101) to a blocking error unless `"ignoreDeprecations": "6.0"` is set in the compiler options. On the server workspace this currently makes `npx tsc --noEmit` exit with code 2 on a clean checkout of `main`. The error is purely about config migration — no real type errors are hidden behind it — but Gate 1 of `docs/VERIFICATION-PROTOCOL.md` ("server tsc clean") is technically red on `main`. Phase 16A's Batch 16A state machine work introduced **zero new tsc errors** — the same single TS5101 remains the only diagnostic — but the broken baseline makes it harder to evidence non-regression on future phases.
-**Deferral reason:** The fix is a one-line tsconfig addition (`"ignoreDeprecations": "6.0"`) but is unrelated to the admissions-to-enrolment journey. Widening Phase 16A's scope to include tooling hygiene would muddy a clean state-machine PR and defeat the operating-model principle of "batch for reviewability". The intended migration is to either set the flag or drop `baseUrl` entirely and rely on explicit path imports.
-**Resolution plan:** Dedicated `chore/tooling-ts6-deprecations` branch, or folded into the Phase 17 closeout pass. Whichever comes first.
+**File(s):** `server/tsconfig.json`, `client/tsconfig.json`
+**Problem (original):** TypeScript 6.0 escalates the `baseUrl` deprecation diagnostic (TS5101) to a blocking error unless `"ignoreDeprecations": "6.0"` is set in the compiler options. On the server workspace this made `npx tsc --noEmit` exit with code 2 on a clean checkout of `main`. The error was purely about config migration but Gate 1 of `docs/VERIFICATION-PROTOCOL.md` ("server tsc clean") was technically red on `main`.
 
-**Detection command:**
+**CLOSED:** 2026-04-24 — `chore/tooling-tsc-baseline`. `"ignoreDeprecations": "6.0"` added to both `server/tsconfig.json` and `client/tsconfig.json`. Closing this KI required a coordinated fix with KI-P16-002 — silencing TS5101 alone caused the underlying Prisma 7 client type errors (previously hidden by the early tsc exit) to surface. Both KIs were therefore closed together in the same chore branch. Closing the two further surfaced a third pre-existing tsc bug in Batch 16C's `convertToStudent` (a `let student = await getByPersonId(...)` whose if-branch reassignment lost the narrowing) — also fixed in the same branch with an explicit `{id: string; studentNumber: string} | null` annotation.
+
+**Verification:**
 ```bash
 (cd server && npx tsc --noEmit 2>&1 | grep -c 'TS5101')
-# → 1 on main today
+# → 0
+(cd server && npx tsc --noEmit) ; echo "EXIT=$?"
+# → EXIT=0
+(cd client && npx tsc --noEmit) ; echo "EXIT=$?"
+# → EXIT=0
 ```
 
 ---
 
-### KI-P16-002: `prisma generate` runtime missing-module error after Prisma 7 bump — OPEN 2026-04-22
+### KI-P16-002: `prisma generate` runtime error after Prisma 7 bump — CLOSED 2026-04-24
 
 **Severity:** LOW
-**Phase introduced:** Pre-Phase 16 (dependabot PR #64 bumped `@prisma/client` 6.19.3 → 7.7.0 in `server/package.json`; `prisma` CLI devDependency is still on 6.19.3)
-**File(s):** `server/package.json`, `package-lock.json`
-**Problem:** After `npm install` in the workspace, `npx prisma generate --schema=prisma/schema.prisma` reports `Cannot find module '.../node_modules/@prisma/client/runtime/query_engine_bg.postgresql.wasm-base64.js'`. Schema validation itself still succeeds (`npx prisma validate` returns "The schema at prisma/schema.prisma is valid 🚀") so unit tests that mock the Prisma client are unaffected. However, anything that needs a generated client — development runs, `prisma migrate`, integration tests — will hit this error until the CLI is aligned with the client major version.
-**Deferral reason:** Aligning the Prisma CLI to 7.x (or reverting the `@prisma/client` bump) is an infrastructure change that must be co-designed with the DB migration story and Prisma 7's auth/model-extension changes. It is not part of the admissions-to-enrolment business-rule work.
-**Resolution plan:** Dedicated `chore/tooling-prisma-7` branch. Either upgrade `prisma` CLI in `server/devDependencies` to 7.x (matching the client) and re-run `prisma generate`, or pin `@prisma/client` back to 6.19.x until the Prisma 7 migration path is planned.
+**Phase introduced:** Pre-Phase 16 (dependabot PR #64 bumped `@prisma/client` 6.19.3 → 7.7.0 in `server/package.json`; `prisma` CLI devDependency was later bumped to 7.x to match)
+**File(s):** `server/package.json`, `package-lock.json`, `prisma/schema.prisma`, `.github/dependabot.yml`
+**Problem (original):** After `npm install` in the workspace, `npx prisma generate --schema=prisma/schema.prisma` reported `Cannot find module '.../node_modules/@prisma/client/runtime/query_engine_bg.postgresql.wasm-base64.js'`. Subsequent dependabot bumps aligned both the CLI and client to ^7.7/^7.8 but Prisma 7 introduced a hard breaking change: `datasource.url = env(...)` is no longer valid in `schema.prisma` and the runtime PrismaClient must be constructed with an explicit adapter or accelerateUrl. The new error surface was `P1012: The datasource property 'url' is no longer supported in schema files. Move connection URLs for Migrate to 'prisma.config.ts' and pass either 'adapter' for a direct database connection or 'accelerateUrl' for Accelerate to the PrismaClient constructor.`
 
-**Detection command:**
+**CLOSED:** 2026-04-24 — `chore/tooling-tsc-baseline`. Per the documented resolution plan's secondary option, both `prisma` and `@prisma/client` were pinned back to `~6.19.3` in `server/package.json` and the lockfile was regenerated. The Prisma 7 migration (`prisma.config.ts`, runtime adapter, connection management) is now sequenced to a planned `chore/prisma-7-migration` branch where the architectural decisions can be reviewed properly. To stop dependabot silently re-introducing the issue, a new `ignore` block in `.github/dependabot.yml` blocks `version-update:semver-major` for both `prisma` and `@prisma/client` until that migration ships.
+
+**Verification:**
 ```bash
-(cd /home/user/SJMS-2.5 && DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma generate --schema=prisma/schema.prisma 2>&1 | grep -c 'wasm-base64')
-# → 1 on main today
+(cd /home/user/SJMS-2.5 && DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma generate --schema=prisma/schema.prisma) ; echo "EXIT=$?"
+# → ✔ Generated Prisma Client (v6.19.3) ; EXIT=0
+(cd /home/user/SJMS-2.5 && DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma validate --schema=prisma/schema.prisma) ; echo "EXIT=$?"
+# → The schema at prisma/schema.prisma is valid 🚀 ; EXIT=0
 ```
 
 ---

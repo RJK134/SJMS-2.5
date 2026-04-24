@@ -602,13 +602,13 @@ Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain ga
 
 Docs-only governance batch that codifies the canonical operating model for Phases 16–23 and refreshes the delivery control set to reflect the merged state of Phase 15A and the ESLint toolchain chore. No source, schema, or CI changes. Publishes `docs/delivery-plan/enterprise-delivery-operating-model.md` as the new canonical rule set for every phase from 16 onward.
 
-### Phase 16 — Admissions to Enrolment (IN FLIGHT, Batches 16A–16C)
+### Phase 16 — Admissions to Enrolment (IN FLIGHT, Batches 16A–16D)
 
-**Active branch:** `phase-16/admissions-to-enrolment` (16A+16B merged as PR #96); 16C on `copilot/sjms-2-5-next-build-phase`
-**Base:** `main @ 75e43c6` (post-governance)
-**PRs:** #96 (merged — 16A+16B), #98 (merged — offers.service fail-soft fix)
+**Active branch:** `phase-16/admissions-to-enrolment` (16A+16B merged as PR #96; 16C merged as PR #99); 16D on `claude/enterprise-build-step-mWIOJ`
+**Base:** `main @ 053cec7` (post-16C merge)
+**PRs:** #96 (merged — 16A+16B), #98 (merged — offers.service fail-soft fix), #99 (merged — 16C conversion)
 
-First vertical golden journey. Batch 16A enforces the canonical admissions lifecycle at the service boundary. Batch 16B layers offer-condition evaluation and auto-promotion. Batch 16C delivers the applicant-to-student conversion endpoint that closes the Admissions → Enrolment handoff gap.
+First vertical golden journey. Batch 16A enforces the canonical admissions lifecycle at the service boundary. Batch 16B layers offer-condition evaluation and auto-promotion. Batch 16C delivers the applicant-to-student conversion endpoint that closes the Admissions → Enrolment handoff gap. Batch 16D closes KI-P12-001 (enrolment cascade repository bypass), adds the missing `clearance-checks` test file, and corrects four drift-grade frontend pages so the applicant/admissions UI matches the canonical shape of the API response.
 
 **Batch 16A — Application lifecycle state enforcement:**
 
@@ -657,15 +657,29 @@ DECLINED, WITHDRAWN, REJECTED          (terminal)
 
 **Conversion eligibility:** FIRM or UNCONDITIONAL_OFFER. FIRM is the primary path; UNCONDITIONAL_OFFER is accepted to support direct-entry and clearing routes.
 
-**Verification (Batches 16A + 16B + 16C):**
-- Server Vitest: **174/174** passing (up from 159 on main after 16A+16B; +15 conversion cases in 16C)
-- `npx prisma validate`: pre-existing P1012 error from Prisma 7 schema change (KI-P16-002 — non-regressive)
-- Server / client tsc: **0 new errors** — the one pre-existing `TS5101` diagnostic on each workspace is from the TypeScript 6.0 dependabot bump (PR #69) and is tracked under **KI-P16-001**
-- `npx prisma generate`: pre-existing WASM error from the Prisma 7 client bump (PR #64) — tracked under **KI-P16-002**; unit suite unaffected because tests mock Prisma
+**Batch 16D — Cascade repository cleanup, clearance-checks test coverage, and applicant/admissions UI honesty:**
+
+| File | Change |
+|---|---|
+| `server/src/repositories/moduleRegistration.repository.ts` | Two new helpers: `findActiveByEnrolment(enrolmentId)` returns `{ id, moduleId }` projections of every active (`status: REGISTERED`, non-deleted) registration for an enrolment; `cascadeStatusForEnrolment(registrationId, newStatus, userId)` is a narrow `{status, updatedBy}` patch helper. Both exist solely so the enrolment cascade can route through the repository layer. |
+| `server/src/api/enrolments/enrolments.service.ts` | `update()` cascade no longer calls `prisma.moduleRegistration.findMany` / `prisma.moduleRegistration.update` directly. Both calls now go through the new repository helpers, so `moduleRegistration.repository` is again the single source of truth for `prisma.moduleRegistration.*` writes. The audit + per-row `module_registration.status_changed` event emission is unchanged. **Closes KI-P12-001.** |
+| `server/src/__tests__/unit/enrolments.service.test.ts` | Mock surface switched from `prisma.moduleRegistration` to the two new repository helpers. Four new cases cover WITHDRAWN cascade (two registrations, both via the repo helper), INTERRUPTED → DEFERRED cascade, no-cascade-when-enrolment-becomes-active, and no-cascade-when-no-active-registrations (with the parent `enrolment.status_changed` event still firing once). |
+| `server/src/__tests__/unit/clearance-checks.service.test.ts` | **New file.** 8 cases — `getById` happy path + NotFound; `create()` audit + `clearance_checks.created` event; `update()` emits `updated` and `status_changed` on a status flip; `update()` does not emit `status_changed` when only metadata changes; `update()` rejects an unknown id with NotFound; `remove()` soft-deletes + audits + emits `clearance_checks.deleted`; `remove()` rejects an unknown id with NotFound. Closes the only admissions-domain service that previously had zero unit-test coverage. |
+| `client/src/pages/applicant/MyOffers.tsx` | Was rendering the empty state for every applicant with conditions — the page typed against `app.offers` (no such relation; the Prisma relation is `conditions`) and `o.deadline` (no such field). Rewritten to type against the canonical `OfferCondition` shape, fetch via `useDetail` after `useList` so the `conditions` relation is hydrated by `admissions.repository.defaultInclude`, render the application status as a header card, distinguish "no offers yet" from "unconditional offer / no outstanding conditions" honestly, and surface `targetGrade` instead of an invented `deadline`. |
+| `client/src/pages/applicant/MyApplication.tsx` | Three drift fixes. `app.entryRoute` → `app.applicationRoute` (entry route lives on the Student record, not the Application). `Reference.relationship` → `Reference.refereePosition` and `Reference.status` → `Reference.receivedDate`-derived "RECEIVED / PENDING" badge (the schema has `refereePosition`/`receivedDate`, no `relationship`/`status`). The list-only data path is replaced with `useList` → `useDetail` so qualifications and references actually populate (the list endpoint omits both relations). |
+| `client/src/pages/applicant/EditApplication.tsx` | The `canEdit = ['DRAFT', 'SUBMITTED'].includes(app.status)` guard referenced a `DRAFT` state that does not exist in the canonical enum — no application would ever satisfy the DRAFT branch. Now gates explicitly on `app.status === 'SUBMITTED'`, with a comment explaining why later states are read-only. |
+| `client/src/pages/admissions/ApplicationPipeline.tsx` | The kanban view rendered six stages and silently dropped any application currently in INTERVIEW, INSURANCE, WITHDRAWN, or REJECTED. All ten canonical stages now render. Layout switched from a fixed 6-column grid to a horizontally scrollable flex strip with fixed-width columns so each stage stays readable on a 1024px viewport. |
+
+**Verification (Batches 16A + 16B + 16C + 16D):**
+- Server Vitest: **186/186** passing (up from 174 on main after 16C; +4 cascade cases in `enrolments.service.test.ts`, +8 cases in the new `clearance-checks.service.test.ts`).
+- Server tsc: 0 new errors — the single pre-existing `TS5101` diagnostic from the TypeScript 6.0 dependabot bump (PR #69) remains and is still the only diagnostic. Tracked under **KI-P16-001**.
+- Client tsc: 0 new errors — same TS5101 baseline as the server (exit code 0 because of the client tsconfig posture).
+- `npx prisma validate` / `prisma generate`: pre-existing failures from the Prisma 7 client/CLI mismatch — tracked under **KI-P16-002**, non-regressive (unit suite mocks Prisma).
+- `grep -n "prisma\.moduleRegistration" server/src/api/enrolments/enrolments.service.ts` → 0 hits (KI-P12-001 detection command).
 
 **Deliberately out-of-scope (sequenced to later batches of Phase 16):**
-- 16D — Module-registration cascade repository cleanup (KI-P12-001) and finance handoff hooks
-- 16E — Portal completion for the applicant/admin sides of this journey
+- 16E — Portal completion for the applicant/admin sides of this journey, including a "Convert to Student" action on the admissions ApplicationDetail page (the `POST /applications/:id/convert` endpoint exists from Batch 16C but has no UI affordance yet — Registry currently has to drive it via the API).
+- 16F — Finance handoff hooks (`enrolment.created` → automatic FeeAssessment generation) sequenced to **Phase 18A** rather than Phase 16 — the fee calculation engine is the natural carrier and avoids cross-domain entanglement.
 
 ### Phase 14 follow-on — CI and repository hygiene hardening (COMPLETE)
 
