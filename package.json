@@ -27,5 +27,11 @@
     "npm": ">=10.0.0"
   },
   "author": "Future Horizons Education",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "prisma": "^6.19.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
+  }
 }

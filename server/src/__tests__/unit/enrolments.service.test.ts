@@ -9,24 +9,23 @@ vi.mock('../../repositories/enrolment.repository', () => ({
   update: vi.fn(),
   softDelete: vi.fn(),
 }));
+vi.mock('../../repositories/moduleRegistration.repository', () => ({
+  findActiveByEnrolment: vi.fn(),
+  cascadeStatusForEnrolment: vi.fn(),
+}));
 vi.mock('../../utils/audit', () => ({ logAudit: vi.fn() }));
 vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
-vi.mock('../../utils/prisma', () => ({
-  default: {
-    moduleRegistration: { findMany: vi.fn(), update: vi.fn() },
-  },
-}));
 
 import * as enrolmentService from '../../api/enrolments/enrolments.service';
 import * as repo from '../../repositories/enrolment.repository';
+import * as moduleRegRepo from '../../repositories/moduleRegistration.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
-import prisma from '../../utils/prisma';
 
 const mockedRepo = vi.mocked(repo);
+const mockedModuleRegRepo = vi.mocked(moduleRegRepo);
 const mockedLogAudit = vi.mocked(logAudit);
 const mockedEmitEvent = vi.mocked(emitEvent);
-const mockedPrisma = prisma as any;
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 const fakeEnrolment = {
@@ -51,7 +50,8 @@ const fakeReq = { ip: '127.0.0.1', user: {}, get: vi.fn() } as any;
 describe('enrolments.service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mockedPrisma.moduleRegistration.findMany.mockResolvedValue([]);
+    mockedModuleRegRepo.findActiveByEnrolment.mockResolvedValue([]);
+    mockedModuleRegRepo.cascadeStatusForEnrolment.mockResolvedValue({} as any);
   });
 
   describe('list()', () => {
@@ -190,6 +190,85 @@ describe('enrolments.service', () => {
         typeof c[0] === 'object' ? c[0].event : c[0],
       );
       expect(emittedEvents).not.toContain('enrolment.status_changed');
+    });
+
+    // ── Cascade — KI-P12-001 (repository-mediated) ────────────────────────
+    it('cascades to active registrations as WITHDRAWN when enrolment becomes WITHDRAWN', async () => {
+      const previous = { ...fakeEnrolment, status: 'ENROLLED' };
+      const updated = { ...fakeEnrolment, status: 'WITHDRAWN' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+      mockedModuleRegRepo.findActiveByEnrolment.mockResolvedValue([
+        { id: 'reg-a', moduleId: 'mod-a' },
+        { id: 'reg-b', moduleId: 'mod-b' },
+      ] as any);
+
+      await enrolmentService.update('enr-1', { status: 'WITHDRAWN' } as any, 'user-99', fakeReq);
+
+      // Repository helper, not direct Prisma — KI-P12-001 close.
+      expect(mockedModuleRegRepo.findActiveByEnrolment).toHaveBeenCalledWith('enr-1');
+      expect(mockedModuleRegRepo.cascadeStatusForEnrolment).toHaveBeenCalledTimes(2);
+      expect(mockedModuleRegRepo.cascadeStatusForEnrolment).toHaveBeenCalledWith(
+        'reg-a', 'WITHDRAWN', 'user-99',
+      );
+      expect(mockedModuleRegRepo.cascadeStatusForEnrolment).toHaveBeenCalledWith(
+        'reg-b', 'WITHDRAWN', 'user-99',
+      );
+      // Cascade must emit a status-change event per registration so n8n
+      // workflows reflect the downstream change.
+      const cascadeEvents = mockedEmitEvent.mock.calls.filter(
+        (c) =>
+          typeof c[0] === 'object' &&
+          (c[0] as { event: string }).event === 'module_registration.status_changed',
+      );
+      expect(cascadeEvents).toHaveLength(2);
+    });
+
+    it('cascades to DEFERRED for INTERRUPTED and SUSPENDED transitions', async () => {
+      const previous = { ...fakeEnrolment, status: 'ENROLLED' };
+      const updated = { ...fakeEnrolment, status: 'INTERRUPTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+      mockedModuleRegRepo.findActiveByEnrolment.mockResolvedValue([
+        { id: 'reg-a', moduleId: 'mod-a' },
+      ] as any);
+
+      await enrolmentService.update('enr-1', { status: 'INTERRUPTED' } as any, 'user-99', fakeReq);
+
+      expect(mockedModuleRegRepo.cascadeStatusForEnrolment).toHaveBeenCalledWith(
+        'reg-a', 'DEFERRED', 'user-99',
+      );
+    });
+
+    it('does not cascade when the enrolment moves to an active status', async () => {
+      const previous = { ...fakeEnrolment, status: 'INTERRUPTED' };
+      const updated = { ...fakeEnrolment, status: 'ENROLLED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await enrolmentService.update('enr-1', { status: 'ENROLLED' } as any, 'user-99', fakeReq);
+
+      expect(mockedModuleRegRepo.findActiveByEnrolment).not.toHaveBeenCalled();
+      expect(mockedModuleRegRepo.cascadeStatusForEnrolment).not.toHaveBeenCalled();
+    });
+
+    it('does not cascade when no active registrations exist', async () => {
+      const previous = { ...fakeEnrolment, status: 'ENROLLED' };
+      const updated = { ...fakeEnrolment, status: 'WITHDRAWN' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+      mockedModuleRegRepo.findActiveByEnrolment.mockResolvedValue([]);
+
+      await enrolmentService.update('enr-1', { status: 'WITHDRAWN' } as any, 'user-99', fakeReq);
+
+      expect(mockedModuleRegRepo.cascadeStatusForEnrolment).not.toHaveBeenCalled();
+      // Parent enrolment status_changed event still fires.
+      const enrolmentChanged = mockedEmitEvent.mock.calls.filter(
+        (c) =>
+          typeof c[0] === 'object' &&
+          (c[0] as { event: string }).event === 'enrolment.status_changed',
+      );
+      expect(enrolmentChanged).toHaveLength(1);
     });
   });
 

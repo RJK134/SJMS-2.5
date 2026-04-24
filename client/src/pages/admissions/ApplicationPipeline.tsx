@@ -15,13 +15,24 @@ interface Application {
   programme?: { title: string; programmeCode: string };
 }
 
+// Mirror of the canonical ApplicationStatus enum and the
+// service-side state machine in
+// server/src/api/applications/applications.service.ts. INTERVIEW and
+// INSURANCE were previously omitted, which silently dropped any
+// application currently in those states from the kanban view; the
+// terminal states (DECLINED / WITHDRAWN / REJECTED) are kept on the
+// board for visibility but coloured red.
 const PIPELINE_STAGES = [
   { key: 'SUBMITTED', label: 'Submitted', colour: 'bg-slate-100' },
   { key: 'UNDER_REVIEW', label: 'Under Review', colour: 'bg-blue-50' },
+  { key: 'INTERVIEW', label: 'Interview', colour: 'bg-indigo-50' },
   { key: 'CONDITIONAL_OFFER', label: 'Conditional Offer', colour: 'bg-amber-50' },
   { key: 'UNCONDITIONAL_OFFER', label: 'Unconditional Offer', colour: 'bg-green-50' },
   { key: 'FIRM', label: 'Firm', colour: 'bg-green-100' },
+  { key: 'INSURANCE', label: 'Insurance', colour: 'bg-emerald-50' },
   { key: 'DECLINED', label: 'Declined', colour: 'bg-red-50' },
+  { key: 'WITHDRAWN', label: 'Withdrawn', colour: 'bg-zinc-100' },
+  { key: 'REJECTED', label: 'Rejected', colour: 'bg-rose-50' },
 ];
 
 const tableColumns: Column<Application>[] = [
@@ -51,11 +62,15 @@ export default function ApplicationPipeline() {
       </PageHeader>
 
       {view === 'kanban' ? (
-        <div className="grid grid-cols-6 gap-3 overflow-x-auto">
+        // 10 canonical lifecycle stages now render. Use fixed-width
+        // columns inside a horizontally scrollable flex strip so each
+        // status remains readable; the previous grid-cols-6 layout
+        // truncated INTERVIEW / INSURANCE / WITHDRAWN / REJECTED.
+        <div className="flex gap-3 overflow-x-auto pb-2">
           {PIPELINE_STAGES.map(stage => {
             const stageApps = apps.filter(a => a.status === stage.key);
             return (
-              <div key={stage.key} className={`rounded-lg p-3 min-h-[400px] ${stage.colour}`}>
+              <div key={stage.key} className={`rounded-lg p-3 min-h-[400px] w-56 flex-shrink-0 ${stage.colour}`}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-sm">{stage.label}</h3>
                   <span className="text-xs bg-white rounded-full px-2 py-0.5 font-medium">{stageApps.length}</span>
