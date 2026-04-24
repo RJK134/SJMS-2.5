@@ -4,7 +4,6 @@ import * as repo from '../../repositories/moduleRegistration.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError, ValidationError } from '../../utils/errors';
-import prisma from '../../utils/prisma';
 import { getPassMark, PASSING_GRADES } from '../../utils/pass-marks';
 import { getMaxCreditsForMode } from '../../utils/credit-limits';
 
@@ -39,36 +38,21 @@ export async function getById(id: string) {
 }
 
 async function validatePrerequisites(moduleId: string, enrolmentId: string): Promise<void> {
-  const prerequisites = await prisma.modulePrerequisite.findMany({
-    where: { moduleId, isMandatory: true },
-    include: { prerequisiteModule: { select: { id: true, title: true, moduleCode: true } } },
-  });
+  const prerequisites = await repo.findMandatoryPrerequisites(moduleId);
 
   if (prerequisites.length === 0) return;
 
-  const enrolment = await prisma.enrolment.findUnique({
-    where: { id: enrolmentId },
-    select: { studentId: true, programme: { select: { level: true } } },
-  });
+  const enrolment = await repo.getEnrolmentForRuleChecks(enrolmentId);
   if (!enrolment) return;
 
   const passMark = await getPassMark(enrolment.programme.level);
 
-  const passedResults = await prisma.moduleResult.findMany({
-    where: {
-      moduleRegistration: { enrolment: { studentId: enrolment.studentId } },
-      moduleId: { in: prerequisites.map((p) => p.prerequisiteModuleId) },
-      status: { in: ['CONFIRMED', 'PROVISIONAL'] },
-      OR: [
-        { aggregateMark: { gte: passMark } },
-        {
-          aggregateMark: null,
-          grade: { in: Array.from(PASSING_GRADES) },
-        },
-      ],
-    },
-    select: { moduleId: true },
-  });
+  const passedResults = await repo.findPassedPrerequisiteResults(
+    enrolment.studentId,
+    prerequisites.map((p) => p.prerequisiteModuleId),
+    passMark,
+    Array.from(PASSING_GRADES),
+  );
 
   const passedModuleIds = new Set(passedResults.map((r) => r.moduleId));
   const missing = prerequisites.filter((p) => !passedModuleIds.has(p.prerequisiteModuleId));
@@ -84,32 +68,15 @@ async function validatePrerequisites(moduleId: string, enrolmentId: string): Pro
 
 async function validateCreditLimit(moduleId: string, enrolmentId: string, academicYear: string): Promise<void> {
   const [targetModule, enrolment] = await Promise.all([
-    prisma.module.findUnique({
-      where: { id: moduleId },
-      select: { credits: true },
-    }),
-    prisma.enrolment.findUnique({
-      where: { id: enrolmentId },
-      select: { modeOfStudy: true },
-    }),
+    repo.getModuleCredits(moduleId),
+    repo.getEnrolmentForRuleChecks(enrolmentId),
   ]);
   if (!targetModule || !enrolment) return;
 
-  const existingRegistrations = await prisma.moduleRegistration.findMany({
-    where: {
-      enrolmentId,
-      academicYear,
-      status: { in: ['REGISTERED', 'COMPLETED'] },
-      deletedAt: null,
-    },
-    select: { moduleId: true },
-  });
+  const existingRegistrations = await repo.findActiveCreditRegistrations(enrolmentId, academicYear);
 
   const moduleIds = existingRegistrations.map((r) => r.moduleId);
-  const modules = await prisma.module.findMany({
-    where: { id: { in: moduleIds } },
-    select: { id: true, credits: true },
-  });
+  const modules = await repo.findModuleCredits(moduleIds);
   const creditMap = new Map(modules.map((m) => [m.id, m.credits]));
 
   const currentCredits = existingRegistrations.reduce((sum, r) => sum + (creditMap.get(r.moduleId) ?? 0), 0);
