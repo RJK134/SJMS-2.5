@@ -69,3 +69,42 @@ export async function update(id: string, data: Prisma.ModuleRegistrationUpdateIn
 export async function softDelete(id: string) {
   return prisma.moduleRegistration.update({ where: { id }, data: { deletedAt: new Date() } });
 }
+
+/**
+ * Find every active (`status: REGISTERED`, non-deleted) module registration
+ * for an enrolment. Returns the minimum projection needed by the enrolment
+ * status cascade — id and moduleId — so the caller can iterate without
+ * over-fetching. Used by `enrolments.service.update()` to cascade an
+ * enrolment status flip onto its child registrations through the
+ * repository layer rather than a service-level direct Prisma call.
+ *
+ * Closes KI-P12-001.
+ */
+export async function findActiveByEnrolment(enrolmentId: string) {
+  return prisma.moduleRegistration.findMany({
+    where: { enrolmentId, status: 'REGISTERED', deletedAt: null },
+    select: { id: true, moduleId: true },
+  });
+}
+
+/**
+ * Cascade-write helper for the enrolment status cascade. Patches a single
+ * module-registration row with a new status and the userId driving the
+ * change. Distinct from the generic `update()` because the cascade has a
+ * narrower contract — only `status` plus `updatedBy` are written, and the
+ * caller is the enrolment status cascade rather than a routine
+ * registration mutation. Localising the write here keeps the repository
+ * the single source of truth for `prisma.moduleRegistration.*`.
+ *
+ * Closes KI-P12-001.
+ */
+export async function cascadeStatusForEnrolment(
+  registrationId: string,
+  newStatus: 'WITHDRAWN' | 'DEFERRED',
+  userId: string,
+) {
+  return prisma.moduleRegistration.update({
+    where: { id: registrationId },
+    data: { status: newStatus, updatedBy: userId },
+  });
+}
