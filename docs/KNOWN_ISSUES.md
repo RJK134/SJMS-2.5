@@ -21,7 +21,7 @@ The current delivery roadmap is now controlled by
 
 | Item | Target phase |
 |---|---|
-| KI-P12-001 — enrolment cascade repository cleanup | Phase 16 (folded into module-registration focus) |
+| KI-P12-001 — enrolment cascade repository cleanup | CLOSED 2026-04-24 via Batch 16D — repository helper introduced |
 | KI-P14-001 — ESLint toolchain bootstrap | CLOSED 2026-04-21 via PR #88; ratchet to blocking gate tracked under KI-P15-002 |
 | KI-P14-002 — ratchet server coverage thresholds | Phase 17 |
 | KI-P15-001 — npm audit baseline triage | Phase 15B (or a fix/ branch if urgent) |
@@ -246,22 +246,24 @@ grep -rn "emitEvent('" server/src/api --include="*.service.ts" | grep -v "emitEv
 
 ---
 
-### KI-P12-001: Enrolment cascade bypasses module registration repository — OPEN 2026-04-16
+### KI-P12-001: Enrolment cascade bypasses module registration repository — CLOSED 2026-04-24
 
 **Severity:** LOW
 **Phase introduced:** Phase 12 (inherited from PR #41 P0 fixes)
-**File(s):** `server/src/api/enrolments/enrolments.service.ts:90-93`
-**Problem:** The enrolment status cascade calls `prisma.moduleRegistration.update()` directly
-from the enrolments service, bypassing the repository pattern that all 44 modules follow.
-Flagged by BugBot as NON-BLOCKING.
-**Deferral reason:** Refactoring into a `moduleRegistrationRepo.updateForEnrolmentCascade()`
-helper would touch shared infrastructure; intentionally deferred to avoid scope creep in
-the BugBot remediation PR.
-**Resolution plan:** Phase 16 — Admissions to enrolment golden journey. The module-registration service is already the direct focus of that phase, so the repository-bypass cleanup and the prerequisite/credit-limit coverage land together rather than as a drive-by edit during governance work.
+**File(s):** `server/src/api/enrolments/enrolments.service.ts`, `server/src/repositories/moduleRegistration.repository.ts`
+**Problem (original):** The enrolment status cascade called `prisma.moduleRegistration.findMany()` and `prisma.moduleRegistration.update()` directly from the enrolments service, bypassing the repository pattern that all 44 modules follow. Flagged by BugBot as NON-BLOCKING.
 
-**Detection command:**
+**CLOSED:** 2026-04-24 — Batch 16D on `claude/enterprise-build-step-mWIOJ`. Two helpers were added to `server/src/repositories/moduleRegistration.repository.ts`:
+
+- `findActiveByEnrolment(enrolmentId)` — projection of `{ id, moduleId }` for every active (`status: REGISTERED`, non-deleted) registration.
+- `cascadeStatusForEnrolment(registrationId, newStatus, userId)` — narrow status patch for the cascade path.
+
+`enrolments.service.update()` now invokes both helpers instead of touching `prisma.moduleRegistration` directly. Audit + event emission per cascaded registration is unchanged (per-row `module_registration.status_changed` event still fires). Four new Vitest cases cover WITHDRAWN, INTERRUPTED→DEFERRED, no-cascade-on-active-status, and no-cascade-on-empty-set.
+
+**Verification:**
 ```bash
-grep -n "prisma.moduleRegistration" server/src/api/enrolments/enrolments.service.ts
+grep -n "prisma\.moduleRegistration" server/src/api/enrolments/enrolments.service.ts
+# → 0 matches
 ```
 
 ---

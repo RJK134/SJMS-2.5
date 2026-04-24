@@ -2,7 +2,7 @@
 
 > **Owner:** Richard Knapp · Future Horizons Education (FHE)
 > **Last updated:** 2026-04-24
-> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). ESLint toolchain bootstrap (KI-P14-001 closeout) merged (PR #88, commit `67df18f`). Governance batch merged as PR #92 (commit `75e43c6`, 2026-04-22). **Phase 16 — Admissions to Enrolment continues. Batches 16A + 16B merged via PR #96 (commit `cdaea2f`). Fail-soft follow-up for 16B on `fix/p16-offer-promotion-fail-soft` → draft PR #98. Batch 16C (applicant-to-student conversion and enrolment orchestration on FIRM) is in flight on `phase-16/16c-applicant-conversion`.** Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc.
+> **Current delivery state:** Phase 15A merged (PR #55, commit `953ed77`). ESLint toolchain bootstrap (KI-P14-001 closeout) merged (PR #88, commit `67df18f`). Governance batch merged as PR #92 (commit `75e43c6`, 2026-04-22). **Phase 16 — Admissions to Enrolment is IN FLIGHT. Batches 16A and 16B merged as PR #96; the offer-condition fail-soft fix as PR #98; Batch 16C (applicant-to-student conversion) merged as PR #99. Batch 16D (enrolment cascade repository cleanup, clearance-checks test coverage, applicant/admissions UI honesty) is now on `claude/enterprise-build-step-mWIOJ` and closes KI-P12-001.** Phase 15B (auth/MFA/identity-cache/retention) remains deferred behind a STOP-gate and a design doc.
 > **Operating model:** `docs/delivery-plan/enterprise-delivery-operating-model.md` — canonical for every phase from 16 onward.
 
 ---
@@ -62,7 +62,7 @@ Read these before every phase:
 - ESLint baseline triage and ratchet to blocking → KI-P15-002 (Phase 15B or dedicated `fix/eslint-baseline` branch)
 - Server coverage threshold ratchet → Phase 17 (KI-P14-002)
 - npm audit baseline triage → Phase 15B or dedicated `fix/` branch (KI-P15-001)
-- KI-P12-001 — enrolment cascade repository bypass → Phase 16 (folded into module-registration focus)
+- KI-P12-001 — enrolment cascade repository bypass → CLOSED 2026-04-24 (Batch 16D — repository helpers `findActiveByEnrolment` / `cascadeStatusForEnrolment`)
 - Finance sub-domains (Sponsors, Bursaries, Refunds) → Phase 18
 - n8n workflow activation → Phase 20
 - MinIO presigned uploads → Phase 21

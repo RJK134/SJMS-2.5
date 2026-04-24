@@ -132,3 +132,24 @@ export async function getStudentsByProgramme(programmeId: string, pagination: Cu
   ]);
   return buildCursorPaginatedResponse(data, total, pagination.limit);
 }
+
+/**
+ * Find a student by the linked Person id. Used during applicant-to-student
+ * conversion to establish whether a Student record already exists for the
+ * person before attempting to create one (idempotency guard).
+ */
+export async function getByPersonId(personId: string) {
+  return prisma.student.findFirst({
+    where: { personId, deletedAt: null },
+    include: detailInclude,
+  });
+}
+
+/**
+ * Count all non-deleted student records. Used to generate the next sequential
+ * student number during conversion. The caller is responsible for handling
+ * unique-constraint retries if a concurrent conversion races this value.
+ */
+export async function countStudents(): Promise<number> {
+  return prisma.student.count({ where: { deletedAt: null } });
+}

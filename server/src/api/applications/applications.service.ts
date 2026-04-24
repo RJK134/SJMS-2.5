@@ -8,8 +8,6 @@ import * as enrolmentsService from '../enrolments/enrolments.service';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError, ValidationError } from '../../utils/errors';
-import logger from '../../utils/logger';
-import { generateStudentNumber } from '../../utils/student-number';
 
 // Canonical admissions lifecycle. Any hop not listed below is treated as
 // an invalid transition and rejected at the service boundary. The map
@@ -66,31 +64,6 @@ const INSTITUTIONAL_DECISION_STATES = new Set([
 // need evidencing; MET conditions have been satisfied outright. PENDING
 // and NOT_MET block promotion.
 const QUALIFYING_CONDITION_STATUSES = new Set(['MET', 'WAIVED']);
-
-// Fail-soft wrapper around the applicant-to-student converter (Phase
-// 16C). By the time this runs the application has already committed its
-// transition to FIRM and emitted `application.status_changed`; a
-// converter failure must not roll that back or propagate to the HTTP
-// caller. Mirrors the attendance-threshold backstop and the
-// offer-condition evaluator. Remediation for a failed conversion is an
-// operator concern (logs + retry), not a user-visible error.
-async function safeConvertApplicantToStudentOnFirm(
-  applicationId: string,
-  userId: string,
-  req: Request,
-): Promise<void> {
-  try {
-    await convertApplicantToStudentOnFirm(applicationId, userId, req);
-  } catch (err) {
-    logger.warn(
-      'Applicant-to-student conversion failed; the application transition to FIRM succeeded',
-      {
-        applicationId,
-        error: (err as Error).message,
-      },
-    );
-  }
-}
 
 function assertValidApplicationTransition(from: string, to: string): void {
   if (from === to) return;
@@ -270,17 +243,6 @@ export async function update(id: string, data: Prisma.ApplicationUpdateInput, us
         },
       });
     }
-
-    // Firm acceptance: the applicant has firmed their offer. Convert the
-    // Applicant into a Student record and create the initial Enrolment
-    // for the target programme + academic year, if neither already
-    // exists. Runs through a fail-soft wrapper so a converter failure
-    // does not reverse the already-committed FIRM transition; operators
-    // see the `logger.warn` and the downstream `application.status_changed`
-    // event still fires for manual remediation workflows.
-    if (result.status === 'FIRM') {
-      await safeConvertApplicantToStudentOnFirm(id, userId, req);
-    }
   }
 
   return result;
@@ -358,114 +320,188 @@ export async function evaluateOfferConditionsAndAutoPromote(
   return promoted;
 }
 
-// ── Applicant-to-student conversion (Phase 16C) ─────────────────────────────
-// Invoked from update() via safeConvertApplicantToStudentOnFirm when an
-// application transitions into FIRM. Creates a Student record for the
-// underlying Person (if one does not already exist) and creates the
-// initial Enrolment for the target programme + academic year. Delegates
-// to studentsService.create and enrolmentsService.create so the usual
-// audit + webhook plumbing (`students.created`, `enrolment.created`)
-// fires naturally. A dedicated `application.firm_accepted` event is
-// emitted only when at least one of the Student or Enrolment was
-// newly created — n8n workflows triggered off this event drive
-// student-account provisioning, welcome communications, and finance
-// handoff, so a no-op path (both already existed) should not re-fire
-// them on a redundant FIRM write.
+// ── Applicant-to-student conversion (Batch 16C) ──────────────────────────────
+// Turns an accepted application into a live student/enrolment pairing.
+// The operation is idempotent: if a Student already exists for the applicant's
+// person, or if an Enrolment already exists for the derived student +
+// programme + academicYear combination, the existing record is reused rather
+// than duplicated. This makes the endpoint safe to retry.
 //
-// Precondition: the application must be at FIRM and must have a valid
-// Programme and applicant.person eager-loaded by the repository's
-// `defaultInclude`. Returns `{ student, enrolment, wasNewStudent,
-// wasNewEnrolment }` on success, or `null` if the status precondition
-// is not met (idempotent no-op).
-export async function convertApplicantToStudentOnFirm(
+// Only applications in FIRM or UNCONDITIONAL_OFFER status are eligible for
+// conversion. FIRM is the primary path (the applicant has made a definitive
+// acceptance); UNCONDITIONAL_OFFER is also accepted to support direct-entry
+// and clearing routes where students may not progress through the FIRM state.
+
+/** Application statuses that permit conversion to a student/enrolment. */
+const CONVERTIBLE_STATUSES = new Set(['FIRM', 'UNCONDITIONAL_OFFER']);
+
+/** Map from ApplicationRoute to EntryRoute for the Student record. */
+const APPLICATION_ROUTE_TO_ENTRY_ROUTE: Record<string, string> = {
+  UCAS: 'UCAS',
+  DIRECT: 'DIRECT',
+  CLEARING: 'CLEARING',
+  INTERNATIONAL: 'INTERNATIONAL',
+};
+
+/**
+ * Generate a unique student number in the format `STU-YYYY-NNNNN` where YYYY
+ * is the current calendar year and NNNNN is the next sequential counter
+ * derived from the current student count. The generated value is a candidate
+ * only — the unique constraint on the students table is the final authority.
+ */
+async function generateStudentNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const count = await studentRepo.countStudents();
+  return `STU-${year}-${String(count + 1).padStart(5, '0')}`;
+}
+
+/** Data provided by the caller when triggering a conversion. */
+export interface ConversionInput {
+  yearOfStudy?: number;
+  modeOfStudy: string;
+  startDate: Date;
+  feeStatus: string;
+  originalEntryDate?: Date;
+}
+
+/** Result returned from a successful conversion. */
+export interface ConversionResult {
+  applicationId: string;
+  studentId: string;
+  studentNumber: string;
+  enrolmentId: string;
+  programmeId: string;
+  academicYear: string;
+  isNewStudent: boolean;
+  isNewEnrolment: boolean;
+}
+
+/**
+ * Convert an accepted application into a live Student and initial Enrolment.
+ *
+ * Steps:
+ * 1. Validate that the application is in a convertible status.
+ * 2. Look up the Person linked to the Applicant.
+ * 3. Create a Student record for that person if one does not already exist.
+ * 4. Create an initial Enrolment for that student + programme + academicYear
+ *    if one does not already exist.
+ * 5. Emit `application.converted` and write an audit log entry.
+ */
+export async function convertToStudent(
   applicationId: string,
+  input: ConversionInput,
   userId: string,
   req: Request,
-) {
+): Promise<ConversionResult> {
   const application = await getById(applicationId);
-  if (application.status !== 'FIRM') return null;
 
-  const applicant = (application as { applicant?: { person?: { id: string } | null } | null }).applicant;
-  const personId = applicant?.person?.id;
-  const programme = (application as { programme?: { modeOfStudy: string } | null }).programme;
-
-  if (!personId) {
+  if (!CONVERTIBLE_STATUSES.has(application.status)) {
     throw new ValidationError(
-      `Application ${applicationId} cannot be converted: no Person linked via Applicant`,
-    );
-  }
-  if (!programme) {
-    throw new ValidationError(
-      `Application ${applicationId} cannot be converted: Programme not loaded`,
+      `Application cannot be converted: status is ${application.status}. ` +
+        `Conversion requires FIRM or UNCONDITIONAL_OFFER status.`,
+      { status: [`Cannot convert an application with status ${application.status}`] },
     );
   }
 
-  // Idempotent Student creation. A Person becomes a Student exactly
-  // once, even if they submit multiple applications across cycles. The
-  // default feeStatus is HOME — a placeholder that must be re-assessed
-  // downstream against residence/immigration data; tracked as a KI for
-  // Phase 18/19 fee-assessment work rather than a judgement call in the
-  // admissions converter.
-  const existingStudent = await studentRepo.getByPersonId(personId);
-  const wasNewStudent = !existingStudent;
-  const student = existingStudent ?? (await studentsService.create(
-    {
-      personId,
-      studentNumber: generateStudentNumber(),
-      feeStatus: 'HOME',
-      entryRoute: application.applicationRoute as Prisma.StudentUncheckedCreateInput['entryRoute'],
-      originalEntryDate: new Date(),
-      createdBy: userId,
-    },
-    userId,
-    req,
-  ));
+  const applicant = (application as { applicant?: { personId?: string } }).applicant;
+  if (!applicant?.personId) {
+    throw new ValidationError(
+      'Application does not have a valid applicant with a linked person record.',
+      { applicantId: ['Applicant record or person link is missing'] },
+    );
+  }
 
-  // Idempotent Enrolment creation. The tuple {studentId, programmeId,
-  // academicYear} is the business-level unique key: a student cannot be
-  // enrolled on the same programme twice in the same year. Mode of study
-  // inherits from the Programme's default; yearOfStudy is 1 for a fresh
-  // enrolment. startDate is "now" at conversion time — the finance /
-  // academic-calendar hooks in later batches refine this to the true
-  // academic-year start.
-  const existingEnrolment = await enrolmentRepo.findOneByStudentProgrammeYear(
+  const { personId } = applicant;
+  const entryRoute = APPLICATION_ROUTE_TO_ENTRY_ROUTE[application.applicationRoute as string] ?? 'DIRECT';
+  const originalEntryDate = input.originalEntryDate ?? input.startDate;
+
+  // ── Idempotency: find or create Student ──────────────────────────────────
+  let student = await studentRepo.getByPersonId(personId);
+  let isNewStudent = false;
+
+  if (!student) {
+    const studentNumber = await generateStudentNumber();
+    student = await studentsService.create(
+      {
+        personId,
+        studentNumber,
+        feeStatus: input.feeStatus as any,
+        entryRoute: entryRoute as any,
+        originalEntryDate,
+      },
+      userId,
+      req,
+    );
+    isNewStudent = true;
+  }
+
+  // ── Idempotency: find or create Enrolment ────────────────────────────────
+  let enrolment = await enrolmentRepo.findForJourney(
     student.id,
     application.programmeId,
     application.academicYear,
   );
-  const wasNewEnrolment = !existingEnrolment;
-  const enrolment = existingEnrolment ?? (await enrolmentsService.create(
-    {
-      studentId: student.id,
-      programmeId: application.programmeId,
-      academicYear: application.academicYear,
-      yearOfStudy: 1,
-      modeOfStudy: programme.modeOfStudy as Prisma.EnrolmentUncheckedCreateInput['modeOfStudy'],
-      startDate: new Date(),
-      feeStatus: 'HOME',
-    },
-    userId,
-    req,
-  ));
+  let isNewEnrolment = false;
 
-  if (wasNewStudent || wasNewEnrolment) {
-    emitEvent({
-      event: 'application.firm_accepted',
-      entityType: 'Application',
-      entityId: applicationId,
-      actorId: userId,
-      data: {
-        applicantId: application.applicantId,
+  if (!enrolment) {
+    const yearOfStudy = input.yearOfStudy ?? 1;
+    enrolment = await enrolmentsService.create(
+      {
+        studentId: student.id,
         programmeId: application.programmeId,
         academicYear: application.academicYear,
-        personId,
-        studentId: student.id,
-        enrolmentId: enrolment.id,
-        wasNewStudent,
-        wasNewEnrolment,
+        yearOfStudy,
+        modeOfStudy: input.modeOfStudy as any,
+        startDate: input.startDate,
+        feeStatus: input.feeStatus as any,
       },
-    });
+      userId,
+      req,
+    );
+    isNewEnrolment = true;
   }
 
-  return { student, enrolment, wasNewStudent, wasNewEnrolment };
+  // ── Audit and event emission ─────────────────────────────────────────────
+  await logAudit(
+    'Application',
+    applicationId,
+    'UPDATE',
+    userId,
+    application,
+    {
+      ...(application as object),
+      convertedStudentId: student.id,
+      convertedEnrolmentId: enrolment.id,
+    },
+    req,
+  );
+
+  emitEvent({
+    event: 'application.converted',
+    entityType: 'Application',
+    entityId: applicationId,
+    actorId: userId,
+    data: {
+      applicationId,
+      applicantId: application.applicantId,
+      programmeId: application.programmeId,
+      academicYear: application.academicYear,
+      studentId: student.id,
+      studentNumber: student.studentNumber,
+      enrolmentId: enrolment.id,
+      isNewStudent,
+      isNewEnrolment,
+    },
+  });
+
+  return {
+    applicationId,
+    studentId: student.id,
+    studentNumber: student.studentNumber,
+    enrolmentId: enrolment.id,
+    programmeId: application.programmeId,
+    academicYear: application.academicYear,
+    isNewStudent,
+    isNewEnrolment,
+  };
 }

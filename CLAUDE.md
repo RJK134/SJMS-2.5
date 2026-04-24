@@ -602,15 +602,13 @@ Pre-Phase-16 chore scoped solely to closing the original KI-P14-001 toolchain ga
 
 Docs-only governance batch that codifies the canonical operating model for Phases 16–23 and refreshes the delivery control set to reflect the merged state of Phase 15A and the ESLint toolchain chore. No source, schema, or CI changes. Publishes `docs/delivery-plan/enterprise-delivery-operating-model.md` as the new canonical rule set for every phase from 16 onward.
 
-### Phase 16 — Admissions to Enrolment (IN FLIGHT, Batches 16A–16C)
+### Phase 16 — Admissions to Enrolment (IN FLIGHT, Batches 16A–16D)
 
-**Status as of 2026-04-24:** Batches 16A + 16B shipped on `phase-16/admissions-to-enrolment` and merged via squash PR #96. Fail-soft follow-up for 16B's offer-condition backstop on `fix/p16-offer-promotion-fail-soft` → draft PR #98 (open). Batch 16C now in flight on a fresh branch off `main`.
+**Active branch:** `phase-16/admissions-to-enrolment` (16A+16B merged as PR #96; 16C merged as PR #99); 16D on `claude/enterprise-build-step-mWIOJ`
+**Base:** `main @ 053cec7` (post-16C merge)
+**PRs:** #96 (merged — 16A+16B), #98 (merged — offers.service fail-soft fix), #99 (merged — 16C conversion)
 
-**Batch 16A/16B merged:** PR #96 → main commit `cdaea2f`
-**Fail-soft follow-up:** PR #98 (draft) — addresses Cursor BugBot MEDIUM (`offers.service` fail-soft contract) that landed 5 minutes after #96 squash-merged.
-**Batch 16C active branch:** `phase-16/16c-applicant-conversion` (off `main`)
-
-First vertical golden journey. Batch 16A enforces the canonical admissions lifecycle at the service boundary, mirroring the pattern already used for appeals and EC claims. Batch 16B layers offer-condition evaluation on top so an application auto-promotes to `UNCONDITIONAL_OFFER` as soon as every live condition is satisfied.
+First vertical golden journey. Batch 16A enforces the canonical admissions lifecycle at the service boundary. Batch 16B layers offer-condition evaluation and auto-promotion. Batch 16C delivers the applicant-to-student conversion endpoint that closes the Admissions → Enrolment handoff gap. Batch 16D closes KI-P12-001 (enrolment cascade repository bypass), adds the missing `clearance-checks` test file, and corrects four drift-grade frontend pages so the applicant/admissions UI matches the canonical shape of the API response.
 
 **Batch 16A — Application lifecycle state enforcement:**
 
@@ -631,29 +629,18 @@ First vertical golden journey. Batch 16A enforces the canonical admissions lifec
 | `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('evaluateOfferConditionsAndAutoPromote()')` block: 9 cases covering MET-only promotion, WAIVED-counts-as-satisfied, PENDING / NOT_MET blocks, soft-deleted conditions ignored, zero-conditions no-op, wrong-status no-op, event payload `conditionIds`, and NotFound propagation. |
 | `server/src/__tests__/unit/offers.service.test.ts` | **New file.** 6 cases exercising `getById` NotFound, `create()` evaluator invocation, `update()` status-change vs no-status-change event emission plus evaluator invocation on both paths, and `remove()` evaluator invocation. |
 
-**Transition map (UK HE with UCAS response states):**
-
-```
-SUBMITTED          → UNDER_REVIEW, WITHDRAWN, REJECTED
-UNDER_REVIEW       → INTERVIEW, CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
-INTERVIEW          → CONDITIONAL_OFFER, UNCONDITIONAL_OFFER, REJECTED, WITHDRAWN
-CONDITIONAL_OFFER  → UNCONDITIONAL_OFFER, FIRM, INSURANCE, DECLINED, WITHDRAWN
-UNCONDITIONAL_OFFER→ FIRM, INSURANCE, DECLINED, WITHDRAWN
-FIRM               → WITHDRAWN
-INSURANCE          → FIRM, WITHDRAWN   (results-day insurance promotion)
-DECLINED, WITHDRAWN, REJECTED          (terminal)
-```
-
 **Batch 16C — Applicant-to-student conversion and enrolment orchestration:**
 
 | File | Change |
 |---|---|
-| `server/src/api/applications/applications.service.ts` | New exported `convertApplicantToStudentOnFirm(applicationId, userId, req)`. Re-loads the application via the admissions repository (`applicant.person` and `programme` eager-loaded), returns `null` when the status is not `FIRM`, throws `ValidationError` when either the linked Person or Programme is missing. Idempotent lookups via `studentRepo.getByPersonId()` and `enrolmentRepo.findOneByStudentProgrammeYear()`. Delegates creation to `studentsService.create` / `enrolmentsService.create` so the usual audit + `students.created` / `enrolment.created` events fire naturally. Emits a dedicated `application.firm_accepted` event only when at least one of Student or Enrolment was newly created — no-op paths stay silent so downstream n8n workflows do not re-fire provisioning. Wired into `update()` via a new `safeConvertApplicantToStudentOnFirm` fail-soft wrapper (matches the attendance-threshold and offer-condition precedents): the converter runs on every transition into `FIRM` from a non-`FIRM` previous state; failure logs `warn` and does not propagate to the HTTP caller. |
-| `server/src/repositories/student.repository.ts` | New `getByPersonId(personId)` idempotency helper — a Person becomes a Student exactly once regardless of how many applications they submit. |
-| `server/src/repositories/enrolment.repository.ts` | New `findOneByStudentProgrammeYear(studentId, programmeId, academicYear)` idempotency helper — a student cannot be enrolled on the same programme twice in the same year. |
-| `server/src/utils/student-number.ts` | **New file.** Pure generator `generateStudentNumber(now?)` producing `STU-<yy><6-char base64url>` (e.g. `STU-26AB7G2X`). Crypto-strong random source; uniqueness enforced by the Student table's unique constraint, collisions are vanishingly rare at single-institution scale. |
-| `server/src/utils/webhooks.ts` | Adds `application.firm_accepted` → `/webhook/sjms/application/firm-accepted` and `students.created` → `/webhook/sjms/student/created` to `EVENT_ROUTES` (the latter closes a documented routing gap — `students.service.create` has always emitted the event but it had no dedicated webhook path). |
-| `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('convertApplicantToStudentOnFirm()')` block: 7 cases covering new-Student-and-new-Enrolment happy path, reuse-existing-Student-and-create-Enrolment, no-op when both already exist (no `firm_accepted` emission), return-null on non-`FIRM` status, `ValidationError` on missing Person, `ValidationError` on missing Programme loaded, `NotFoundError` propagation when the application does not exist. New `describe('update() FIRM integration')` block: 3 cases covering converter invocation on transition into `FIRM`, non-invocation on other transitions, and fail-soft behaviour when the converter throws (the FIRM transition still succeeds and `logger.warn` is called). |
+| `server/src/repositories/student.repository.ts` | Added `getByPersonId(personId)` (idempotency guard — find existing Student for a person) and `countStudents()` (student number generation counter) |
+| `server/src/repositories/enrolment.repository.ts` | Added `findForJourney(studentId, programmeId, academicYear)` (idempotency guard — find existing Enrolment before creating) |
+| `server/src/api/applications/applications.service.ts` | `CONVERTIBLE_STATUSES = {FIRM, UNCONDITIONAL_OFFER}`; `APPLICATION_ROUTE_TO_ENTRY_ROUTE` map; `generateStudentNumber()` produces `STU-YYYY-NNNNN`; exported `convertToStudent(applicationId, input, userId, req)` — validates status, resolves personId from applicant, creates Student if not found (via `students.service.create`), creates Enrolment if not found (via `enrolments.service.create`), emits `application.converted`, writes audit log |
+| `server/src/api/applications/applications.schema.ts` | `convertSchema` — `yearOfStudy` (default 1), `modeOfStudy`, `startDate`, `feeStatus`, `originalEntryDate` (optional) |
+| `server/src/api/applications/applications.controller.ts` | `convert()` handler |
+| `server/src/api/applications/applications.router.ts` | `POST /:id/convert` route — REGISTRY role, uses `paramsSchema` + `convertSchema` |
+| `server/src/utils/webhooks.ts` | `application.converted` → `/webhook/sjms/application/converted` added to `EVENT_ROUTES` |
+| `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('convertToStudent()')` block: 12 cases covering new-student+enrolment happy path; UNCONDITIONAL_OFFER accepted; student idempotency; full idempotency (both exist); non-convertible status rejection; missing applicant/person rejection; UCAS route mapping; event payload correctness; audit log correctness; student number format; NotFound propagation |
 
 **Transition map (UK HE with UCAS response states):**
 
@@ -668,20 +655,31 @@ INSURANCE          → FIRM, WITHDRAWN   (results-day insurance promotion)
 DECLINED, WITHDRAWN, REJECTED          (terminal)
 ```
 
-**Verification (Batch 16C, on `phase-16/16c-applicant-conversion` off latest `main`):**
-- Server Vitest: **169/169** passing (up from 159 on the 16A + 16B merge commit; +10 new cases — 7 direct on the converter and 3 on the `update()` integration)
-- `npx prisma validate`: pass
-- Server tsc: **0 new errors** — the single pre-existing `TS5101` diagnostic is unchanged (**KI-P16-001**)
-- `npx prisma generate`: pre-existing runtime WASM error (**KI-P16-002**); unit suite unaffected because tests mock Prisma
+**Conversion eligibility:** FIRM or UNCONDITIONAL_OFFER. FIRM is the primary path; UNCONDITIONAL_OFFER is accepted to support direct-entry and clearing routes.
 
-**New Known Issues opened by Batch 16C:**
-- **KI-P16C-001** — the converter defaults a new Student's `feeStatus` to `HOME` because neither `Application` nor `Applicant` carries a fee-status field. Proper fee assessment against residence / immigration data is sequenced to **Phase 18** finance readiness.
-- **KI-P16C-002** — the converter is not transactional across the Student + Enrolment pair. If Student creation succeeds and Enrolment creation fails, an operator must re-trigger the FIRM conversion. The converter is idempotent, so the retry is safe. A proper transactional wrapper is sequenced to Phase 16D or Phase 18.
+**Batch 16D — Cascade repository cleanup, clearance-checks test coverage, and applicant/admissions UI honesty:**
+
+| File | Change |
+|---|---|
+| `server/src/repositories/moduleRegistration.repository.ts` | Two new helpers: `findActiveByEnrolment(enrolmentId)` returns `{ id, moduleId }` projections of every active (`status: REGISTERED`, non-deleted) registration for an enrolment; `cascadeStatusForEnrolment(registrationId, newStatus, userId)` is a narrow `{status, updatedBy}` patch helper. Both exist solely so the enrolment cascade can route through the repository layer. |
+| `server/src/api/enrolments/enrolments.service.ts` | `update()` cascade no longer calls `prisma.moduleRegistration.findMany` / `prisma.moduleRegistration.update` directly. Both calls now go through the new repository helpers, so `moduleRegistration.repository` is again the single source of truth for `prisma.moduleRegistration.*` writes. The audit + per-row `module_registration.status_changed` event emission is unchanged. **Closes KI-P12-001.** |
+| `server/src/__tests__/unit/enrolments.service.test.ts` | Mock surface switched from `prisma.moduleRegistration` to the two new repository helpers. Four new cases cover WITHDRAWN cascade (two registrations, both via the repo helper), INTERRUPTED → DEFERRED cascade, no-cascade-when-enrolment-becomes-active, and no-cascade-when-no-active-registrations (with the parent `enrolment.status_changed` event still firing once). |
+| `server/src/__tests__/unit/clearance-checks.service.test.ts` | **New file.** 8 cases — `getById` happy path + NotFound; `create()` audit + `clearance_checks.created` event; `update()` emits `updated` and `status_changed` on a status flip; `update()` does not emit `status_changed` when only metadata changes; `update()` rejects an unknown id with NotFound; `remove()` soft-deletes + audits + emits `clearance_checks.deleted`; `remove()` rejects an unknown id with NotFound. Closes the only admissions-domain service that previously had zero unit-test coverage. |
+| `client/src/pages/applicant/MyOffers.tsx` | Was rendering the empty state for every applicant with conditions — the page typed against `app.offers` (no such relation; the Prisma relation is `conditions`) and `o.deadline` (no such field). Rewritten to type against the canonical `OfferCondition` shape, fetch via `useDetail` after `useList` so the `conditions` relation is hydrated by `admissions.repository.defaultInclude`, render the application status as a header card, distinguish "no offers yet" from "unconditional offer / no outstanding conditions" honestly, and surface `targetGrade` instead of an invented `deadline`. |
+| `client/src/pages/applicant/MyApplication.tsx` | Three drift fixes. `app.entryRoute` → `app.applicationRoute` (entry route lives on the Student record, not the Application). `Reference.relationship` → `Reference.refereePosition` and `Reference.status` → `Reference.receivedDate`-derived "RECEIVED / PENDING" badge (the schema has `refereePosition`/`receivedDate`, no `relationship`/`status`). The list-only data path is replaced with `useList` → `useDetail` so qualifications and references actually populate (the list endpoint omits both relations). |
+| `client/src/pages/applicant/EditApplication.tsx` | The `canEdit = ['DRAFT', 'SUBMITTED'].includes(app.status)` guard referenced a `DRAFT` state that does not exist in the canonical enum — no application would ever satisfy the DRAFT branch. Now gates explicitly on `app.status === 'SUBMITTED'`, with a comment explaining why later states are read-only. |
+| `client/src/pages/admissions/ApplicationPipeline.tsx` | The kanban view rendered six stages and silently dropped any application currently in INTERVIEW, INSURANCE, WITHDRAWN, or REJECTED. All ten canonical stages now render. Layout switched from a fixed 6-column grid to a horizontally scrollable flex strip with fixed-width columns so each stage stays readable on a 1024px viewport. |
+
+**Verification (Batches 16A + 16B + 16C + 16D):**
+- Server Vitest: **186/186** passing (up from 174 on main after 16C; +4 cascade cases in `enrolments.service.test.ts`, +8 cases in the new `clearance-checks.service.test.ts`).
+- Server tsc: 0 new errors — the single pre-existing `TS5101` diagnostic from the TypeScript 6.0 dependabot bump (PR #69) remains and is still the only diagnostic. Tracked under **KI-P16-001**.
+- Client tsc: 0 new errors — same TS5101 baseline as the server (exit code 0 because of the client tsconfig posture).
+- `npx prisma validate` / `prisma generate`: pre-existing failures from the Prisma 7 client/CLI mismatch — tracked under **KI-P16-002**, non-regressive (unit suite mocks Prisma).
+- `grep -n "prisma\.moduleRegistration" server/src/api/enrolments/enrolments.service.ts` → 0 hits (KI-P12-001 detection command).
 
 **Deliberately out-of-scope (sequenced to later batches of Phase 16):**
-- 16D — Module-registration cascade repository cleanup (KI-P12-001) and finance handoff hooks
-- 16E — Portal completion for the applicant/admin sides of this journey
-- 16F — Evidence, tests, and closeout
+- 16E — Portal completion for the applicant/admin sides of this journey, including a "Convert to Student" action on the admissions ApplicationDetail page (the `POST /applications/:id/convert` endpoint exists from Batch 16C but has no UI affordance yet — Registry currently has to drive it via the API).
+- 16F — Finance handoff hooks (`enrolment.created` → automatic FeeAssessment generation) sequenced to **Phase 18A** rather than Phase 16 — the fee calculation engine is the natural carrier and avoids cross-domain entanglement.
 
 ### Phase 14 follow-on — CI and repository hygiene hardening (COMPLETE)
 
