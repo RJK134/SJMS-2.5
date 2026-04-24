@@ -229,12 +229,7 @@ export function initKeycloak(): Promise<boolean> {
       enableLogging: true,
     })
     .then((authenticated) => {
-      console.log('[auth] Keycloak init complete. authenticated =', authenticated);
       _authenticated = authenticated;
-      if (authenticated) {
-        console.log('[auth] Token subject:', keycloak.subject);
-        console.log('[auth] Roles:', keycloak.realmAccess?.roles?.join(', '));
-      }
       // Clean any leftover query params from the URL (code, session_state, error)
       if (window.location.search) {
         const clean = window.location.origin + window.location.pathname + window.location.hash;
@@ -292,8 +287,6 @@ export function getRoles(): string[] {
 
 // ── Login ───────────────────────────────────────────────────────────────────
 export function login(portal: string = '/admin'): void {
-  console.log('[auth] login() called for portal:', portal, '- mode:', AUTH_MODE);
-
   if (IS_DEV_MODE) {
     // Dev mode: the mock user is always "logged in". Just navigate to the
     // requested portal route so the app (and the persona selector) reflect
@@ -317,8 +310,6 @@ export function login(portal: string = '/admin'): void {
 
 // ── Logout ──────────────────────────────────────────────────────────────────
 export function logout(): void {
-  console.log('[auth] logout() called - mode:', AUTH_MODE);
-
   if (IS_DEV_MODE) {
     // Dev mode: there is no Keycloak session to invalidate. Navigate to the
     // hash-routed login page so the wouter `useHashLocation` router can
@@ -361,9 +352,6 @@ export async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const refreshed = await keycloak.updateToken(30);
-    if (refreshed) {
-      console.log('[auth] Token refreshed');
-    }
     return keycloak.token ?? null;
   } catch (err) {
     console.error('[auth] Token refresh failed:', err);
