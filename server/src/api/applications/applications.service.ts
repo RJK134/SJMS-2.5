@@ -416,7 +416,16 @@ export async function convertToStudent(
   const originalEntryDate = input.originalEntryDate ?? input.startDate;
 
   // ── Idempotency: find or create Student ──────────────────────────────────
-  let student = await studentRepo.getByPersonId(personId);
+  // Typed as the structural minimum the rest of this function reads off
+  // student. `studentRepo.getByPersonId` returns the rich `detailInclude`
+  // shape (Student + person.addresses/contacts/identifiers/demographic),
+  // while `studentsService.create` returns the flat Student shape — they
+  // are not directly assignable to each other, but both expose `id` and
+  // `studentNumber`, which is all this function needs. Without this
+  // explicit annotation the if-branch reassignment fails type-check
+  // (TS2322) and every subsequent access widens to nullable (TS18047).
+  let student: { id: string; studentNumber: string } | null =
+    await studentRepo.getByPersonId(personId);
   let isNewStudent = false;
 
   if (!student) {
