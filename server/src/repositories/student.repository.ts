@@ -89,13 +89,17 @@ export async function getByStudentNumber(studentNumber: string) {
 // The personId column is the real identity key for a human record — a
 // student is created exactly once per person, regardless of how many
 // applications that person submits over time. Returns the non-deleted
-// Student, or null when no record exists for the person.
-export async function getByPersonId(personId: string) {
-  return prisma.student.findFirst({
-    where: { personId, deletedAt: null },
-  });
-}
-
+// Student with the full detailInclude shape (person + addresses/
+// contacts/identifiers/demographic), consistent with
+// `getByStudentNumber`. The conversion service only reads `id` and
+// `studentNumber` off the result, so either projection is safe at the
+// call site; the rich include is kept because future callers
+// (detail/profile views) will likely want the relation.
+//
+// Note: PR #109 landed a duplicate unincluded version of this helper
+// at the same time PR #107 landed this one. The duplicate has been
+// removed in `chore/tooling-tsc-baseline` — TS2323/TS2393 on main
+// would otherwise keep the server quality gate red.
 export async function create(data: Prisma.StudentUncheckedCreateInput) {
   return prisma.student.create({ data });
 }
