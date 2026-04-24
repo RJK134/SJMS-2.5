@@ -38,7 +38,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "keycloak-js": "^26.2.3",
-    "lucide-react": "^0.460.0",
+    "lucide-react": "^1.9.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-hook-form": "^7.54.0",
