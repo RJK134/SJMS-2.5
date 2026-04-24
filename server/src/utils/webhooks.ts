@@ -58,8 +58,12 @@ const EVENT_ROUTES: Record<string, string> = {
   'application.status_changed':       '/webhook/sjms/application/status-changed',
   'application.offer_made':           '/webhook/sjms/offer/decision-made',
   'application.offer_conditions_met': '/webhook/sjms/application/offer-conditions-met',
+  'application.firm_accepted':        '/webhook/sjms/application/firm-accepted',
   'application.withdrawn':            '/webhook/sjms/application/withdrawn',
   'application.deleted':              '/webhook/sjms/application/deleted',
+
+  // ── Student lifecycle (created on applicant-to-student conversion) ────
+  'students.created':                 '/webhook/sjms/student/created',
 
   // ── Enrolment ─────────────────────────────────────────────────────────
   'enrolment.created':                '/webhook/sjms/enrolment/created',

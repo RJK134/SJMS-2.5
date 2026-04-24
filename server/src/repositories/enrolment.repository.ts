@@ -49,6 +49,21 @@ export async function getById(id: string) {
   });
 }
 
+// Idempotency helper for the applicant-to-student converter (Phase 16C).
+// An enrolment is uniquely identified by the tuple {student, programme,
+// academic year}: the same person cannot be enrolled on the same
+// programme twice in the same year. Returns the non-deleted match, or
+// null when no record exists.
+export async function findOneByStudentProgrammeYear(
+  studentId: string,
+  programmeId: string,
+  academicYear: string,
+) {
+  return prisma.enrolment.findFirst({
+    where: { studentId, programmeId, academicYear, deletedAt: null },
+  });
+}
+
 export async function create(data: Prisma.EnrolmentUncheckedCreateInput) {
   return prisma.$transaction(async (tx) => {
     const enrolment = await tx.enrolment.create({ data, include: defaultInclude });

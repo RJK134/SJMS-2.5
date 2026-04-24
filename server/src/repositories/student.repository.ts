@@ -85,6 +85,17 @@ export async function getByStudentNumber(studentNumber: string) {
   return prisma.student.findUnique({ where: { studentNumber }, include: detailInclude });
 }
 
+// Idempotency helper for the applicant-to-student converter (Phase 16C).
+// The personId column is the real identity key for a human record — a
+// student is created exactly once per person, regardless of how many
+// applications that person submits over time. Returns the non-deleted
+// Student, or null when no record exists for the person.
+export async function getByPersonId(personId: string) {
+  return prisma.student.findFirst({
+    where: { personId, deletedAt: null },
+  });
+}
+
 export async function create(data: Prisma.StudentUncheckedCreateInput) {
   return prisma.student.create({ data });
 }

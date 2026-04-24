@@ -1,9 +1,15 @@
 import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import * as repo from '../../repositories/admissions.repository';
+import * as studentRepo from '../../repositories/student.repository';
+import * as enrolmentRepo from '../../repositories/enrolment.repository';
+import * as studentsService from '../students/students.service';
+import * as enrolmentsService from '../enrolments/enrolments.service';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError, ValidationError } from '../../utils/errors';
+import logger from '../../utils/logger';
+import { generateStudentNumber } from '../../utils/student-number';
 
 // Canonical admissions lifecycle. Any hop not listed below is treated as
 // an invalid transition and rejected at the service boundary. The map
@@ -60,6 +66,31 @@ const INSTITUTIONAL_DECISION_STATES = new Set([
 // need evidencing; MET conditions have been satisfied outright. PENDING
 // and NOT_MET block promotion.
 const QUALIFYING_CONDITION_STATUSES = new Set(['MET', 'WAIVED']);
+
+// Fail-soft wrapper around the applicant-to-student converter (Phase
+// 16C). By the time this runs the application has already committed its
+// transition to FIRM and emitted `application.status_changed`; a
+// converter failure must not roll that back or propagate to the HTTP
+// caller. Mirrors the attendance-threshold backstop and the
+// offer-condition evaluator. Remediation for a failed conversion is an
+// operator concern (logs + retry), not a user-visible error.
+async function safeConvertApplicantToStudentOnFirm(
+  applicationId: string,
+  userId: string,
+  req: Request,
+): Promise<void> {
+  try {
+    await convertApplicantToStudentOnFirm(applicationId, userId, req);
+  } catch (err) {
+    logger.warn(
+      'Applicant-to-student conversion failed; the application transition to FIRM succeeded',
+      {
+        applicationId,
+        error: (err as Error).message,
+      },
+    );
+  }
+}
 
 function assertValidApplicationTransition(from: string, to: string): void {
   if (from === to) return;
@@ -239,6 +270,17 @@ export async function update(id: string, data: Prisma.ApplicationUpdateInput, us
         },
       });
     }
+
+    // Firm acceptance: the applicant has firmed their offer. Convert the
+    // Applicant into a Student record and create the initial Enrolment
+    // for the target programme + academic year, if neither already
+    // exists. Runs through a fail-soft wrapper so a converter failure
+    // does not reverse the already-committed FIRM transition; operators
+    // see the `logger.warn` and the downstream `application.status_changed`
+    // event still fires for manual remediation workflows.
+    if (result.status === 'FIRM') {
+      await safeConvertApplicantToStudentOnFirm(id, userId, req);
+    }
   }
 
   return result;
@@ -314,4 +356,116 @@ export async function evaluateOfferConditionsAndAutoPromote(
   });
 
   return promoted;
+}
+
+// ── Applicant-to-student conversion (Phase 16C) ─────────────────────────────
+// Invoked from update() via safeConvertApplicantToStudentOnFirm when an
+// application transitions into FIRM. Creates a Student record for the
+// underlying Person (if one does not already exist) and creates the
+// initial Enrolment for the target programme + academic year. Delegates
+// to studentsService.create and enrolmentsService.create so the usual
+// audit + webhook plumbing (`students.created`, `enrolment.created`)
+// fires naturally. A dedicated `application.firm_accepted` event is
+// emitted only when at least one of the Student or Enrolment was
+// newly created — n8n workflows triggered off this event drive
+// student-account provisioning, welcome communications, and finance
+// handoff, so a no-op path (both already existed) should not re-fire
+// them on a redundant FIRM write.
+//
+// Precondition: the application must be at FIRM and must have a valid
+// Programme and applicant.person eager-loaded by the repository's
+// `defaultInclude`. Returns `{ student, enrolment, wasNewStudent,
+// wasNewEnrolment }` on success, or `null` if the status precondition
+// is not met (idempotent no-op).
+export async function convertApplicantToStudentOnFirm(
+  applicationId: string,
+  userId: string,
+  req: Request,
+) {
+  const application = await getById(applicationId);
+  if (application.status !== 'FIRM') return null;
+
+  const applicant = (application as { applicant?: { person?: { id: string } | null } | null }).applicant;
+  const personId = applicant?.person?.id;
+  const programme = (application as { programme?: { modeOfStudy: string } | null }).programme;
+
+  if (!personId) {
+    throw new ValidationError(
+      `Application ${applicationId} cannot be converted: no Person linked via Applicant`,
+    );
+  }
+  if (!programme) {
+    throw new ValidationError(
+      `Application ${applicationId} cannot be converted: Programme not loaded`,
+    );
+  }
+
+  // Idempotent Student creation. A Person becomes a Student exactly
+  // once, even if they submit multiple applications across cycles. The
+  // default feeStatus is HOME — a placeholder that must be re-assessed
+  // downstream against residence/immigration data; tracked as a KI for
+  // Phase 18/19 fee-assessment work rather than a judgement call in the
+  // admissions converter.
+  const existingStudent = await studentRepo.getByPersonId(personId);
+  const wasNewStudent = !existingStudent;
+  const student = existingStudent ?? (await studentsService.create(
+    {
+      personId,
+      studentNumber: generateStudentNumber(),
+      feeStatus: 'HOME',
+      entryRoute: application.applicationRoute as Prisma.StudentUncheckedCreateInput['entryRoute'],
+      originalEntryDate: new Date(),
+      createdBy: userId,
+    },
+    userId,
+    req,
+  ));
+
+  // Idempotent Enrolment creation. The tuple {studentId, programmeId,
+  // academicYear} is the business-level unique key: a student cannot be
+  // enrolled on the same programme twice in the same year. Mode of study
+  // inherits from the Programme's default; yearOfStudy is 1 for a fresh
+  // enrolment. startDate is "now" at conversion time — the finance /
+  // academic-calendar hooks in later batches refine this to the true
+  // academic-year start.
+  const existingEnrolment = await enrolmentRepo.findOneByStudentProgrammeYear(
+    student.id,
+    application.programmeId,
+    application.academicYear,
+  );
+  const wasNewEnrolment = !existingEnrolment;
+  const enrolment = existingEnrolment ?? (await enrolmentsService.create(
+    {
+      studentId: student.id,
+      programmeId: application.programmeId,
+      academicYear: application.academicYear,
+      yearOfStudy: 1,
+      modeOfStudy: programme.modeOfStudy as Prisma.EnrolmentUncheckedCreateInput['modeOfStudy'],
+      startDate: new Date(),
+      feeStatus: 'HOME',
+    },
+    userId,
+    req,
+  ));
+
+  if (wasNewStudent || wasNewEnrolment) {
+    emitEvent({
+      event: 'application.firm_accepted',
+      entityType: 'Application',
+      entityId: applicationId,
+      actorId: userId,
+      data: {
+        applicantId: application.applicantId,
+        programmeId: application.programmeId,
+        academicYear: application.academicYear,
+        personId,
+        studentId: student.id,
+        enrolmentId: enrolment.id,
+        wasNewStudent,
+        wasNewEnrolment,
+      },
+    });
+  }
+
+  return { student, enrolment, wasNewStudent, wasNewEnrolment };
 }
