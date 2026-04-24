@@ -87,36 +87,58 @@ export default function MyOffers() {
 
       {showConditions && conditions.length > 0 ? (
         <div className="space-y-4">
-          {conditions.map(c => (
-            <Card key={c.id}>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{c.description || c.conditionType?.replace(/_/g, ' ')}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {c.conditionType.replace(/_/g, ' ')}
-                      {c.targetGrade ? ` · Target: ${c.targetGrade}` : ''}
-                    </p>
+          {conditions.map(c => {
+            const typeLabel = c.conditionType.replace(/_/g, ' ');
+            const hasDescription = !!c.description;
+            // Primary line falls back to the condition type when there is no
+            // description; repeating the type on the subtitle would then show
+            // the same text twice. Only render the contextual subtitle when
+            // it adds something (distinct description primary, or a target
+            // grade). Fixes BugBot finding d2fc595 (Low).
+            const subtitle = hasDescription
+              ? `${typeLabel}${c.targetGrade ? ` · Target: ${c.targetGrade}` : ''}`
+              : c.targetGrade
+                ? `Target: ${c.targetGrade}`
+                : null;
+            return (
+              <Card key={c.id}>
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{c.description || typeLabel}</p>
+                      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+                    </div>
+                    <StatusBadge status={c.status} />
                   </div>
-                  <StatusBadge status={c.status} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <Card>
           <CardContent className="py-12 text-center">
             <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">
-              {showConditions ? 'No Conditions Set' : 'No Offers Yet'}
+              {showConditions
+                ? app?.status === 'CONDITIONAL_OFFER'
+                  ? 'Conditions Pending'
+                  : 'No Outstanding Conditions'
+                : 'No Offers Yet'}
             </h3>
             <p className="text-sm text-muted-foreground">
               {!app
                 ? 'Submit an application to receive offers.'
-                : showConditions
-                  ? 'You have an unconditional offer — there are no outstanding conditions to meet.'
-                  : 'Your application is being reviewed. Offers will appear here once a decision is made.'}
+                : app.status === 'CONDITIONAL_OFFER'
+                  // CONDITIONAL_OFFER with zero condition rows means the
+                  // offer has been made but the specific conditions are
+                  // still being drafted by admissions. Do NOT claim the
+                  // applicant has an unconditional offer. Fixes BugBot
+                  // finding 193bebf (Medium).
+                  ? 'You have a conditional offer — the specific conditions are being finalised by admissions and will appear here shortly.'
+                  : showConditions
+                    ? 'You have an unconditional offer — there are no outstanding conditions to meet.'
+                    : 'Your application is being reviewed. Offers will appear here once a decision is made.'}
             </p>
           </CardContent>
         </Card>
