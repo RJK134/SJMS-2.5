@@ -1,7 +1,7 @@
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useList } from '@/hooks/useApi';
+import { useDetail, useList } from '@/hooks/useApi';
 import { Loader2, AlertCircle, FileText, GraduationCap, BookUser } from 'lucide-react';
 
 interface Qualification {
@@ -13,19 +13,26 @@ interface Qualification {
   dateAwarded?: string;
 }
 
+// Mirrors the ApplicationReference Prisma model. There is no
+// `relationship` field — the schema uses `refereePosition` (e.g.
+// "Head of Sixth Form"). There is no per-reference status either; the
+// closest signal is `receivedDate` (set when the referee submits).
 interface Reference {
   id: string;
   refereeName: string;
-  relationship: string;
-  email?: string;
-  status?: string;
+  refereePosition?: string | null;
+  refereeEmail: string;
+  receivedDate?: string | null;
 }
 
 interface Application {
   id: string;
   status: string;
   academicYear: string;
-  entryRoute: string;
+  // Application has `applicationRoute`; `entryRoute` is on the
+  // Student record after conversion. Renaming the typed field here
+  // stops the field from silently rendering as an empty string.
+  applicationRoute: string;
   personalStatement?: string;
   programme?: { title: string; programmeCode: string; level: string };
   qualifications?: Qualification[];
@@ -34,13 +41,20 @@ interface Application {
 }
 
 export default function MyApplication() {
-  const { data, isLoading, isError } = useList<Application>('my-application', '/v1/applications', {
-    limit: 1, sort: 'createdAt', order: 'desc',
-  });
+  // The list endpoint omits qualifications / references / conditions
+  // (they are only on the detail endpoint's defaultInclude). Resolve
+  // the application id from the scoped list, then fetch the detail so
+  // every section on the page is rendered from real data.
+  const { data: list, isLoading: isListLoading, isError: isListError } = useList<Application>(
+    'my-application', '/v1/applications', { limit: 1, sort: 'createdAt', order: 'desc' },
+  );
+  const appId = list?.data?.[0]?.id;
+  const { data: detail, isLoading: isDetailLoading, isError: isDetailError } =
+    useDetail<Application>('my-application-detail', '/v1/applications', appId);
 
-  const app = data?.data?.[0];
+  const app = detail?.data ?? list?.data?.[0];
 
-  if (isLoading) {
+  if (isListLoading || (appId && isDetailLoading)) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -48,7 +62,7 @@ export default function MyApplication() {
     );
   }
 
-  if (isError) {
+  if (isListError || isDetailError) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-destructive gap-2">
         <AlertCircle className="h-6 w-6" />
@@ -84,7 +98,7 @@ export default function MyApplication() {
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Programme</span><span>{app.programme?.title ?? '—'}</span></div>
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Programme Code</span><span>{app.programme?.programmeCode ?? '—'}</span></div>
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Academic Year</span><span>{app.academicYear}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Entry Route</span><span>{app.entryRoute?.replace(/_/g, ' ')}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Application Route</span><span>{app.applicationRoute?.replace(/_/g, ' ')}</span></div>
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Submitted</span><span>{new Date(app.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
         </CardContent>
       </Card>
@@ -121,9 +135,11 @@ export default function MyApplication() {
                 <div key={r.id} className="flex justify-between items-center border-b pb-2 last:border-0 text-sm">
                   <div>
                     <p className="font-medium">{r.refereeName}</p>
-                    <p className="text-xs text-muted-foreground">{r.relationship}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.refereePosition || r.refereeEmail}
+                    </p>
                   </div>
-                  {r.status && <StatusBadge status={r.status} />}
+                  <StatusBadge status={r.receivedDate ? 'RECEIVED' : 'PENDING'} />
                 </div>
               ))}
             </div>

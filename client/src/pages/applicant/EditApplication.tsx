@@ -47,7 +47,13 @@ export default function EditApplication() {
     </div>
   );
 
-  const canEdit = ['DRAFT', 'SUBMITTED'].includes(app.status);
+  // The canonical ApplicationStatus enum does not include DRAFT; an
+  // application becomes visible to admissions at SUBMITTED. Editing is
+  // therefore only permitted while the application is still at SUBMITTED
+  // (before any admissions decision has been recorded). Once an
+  // institutional decision lands the application moves to UNDER_REVIEW
+  // or beyond and the applicant can no longer self-edit.
+  const canEdit = app.status === 'SUBMITTED';
 
   const handleSave = () => {
     updateApp.mutate(
