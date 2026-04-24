@@ -119,3 +119,25 @@ export async function getEngagementScores(studentId: string, academicYear: strin
 export async function createAlert(data: Prisma.AttendanceAlertUncheckedCreateInput) {
   return prisma.attendanceAlert.create({ data });
 }
+
+export async function findActiveEnrolmentForStudent(studentId: string) {
+  return prisma.enrolment.findFirst({
+    where: { studentId, status: 'ENROLLED', deletedAt: null },
+    select: { academicYear: true },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function getUkviRecordForStudent(studentId: string) {
+  return prisma.uKVIRecord.findFirst({
+    where: { studentId, deletedAt: null },
+    select: { tier4Status: true, complianceStatus: true },
+  });
+}
+
+export async function findActiveAlert(studentId: string, alertType: 'LOW_ATTENDANCE' | 'TIER4_RISK') {
+  return prisma.attendanceAlert.findFirst({
+    where: { studentId, alertType, status: 'ACTIVE' },
+    select: { id: true },
+  });
+}

@@ -2,7 +2,6 @@ import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import * as repo from '../../repositories/attendance.repository';
 import * as settingsRepo from '../../repositories/systemSetting.repository';
-import prisma from '../../utils/prisma';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import logger from '../../utils/logger';
@@ -61,11 +60,7 @@ async function evaluateAttendanceThresholds(
   actorId: string,
 ): Promise<void> {
   try {
-    const enrolment = await prisma.enrolment.findFirst({
-      where: { studentId, status: 'ENROLLED', deletedAt: null },
-      select: { academicYear: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    const enrolment = await repo.findActiveEnrolmentForStudent(studentId);
     if (!enrolment) return;
 
     const { rate, total } = await repo.getStudentAttendanceRate(studentId, enrolment.academicYear);
@@ -75,10 +70,7 @@ async function evaluateAttendanceThresholds(
     const generalThreshold = await getGeneralAttendanceThreshold();
     const ukviThreshold = await getUkviAttendanceThreshold();
 
-    const visa = await prisma.uKVIRecord.findFirst({
-      where: { studentId, deletedAt: null },
-      select: { tier4Status: true, complianceStatus: true },
-    });
+    const visa = await repo.getUkviRecordForStudent(studentId);
     const isSponsored = visa?.tier4Status === 'SPONSORED';
 
     // UKVI breach takes precedence for sponsored students.
@@ -128,10 +120,7 @@ async function createAlertIfNotOpen(
   currentValue: number,
   threshold: number,
 ): Promise<void> {
-  const existing = await prisma.attendanceAlert.findFirst({
-    where: { studentId, alertType, status: 'ACTIVE' },
-    select: { id: true },
-  });
+  const existing = await repo.findActiveAlert(studentId, alertType);
   if (existing) return;
   // Prisma accepts plain number literals for Decimal columns and serialises
   // via the driver's Decimal adapter — no explicit Prisma.Decimal construction
