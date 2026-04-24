@@ -60,7 +60,6 @@ export default function Login() {
   }
 
   const handleSignIn = (portalRoute: string) => {
-    console.log('Sign In clicked for portal:', portalRoute);
     login(portalRoute);
   };
 
