@@ -28,6 +28,8 @@ The current delivery roadmap is now controlled by
 | KI-P15-002 — ESLint baseline triage and ratchet to blocking | Phase 15B or dedicated `fix/eslint-baseline` branch |
 | KI-P16-001 — server tsc fails on pre-existing TS5101 after TypeScript 6.0 bump | Dedicated `chore/tooling-ts6-deprecations` branch (or folded into Phase 17 closeout) |
 | KI-P16-002 — `prisma generate` runtime missing-module error after Prisma 7 bump | Dedicated `chore/tooling-prisma-7` branch (runs DB development; not blocking unit tests) |
+| KI-P16C-001 — applicant-to-student converter defaults feeStatus to `HOME` | Phase 18 — proper fee assessment logic against residence / immigration data |
+| KI-P16C-002 — applicant-to-student conversion is not transactional | Phase 16D or Phase 18 — if Student creation succeeds and Enrolment creation fails, operators must re-trigger; the converter is idempotent, so recovery is safe |
 | MFA enforcement in Keycloak | Phase 15B |
 | Redis-backed identity cache | Phase 15B |
 | KI-P10b-001 — finance sub-domains | Phase 18 / 18A |
