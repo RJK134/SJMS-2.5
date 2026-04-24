@@ -672,9 +672,9 @@ DECLINED, WITHDRAWN, REJECTED          (terminal)
 
 **Verification (Batches 16A + 16B + 16C + 16D):**
 - Server Vitest: **186/186** passing (up from 174 on main after 16C; +4 cascade cases in `enrolments.service.test.ts`, +8 cases in the new `clearance-checks.service.test.ts`).
-- Server tsc: 0 new errors — the single pre-existing `TS5101` diagnostic from the TypeScript 6.0 dependabot bump (PR #69) remains and is still the only diagnostic. Tracked under **KI-P16-001**.
-- Client tsc: 0 new errors — same TS5101 baseline as the server (exit code 0 because of the client tsconfig posture).
-- `npx prisma validate` / `prisma generate`: pre-existing failures from the Prisma 7 client/CLI mismatch — tracked under **KI-P16-002**, non-regressive (unit suite mocks Prisma).
+- Server tsc: ✅ clean after `chore/tooling-tsc-baseline` closed **KI-P16-001**.
+- Client tsc: ✅ clean after `chore/tooling-tsc-baseline` closed **KI-P16-001**.
+- `npx prisma validate` / `prisma generate`: ✅ clean after `chore/tooling-tsc-baseline` closed **KI-P16-002** by pinning Prisma back to `~6.19.3`; the Prisma 7 migration remains a future planned branch.
 - `grep -n "prisma\.moduleRegistration" server/src/api/enrolments/enrolments.service.ts` → 0 hits (KI-P12-001 detection command).
 
 **Deliberately out-of-scope (sequenced to later batches of Phase 16):**
