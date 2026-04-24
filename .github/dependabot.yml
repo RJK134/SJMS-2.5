@@ -25,9 +25,6 @@ updates:
       prefix: chore
       prefix-development: chore
       include: scope
-    labels:
-      - dependencies
-      - npm
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -67,6 +64,3 @@ updates:
     commit-message:
       prefix: ci
       include: scope
-    labels:
-      - dependencies
-      - github-actions
