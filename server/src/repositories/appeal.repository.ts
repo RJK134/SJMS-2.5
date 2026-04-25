@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { APPEAL_SORT } from '../utils/repository-sort-allow-lists';
 
 export interface AppealFilters {
   studentId?: string;
@@ -21,7 +22,7 @@ export async function list(filters: AppealFilters = {}, pagination: CursorPagina
       where,
       include: { student: { include: { person: true } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, APPEAL_SORT, 'submittedDate'),
     }),
     prisma.appeal.count({ where }),
   ]);

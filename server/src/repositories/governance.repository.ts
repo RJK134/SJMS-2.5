@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { COMMITTEE_MEETING_SORT, COMMITTEE_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma } from '@prisma/client';
 
 // ── Filter interfaces ────────────────────────────────────────────────────
@@ -36,7 +37,7 @@ export async function listCommittees(filters: CommitteeFilters = {}, pagination:
       include: { members: { include: { staff: { include: { person: true } } } } },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, COMMITTEE_SORT, 'committeeName'),
     }),
     prisma.committee.count({ where }),
   ]);
@@ -95,7 +96,7 @@ export async function listMeetings(filters: MeetingFilters = {}, pagination: Cur
       include: { committee: true },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, COMMITTEE_MEETING_SORT, 'meetingDate'),
     }),
     prisma.committeeMeeting.count({ where }),
   ]);

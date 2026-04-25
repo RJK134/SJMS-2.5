@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma';
 import type { Prisma } from '@prisma/client';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { COMMUNICATION_LOG_SORT } from '../utils/repository-sort-allow-lists';
 
 export async function create(data: Prisma.CommunicationLogUncheckedCreateInput) {
   return prisma.communicationLog.create({ data });
@@ -30,7 +31,7 @@ export async function list(filters: CommunicationLogFilters = {}, pagination: Cu
       where,
       include: { template: true },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, COMMUNICATION_LOG_SORT),
     }),
     prisma.communicationLog.count({ where }),
   ]);

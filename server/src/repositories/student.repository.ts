@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { STUDENT_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma } from '@prisma/client';
 
 const detailInclude = {
@@ -59,7 +60,7 @@ export async function list(filters: StudentFilters = {}, pagination: CursorPagin
       include: listInclude,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, STUDENT_SORT),
     }),
     prisma.student.count({ where }),
   ]);

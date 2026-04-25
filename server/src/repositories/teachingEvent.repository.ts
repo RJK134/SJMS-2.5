@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { TEACHING_EVENT_SORT } from '../utils/repository-sort-allow-lists';
 
 // TeachingEvent has no deletedAt field in the current schema — teaching
 // sessions are state-driven via `status` (scheduled, cancelled, etc).
@@ -49,7 +50,7 @@ export async function listSessions(filters: TeachingEventFilters = {}, paginatio
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, TEACHING_EVENT_SORT),
       include: {
         module: { select: { id: true, moduleCode: true, title: true, credits: true } },
         room: { select: { id: true, roomCode: true, building: true, capacity: true, roomType: true } },

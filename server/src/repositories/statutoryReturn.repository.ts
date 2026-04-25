@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { STATUTORY_RETURN_SORT } from '../utils/repository-sort-allow-lists';
 
 // StatutoryReturn is a read-heavy model with no deletedAt field — returns
 // are state-driven via the `status` column (DRAFT, SUBMITTED, ACCEPTED, etc.)
@@ -24,7 +25,7 @@ export async function list(filters: StatutoryReturnFilters = {}, pagination: Cur
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, STATUTORY_RETURN_SORT),
     }),
     prisma.statutoryReturn.count({ where }),
   ]);

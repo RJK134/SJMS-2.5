@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { ENROLMENT_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma, type EnrolmentStatus } from '@prisma/client';
 
 export interface EnrolmentFilters {
@@ -29,7 +30,7 @@ export async function list(filters: EnrolmentFilters = {}, pagination: CursorPag
       include: defaultInclude,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, ENROLMENT_SORT),
     }),
     prisma.enrolment.count({ where }),
   ]);

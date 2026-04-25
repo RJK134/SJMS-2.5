@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma';
 import type { Prisma } from '@prisma/client';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { HESA_NOTIFICATION_SORT } from '../utils/repository-sort-allow-lists';
 
 export async function create(data: Prisma.HESANotificationUncheckedCreateInput) {
   return prisma.hESANotification.create({ data });
@@ -30,7 +31,7 @@ export async function list(filters: HESANotificationFilters = {}, pagination: Cu
     prisma.hESANotification.findMany({
       where,
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, HESA_NOTIFICATION_SORT),
     }),
     prisma.hESANotification.count({ where }),
   ]);

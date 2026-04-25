@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { UKVI_CONTACT_POINT_SORT, UKVI_RECORD_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma } from '@prisma/client';
 
 export interface UKVIFilters {
@@ -36,7 +37,7 @@ export async function list(filters: UKVIFilters = {}, pagination: CursorPaginati
       include: { student: { include: { person: true } } },
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, UKVI_RECORD_SORT),
     }),
     prisma.uKVIRecord.count({ where }),
   ]);
@@ -97,7 +98,7 @@ export async function listContactPoints(
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
+      orderBy: safeOrderBy(pagination, UKVI_CONTACT_POINT_SORT),
       include: {
         ukviRecord: {
           include: {
@@ -125,8 +126,8 @@ export async function getNonCompliantStudents(pagination: CursorPaginationParams
     prisma.uKVIRecord.findMany({
       where,
       include: { student: { include: { person: true } } },
-      
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
+      orderBy: safeOrderBy(pagination, UKVI_RECORD_SORT, 'complianceStatus'),
     }),
     prisma.uKVIRecord.count({ where }),
   ]);
