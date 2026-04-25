@@ -1,0 +1,321 @@
+name: Cursor Agent (API-driven)
+
+# Drives Cursor's Background Agents API directly on GitHub events.
+# No Cursor UI automations required — everything flows through this workflow.
+#
+# Required repo secret:
+#   CURSOR_API_KEY  — generate at cursor.com/dashboard → Integrations → API Keys
+#
+# Triggers:
+#   - PR opened/synchronize/reopened   → review-only comment with fix suggestions
+#   - Issue labeled `cursor` / assigned to cursor-agent → implement & open PR
+#   - Comment containing @cursor       → contextual response (read-only or implement)
+#   - Check suite failure on PR        → investigate logs, push fix commit
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - 'prisma/**'
+      - 'scripts/**'
+      - '!**/*.md'
+      - '!**/*.csv'
+  issues:
+    types: [assigned, labeled]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  check_suite:
+    types: [completed]
+
+concurrency:
+  group: cursor-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.route.outputs.action }}      # review | implement | mention | ci-fix | skip
+      readonly: ${{ steps.route.outputs.readonly }}  # true | false
+      ref: ${{ steps.route.outputs.ref }}            # branch to base agent off
+      pr_number: ${{ steps.route.outputs.pr_number }}
+      issue_number: ${{ steps.route.outputs.issue_number }}
+      prompt: ${{ steps.route.outputs.prompt }}
+    steps:
+      - name: Route event
+        id: route
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          ACTOR: ${{ github.actor }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ASSIGNEE: ${{ github.event.assignee.login }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          CHECK_CONCLUSION: ${{ github.event.check_suite.conclusion }}
+          CHECK_HEAD: ${{ github.event.check_suite.head_branch }}
+        run: |
+          set -e
+
+          # Skip bots and self-loops
+          if [[ "$ACTOR" == "dependabot[bot]" || "$ACTOR" == "github-actions[bot]" || "$ACTOR" == "cursor-agent" ]]; then
+            echo "action=skip" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          ACTION="skip"
+          READONLY="false"
+          REF="main"
+          PROMPT=""
+
+          case "$EVENT_NAME" in
+            pull_request)
+              ACTION="review"
+              READONLY="true"
+              REF="$PR_HEAD"
+              PROMPT=$(jq -n \
+                --arg num "$PR_NUM" --arg title "$PR_TITLE" --arg body "$PR_BODY" \
+                '"Review PR #" + $num + ": " + $title + "\n\nDescription:\n" + ($body // "") + "\n\nFollow your system rules in .cursor/agents/SJMS-Agent.md and .cursor/rules/sjms-conventions.mdc. Leave a single review comment summarising findings. For clear low-risk fixes, push a fix commit prefixed fix(agent):. Do NOT modify auth, RBAC, session, or migration code."')
+              ;;
+            issues)
+              if [[ "$EVENT_ACTION" == "labeled" && "$LABEL_NAME" == "cursor" ]] || \
+                 [[ "$EVENT_ACTION" == "assigned" && "$ASSIGNEE" == "cursor-agent" ]]; then
+                ACTION="implement"
+                REF="main"
+                PROMPT=$(jq -n \
+                  --arg num "$ISSUE_NUM" --arg title "$ISSUE_TITLE" --arg body "$ISSUE_BODY" \
+                  '"Implement issue #" + $num + ": " + $title + "\n\nDescription:\n" + ($body // "") + "\n\nFollow .cursor/agents/SJMS-Agent.md. Open a PR titled feat(agent): or fix(agent): referencing the issue with Closes #" + $num + ". Run npm run lint and npm run build before completing."')
+              fi
+              ;;
+            issue_comment|pull_request_review_comment)
+              if [[ "$COMMENT_BODY" == *"@cursor"* ]]; then
+                ACTION="mention"
+                # Read-only mode triggers
+                if echo "$COMMENT_BODY" | grep -qiE '@cursor[[:space:]]+(explain|question:|q:|what|why|how|where|when|which|who|describe|summari[sz]e|review \(no fix\)|read-only:)'; then
+                  READONLY="true"
+                fi
+                REF="${PR_HEAD:-main}"
+                PROMPT=$(jq -n \
+                  --arg comment "$COMMENT_BODY" --arg pr "$PR_NUM" --arg issue "$ISSUE_NUM" \
+                  --arg readonly "$READONLY" \
+                  '"User mention: " + $comment + "\n\nContext: PR #" + $pr + " / Issue #" + $issue + "\n\nIf read-only mode (" + $readonly + " == true): respond with a comment only, do NOT push commits or open PRs. Otherwise follow .cursor/agents/SJMS-Agent.md normal rules."')
+              fi
+              ;;
+            check_suite)
+              if [[ "$CHECK_CONCLUSION" == "failure" && -n "$CHECK_HEAD" && "$CHECK_HEAD" != "main" ]]; then
+                ACTION="ci-fix"
+                REF="$CHECK_HEAD"
+                PROMPT="CI failed on branch $CHECK_HEAD. Investigate the failing checks via the GitHub API, identify the root cause, and push a single fix commit prefixed fix(agent): ci. Do NOT disable tests, suppress type errors, or skip checks."
+              fi
+              ;;
+          esac
+
+          {
+            echo "action=$ACTION"
+            echo "readonly=$READONLY"
+            echo "ref=$REF"
+            echo "pr_number=$PR_NUM"
+            echo "issue_number=$ISSUE_NUM"
+            echo "prompt<<PROMPTEOF"
+            echo "$PROMPT"
+            echo "PROMPTEOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Routed: action=$ACTION readonly=$READONLY ref=$REF"
+
+  guard:
+    needs: classify
+    if: needs.classify.outputs.action != 'skip'
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.size.outputs.proceed }}
+    steps:
+      - name: PR size guard (cost control)
+        id: size
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ needs.classify.outputs.pr_number }}
+          ACTION: ${{ needs.classify.outputs.action }}
+        run: |
+          if [[ "$ACTION" == "review" && -n "$PR_NUM" ]]; then
+            CHANGES=$(gh pr view "$PR_NUM" --repo ${{ github.repository }} --json additions,deletions -q '.additions + .deletions')
+            echo "PR size: $CHANGES lines"
+            if [ "$CHANGES" -gt 1500 ]; then
+              echo "::notice::PR exceeds 1500 line-change threshold; skipping agent to preserve credits."
+              echo "proceed=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+  invoke:
+    needs: [classify, guard]
+    if: needs.classify.outputs.action != 'skip' && needs.guard.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify CURSOR_API_KEY is configured
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          if [ -z "$CURSOR_API_KEY" ]; then
+            echo "::error::CURSOR_API_KEY repo secret is missing. Get one at https://cursor.com/dashboard → Integrations → API Keys."
+            exit 1
+          fi
+
+      - name: Check API key is valid
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          STATUS=$(curl -s -o /tmp/me.json -w "%{http_code}" \
+            -H "Authorization: Bearer $CURSOR_API_KEY" \
+            https://api.cursor.com/v0/me)
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Cursor API key invalid or expired (HTTP $STATUS). Body: $(cat /tmp/me.json)"
+            exit 1
+          fi
+          echo "API key valid for: $(jq -r '.email // .name // "user"' /tmp/me.json)"
+
+      - name: Discover available models
+        id: models
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          set -e
+          # Fetch live model list from the API
+          curl -sS -H "Authorization: Bearer $CURSOR_API_KEY" \
+            https://api.cursor.com/v0/models > /tmp/models.json
+
+          echo "::group::Available models"
+          cat /tmp/models.json | jq .
+          echo "::endgroup::"
+
+          # Pick the first matching model from a preference list
+          # (the API may return either an array of strings or an array of objects with .id)
+          MODELS_FLAT=$(jq -r 'if type == "array" then
+                                  if (.[0] | type) == "string" then .[]
+                                  else .[].id end
+                                elif .models then
+                                  if (.models[0] | type) == "string" then .models[]
+                                  else .models[].id end
+                                else empty end' /tmp/models.json)
+
+          if [ -z "$MODELS_FLAT" ]; then
+            echo "::warning::Could not parse model list; defaulting to claude-4.6-sonnet"
+            CHOSEN="claude-4.6-sonnet"
+          else
+            # Preference order — prefer Claude Sonnet for reliability, fall back to others
+            CHOSEN=""
+            for pref in "claude-4.6-sonnet" "claude-sonnet-4.6" "composer-2" "composer-1.5" \
+                        "gpt-5.5-high" "gpt-5.5" "gpt-5.4-high" "gpt-5.4" \
+                        "claude-4.7-opus" "claude-opus-4.7" "gemini-3.1-pro" "gemini-3-pro"; do
+              if echo "$MODELS_FLAT" | grep -qx "$pref"; then
+                CHOSEN="$pref"
+                break
+              fi
+            done
+            # Last-ditch: pick the first one
+            if [ -z "$CHOSEN" ]; then
+              CHOSEN=$(echo "$MODELS_FLAT" | head -1)
+            fi
+          fi
+
+          echo "Selected model: $CHOSEN"
+          echo "model=$CHOSEN" >> "$GITHUB_OUTPUT"
+
+      - name: Launch Cursor Background Agent
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          PROMPT: ${{ needs.classify.outputs.prompt }}
+          REF: ${{ needs.classify.outputs.ref }}
+          ACTION: ${{ needs.classify.outputs.action }}
+          READONLY: ${{ needs.classify.outputs.readonly }}
+          PR_NUM: ${{ needs.classify.outputs.pr_number }}
+          ISSUE_NUM: ${{ needs.classify.outputs.issue_number }}
+        run: |
+          set -e
+
+          # Decide auto-create-PR behaviour
+          AUTO_PR="false"
+          BRANCH=""
+          if [[ "$ACTION" == "implement" ]]; then
+            AUTO_PR="true"
+            BRANCH="cursor/issue-${ISSUE_NUM}"
+          elif [[ "$ACTION" == "ci-fix" ]]; then
+            AUTO_PR="false"   # push to existing PR branch
+            BRANCH="$REF"
+          elif [[ "$ACTION" == "mention" && "$READONLY" != "true" ]]; then
+            AUTO_PR="false"
+            BRANCH="$REF"
+          else
+            # review or read-only mention: no commits
+            AUTO_PR="false"
+            BRANCH=""
+          fi
+
+          # Build payload — model defaults to GPT-5.5 (included in your Pro+ plan)
+          PAYLOAD=$(jq -n \
+            --arg prompt "$PROMPT" \
+            --arg repo "https://github.com/${{ github.repository }}" \
+            --arg ref "$REF" \
+            --arg model "${{ steps.models.outputs.model }}" \
+            --argjson autoPr "$AUTO_PR" \
+            --arg branch "$BRANCH" \
+            '{
+              prompt: { text: $prompt },
+              source: { repository: $repo, ref: $ref },
+              model: $model,
+              target: ({ autoCreatePr: $autoPr } + (if $branch == "" then {} else { branchName: $branch } end))
+            }')
+
+          echo "::group::Cursor API payload"
+          echo "$PAYLOAD" | jq .
+          echo "::endgroup::"
+
+          RESPONSE=$(curl -sS -X POST https://api.cursor.com/v0/agents \
+            -H "Authorization: Bearer $CURSOR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          echo "::group::Cursor API response"
+          echo "$RESPONSE" | jq .
+          echo "::endgroup::"
+
+          AGENT_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
+          AGENT_URL=$(echo "$RESPONSE" | jq -r '.target.url // empty')
+
+          if [ -z "$AGENT_ID" ]; then
+            echo "::error::No agent ID in response. Cursor API may be experiencing issues. Body: $RESPONSE"
+            exit 1
+          fi
+
+          echo "AGENT_ID=$AGENT_ID" >> "$GITHUB_ENV"
+          echo "AGENT_URL=$AGENT_URL" >> "$GITHUB_ENV"
+
+      - name: Comment back on the GitHub event with the agent link
+        if: env.AGENT_ID != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ needs.classify.outputs.pr_number }}
+          ISSUE_NUM: ${{ needs.classify.outputs.issue_number }}
+          ACTION: ${{ needs.classify.outputs.action }}
+        run: |
+          BODY="🤖 **SJMS-Agent dispatched** — action: \`$ACTION\`, agent id: \`$AGENT_ID\`. Track progress: $AGENT_URL"
+          TARGET="${PR_NUM:-$ISSUE_NUM}"
+          if [ -n "$TARGET" ]; then
+            gh api -X POST "repos/${{ github.repository }}/issues/$TARGET/comments" -f body="$BODY" --silent
+          fi

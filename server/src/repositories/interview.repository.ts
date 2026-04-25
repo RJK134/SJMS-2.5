@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { INTERVIEW_SORT } from '../utils/repository-sort-allow-lists';
 
 export interface InterviewFilters {
   applicationId?: string;
@@ -19,7 +20,7 @@ export async function list(filters: InterviewFilters = {}, pagination: CursorPag
       where,
       include: { application: { include: { applicant: { include: { person: true } } } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, INTERVIEW_SORT),
     }),
     prisma.interview.count({ where }),
   ]);

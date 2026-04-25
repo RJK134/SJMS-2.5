@@ -4,16 +4,19 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import { PrismaClient } from '@prisma/client';
+import { randomInt } from 'node:crypto';
 
 const prisma = new PrismaClient();
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-const rng = (max: number) => Math.floor(Math.random() * max);
+// Uses crypto.randomInt — seed data is non-security-critical but Math.random()
+// is flagged by CodeQL js/insecure-randomness, so we use the crypto-grade RNG.
+const rng = (max: number) => (max <= 0 ? 0 : randomInt(0, max));
 const pick = <T>(arr: readonly T[]): T => arr[rng(arr.length)];
 const d = (y: number, m: number, day: number) => new Date(y, m - 1, day);
 const pad = (n: number, w = 4) => String(n).padStart(w, '0');
-const money = (min: number, max: number) => +(min + Math.random() * (max - min)).toFixed(2);
-const mark = () => +(35 + Math.random() * 65).toFixed(1); // 35-100
+const money = (min: number, max: number) => +(min + (randomInt(0, 1_000_000) / 1_000_000) * (max - min)).toFixed(2);
+const mark = () => +(35 + (randomInt(0, 1_000_000) / 1_000_000) * 65).toFixed(1); // 35-100
 
 // ─── Reference Data ─────────────────────────────────────────────────────────
 const MALE_NAMES = [
