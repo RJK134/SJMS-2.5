@@ -33,7 +33,17 @@ export async function getById(id: string) {
 export async function create(data: Prisma.SubmissionUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('Submission', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('submissions.created', { id: result.id });
+  emitEvent({
+    event: 'submissions.created',
+    entityType: 'Submission',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      assessmentId: (result as { assessmentId?: string }).assessmentId ?? null,
+      moduleRegistrationId: (result as { moduleRegistrationId?: string }).moduleRegistrationId ?? null,
+      status: (result as { status?: string }).status ?? null,
+    },
+  });
   return result;
 }
 
@@ -41,7 +51,32 @@ export async function update(id: string, data: Prisma.SubmissionUpdateInput, use
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Submission', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('submissions.updated', { id });
+  emitEvent({
+    event: 'submissions.updated',
+    entityType: 'Submission',
+    entityId: id,
+    actorId: userId,
+    data: {
+      assessmentId: (result as { assessmentId?: string }).assessmentId ?? null,
+      moduleRegistrationId: (result as { moduleRegistrationId?: string }).moduleRegistrationId ?? null,
+      status: (result as { status?: string }).status ?? null,
+    },
+  });
+  const prevStatus = (previous as { status?: string }).status;
+  const newStatus = (result as { status?: string }).status;
+  if (prevStatus !== newStatus) {
+    emitEvent({
+      event: 'submissions.status_changed',
+      entityType: 'Submission',
+      entityId: id,
+      actorId: userId,
+      data: {
+        assessmentId: (result as { assessmentId?: string }).assessmentId ?? null,
+        previousStatus: prevStatus,
+        newStatus,
+      },
+    });
+  }
   return result;
 }
 
@@ -49,5 +84,14 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Submission', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('submissions.deleted', { id });
+  emitEvent({
+    event: 'submissions.deleted',
+    entityType: 'Submission',
+    entityId: id,
+    actorId: userId,
+    data: {
+      assessmentId: (previous as { assessmentId?: string }).assessmentId ?? null,
+      moduleRegistrationId: (previous as { moduleRegistrationId?: string }).moduleRegistrationId ?? null,
+    },
+  });
 }

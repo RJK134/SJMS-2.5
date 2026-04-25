@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,14 +26,39 @@ interface DataTableProps<T> {
   currentSort?: string;
   currentOrder?: 'asc' | 'desc';
   emptyMessage?: string;
+  /** Infinite scroll: is more data being fetched? */
+  isFetchingMore?: boolean;
+  /** Infinite scroll: are there more pages to load? */
+  hasMore?: boolean;
+  /** Infinite scroll: callback to load next page */
+  onLoadMore?: () => void;
 }
 
 export default function DataTable<T extends object>({
   columns, data, pagination, isLoading, searchPlaceholder = 'Search...',
   onSearch, onPageChange, onSort, onRowClick, currentSort, currentOrder,
   emptyMessage = 'No records found',
+  isFetchingMore, hasMore, onLoadMore,
 }: DataTableProps<T>) {
   const [searchValue, setSearchValue] = useState('');
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Detect prefers-reduced-motion for accessible fallback
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  const handleIntersect = useCallback((entries: IntersectionObserverEntry[]) => {
+    if (entries[0]?.isIntersecting && hasMore && !isFetchingMore && onLoadMore) {
+      onLoadMore();
+    }
+  }, [hasMore, isFetchingMore, onLoadMore]);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !onLoadMore || !sentinelRef.current) return;
+    const observer = new IntersectionObserver(handleIntersect, { rootMargin: '200px' });
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [handleIntersect, prefersReducedMotion, onLoadMore]);
 
   const handleSearch = (value: string) => {
     setSearchValue(value);
@@ -141,11 +166,27 @@ export default function DataTable<T extends object>({
         </Table>
       </div>
 
-      {/* Pagination */}
-      {pagination && (
+      {/* Infinite scroll sentinel + fallback button */}
+      {onLoadMore && hasMore && (
+        <>
+          {/* Auto-scroll sentinel (hidden for reduced motion) */}
+          {!prefersReducedMotion && <div ref={sentinelRef} className="h-1" />}
+          {/* Loading spinner or manual button */}
+          <div className="flex justify-center py-2">
+            {isFetchingMore ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : prefersReducedMotion ? (
+              <Button variant="outline" size="sm" onClick={onLoadMore}>Load more</Button>
+            ) : null}
+          </div>
+        </>
+      )}
+
+      {/* Legacy cursor pagination (for pages not yet migrated to useInfiniteList) */}
+      {!onLoadMore && pagination && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Showing {Math.min(pagination.limit, pagination.total)} of {pagination.total} records
+            Showing {Math.min(data.length, pagination.total)} of {pagination.total} records
           </span>
           <div className="flex items-center gap-2">
             <Button

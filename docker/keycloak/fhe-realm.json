@@ -15,6 +15,16 @@
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "bruteForceProtected": true,
+  "failureFactor": 30,
+  "maxDeltaTimeSeconds": 43200,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyLookAheadWindow": 1,
   "internationalizationEnabled": true,
   "supportedLocales": [
     "en"

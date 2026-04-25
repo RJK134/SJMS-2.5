@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { AUDIT_LOG_SORT } from '../utils/repository-sort-allow-lists';
 
 // AuditLog is append-only and intentionally has NO softDelete, update,
 // or remove operations — audit trails must never be mutated or removed.
@@ -33,7 +34,7 @@ export async function list(filters: AuditLogFilters = {}, pagination: CursorPagi
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, AUDIT_LOG_SORT, 'timestamp'),
       select: {
         id: true,
         entityType: true,

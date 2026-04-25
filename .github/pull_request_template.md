@@ -1,65 +1,79 @@
 ## Review Scope — SJMS 2.5
 
-> ⚠️ This review is intentionally scoped. Do not review beyond these boundaries.
-
-**Project phase:**
-- PR #9 = Phase 1 Build Gate closure / stabilisation
-- Remediation PR = pre-Phase 2 structural fixes (soft deletes, realm, Docker)
-- Phase 2 PRs = auth foundation (Keycloak, OIDC, JWT, data scoping)
+> ⚠️ Review only the diff in this PR and the control files it updates.
 
 **BLOCKING findings ONLY if they affect:**
-1. Authentication correctness (token validation, PKCE flow, refresh)
-2. Role-based access control (missing requireRole, wrong role group)
-3. Data scoping / data leakage (student sees another student's data)
-4. Direct hard delete on business entities (prisma.*.delete)
-5. Missing audit logging on mutations (no logAudit/emitEvent call)
-6. Broken Docker / dev-start path
-7. Route regressions or broken portal entry paths
-8. Security-critical realm / token validation mismatch
+1. Authentication, authorisation, or data scoping correctness
+2. Missing validation, audit logging, or webhook emission on touched mutations
+3. Hard deletes or destructive finance/marks retention behaviour
+4. Broken CI, build, verification, or release-discipline automation
+5. Broken routes, portal entry points, or workflow/event regressions introduced by this PR
+6. Security-critical configuration drift (secrets, CSP/CORS, auth bypass, request correlation, workflow credentials)
 
-**NON-BLOCKING findings (flag but do not block merge):**
-- Repository-layer bypass (service calls prisma directly)
-- Typing weaknesses (data: any)
-- Missing tests
-- Marks pipeline incompleteness
-- Style/naming preferences
-— but ONLY when directly touched by this PR's diff.
+**NON-BLOCKING findings:**
+- repository-layer bypasses
+- missing tests where the diff introduces logic
+- documentation drift outside the touched files
+- style or naming issues directly in the diff
+- backlog-worthy concerns that do not block merge
 
 **DO NOT:**
-- Request broad refactors outside this PR's scope
-- Suggest framework changes or dependency upgrades
-- Flag naming/style churn unrelated to the PR
-- Reopen already-accepted Phase 1 decisions
-- Comment on files not modified in this PR
+- request broad refactors outside this PR's scope
+- reopen already-accepted architectural decisions unless this PR regresses them
+- comment on untouched files
+- suggest new frameworks or dependencies unless required to fix a blocking issue
 
 **OUTPUT LIMITS:**
 - Maximum 5 blocking findings
 - Maximum 5 non-blocking findings
-- Everything else → backlog (mention once in summary, do not inline-comment)
-- Each finding must state: BLOCKING or NON-BLOCKING
-- Each finding must state: "must fix before merge" or "backlog"
+- State `BLOCKING` or `NON-BLOCKING` on every finding
+- State `must fix before merge`, `fix if quick`, or `backlog` on every finding
 
 ---
 
-## PR Details
+## Phase Details
 
-**What does this PR do?**
-<!-- Replace with your PR description -->
+**Phase objective:**
+<!-- Describe the business outcome for this phase or batch -->
 
-**Related issues:**
-<!-- Link to issue(s) this PR closes -->
+**Branch:**
+<!-- e.g. phase-14/governance-baseline -->
 
-**Type of change:**
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation
-- [ ] Structural/Refactoring
+**Batches completed:**
+<!-- List each batch with its scope and commit SHA, for example:
+- Batch 1A — CI workflow hardening (0d570c0)
+- Batch 1B — .claude/worktrees cleanup (49cd99e)
+-->
 
-**Testing:**
-<!-- Describe how this was tested -->
+## Acceptance gates
 
-**Checklist:**
-- [ ] Code follows project standards
-- [ ] Tests pass locally
-- [ ] No console errors or warnings
-- [ ] Docker dev-start works
+- [ ] `cd server && npx tsc --noEmit`
+- [ ] `cd client && npx tsc --noEmit`
+- [ ] `DATABASE_URL=... npx prisma validate --schema=prisma/schema.prisma`
+- [ ] `npx prisma generate --schema=prisma/schema.prisma`
+- [ ] Relevant Vitest suites pass
+- [ ] Relevant Playwright suites pass (when user journeys are touched)
+- [ ] `docs/VERIFICATION-PROTOCOL.md` gates reviewed
+- [ ] Repository hygiene: no new `.claude/worktrees/` entries, no stray chat transcripts, no dangling gitlinks (`git ls-files -s | awk '$1=="160000"'` empty)
+- [ ] BugBot HIGH findings: 0 open
+- [ ] GitGuardian / secret checks: no blocking findings
+
+## Known issues resolved
+
+- [ ] KI-...
+
+## Known issues deferred
+
+- [ ] KI-... — reason and target phase
+
+## Testing evidence
+
+<!--
+List the exact commands run and their outcomes. For CI-only changes,
+point at the CI run URL and, where relevant, the coverage artefact
+published from the `server-coverage` upload step.
+-->
+
+## Reviewer notes
+
+<!-- Call out any specific areas BugBot or human reviewers should focus on -->

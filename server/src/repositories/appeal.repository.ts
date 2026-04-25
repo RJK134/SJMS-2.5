@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { APPEAL_SORT } from '../utils/repository-sort-allow-lists';
 
 export interface AppealFilters {
   studentId?: string;
@@ -19,9 +20,9 @@ export async function list(filters: AppealFilters = {}, pagination: CursorPagina
   const [data, total] = await Promise.all([
     prisma.appeal.findMany({
       where,
-      
+      include: { student: { include: { person: true } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, APPEAL_SORT, 'submittedDate'),
     }),
     prisma.appeal.count({ where }),
   ]);

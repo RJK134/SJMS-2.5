@@ -10,7 +10,7 @@ router.use('/exam-boards', examBoardsRouter);
 router.use('/awards', awardsRouter);
 
 router.get('/health', (_req, res) => {
-  res.json({ group: 'progression', status: 'ok', modules: 3 });
+  res.json({ group: 'progression', status: 'ok', modules: 3, timestamp: new Date().toISOString() });
 });
 
 export default router;

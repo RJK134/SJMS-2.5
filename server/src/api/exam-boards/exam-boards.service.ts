@@ -32,7 +32,19 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ExamBoardUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('ExamBoard', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('exam_boards.created', { id: result.id });
+  emitEvent({
+    event: 'exam_board.scheduled',
+    entityType: 'ExamBoard',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      programmeId: result.programmeId,
+      boardType: result.boardType,
+      academicYear: result.academicYear,
+      scheduledDate: result.scheduledDate?.toISOString() ?? null,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -40,7 +52,30 @@ export async function update(id: string, data: Prisma.ExamBoardUpdateInput, user
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('ExamBoard', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('exam_boards.updated', { id });
+  emitEvent({
+    event: 'exam_board.updated',
+    entityType: 'ExamBoard',
+    entityId: id,
+    actorId: userId,
+    data: {
+      programmeId: result.programmeId,
+      academicYear: result.academicYear,
+      status: result.status,
+    },
+  });
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'exam_board.status_changed',
+      entityType: 'ExamBoard',
+      entityId: id,
+      actorId: userId,
+      data: {
+        programmeId: result.programmeId,
+        previousStatus: previous.status,
+        newStatus: result.status,
+      },
+    });
+  }
   return result;
 }
 
@@ -48,5 +83,14 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('ExamBoard', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('exam_boards.deleted', { id });
+  emitEvent({
+    event: 'exam_board.deleted',
+    entityType: 'ExamBoard',
+    entityId: id,
+    actorId: userId,
+    data: {
+      programmeId: previous.programmeId,
+      title: previous.title,
+    },
+  });
 }

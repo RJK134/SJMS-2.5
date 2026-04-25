@@ -32,7 +32,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.AwardRecordUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('AwardRecord', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('awards.created', { id: result.id });
+  emitEvent({
+    event: 'awards.created',
+    entityType: 'AwardRecord',
+    entityId: result.id,
+    actorId: userId,
+    data: { studentId: result.studentId, programmeId: result.programmeId, classification: result.classification },
+  });
   return result;
 }
 
@@ -40,7 +46,13 @@ export async function update(id: string, data: Prisma.AwardRecordUpdateInput, us
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('AwardRecord', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('awards.updated', { id });
+  emitEvent({
+    event: 'awards.updated',
+    entityType: 'AwardRecord',
+    entityId: id,
+    actorId: userId,
+    data: { studentId: result.studentId, programmeId: result.programmeId, classification: result.classification },
+  });
   return result;
 }
 
@@ -48,5 +60,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('AwardRecord', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('awards.deleted', { id });
+  emitEvent({
+    event: 'awards.deleted',
+    entityType: 'AwardRecord',
+    entityId: id,
+    actorId: userId,
+    data: { studentId: previous.studentId, status: 'DELETED' },
+  });
 }

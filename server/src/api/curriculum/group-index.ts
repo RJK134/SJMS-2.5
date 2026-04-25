@@ -22,7 +22,7 @@ router.use('/departments', departmentsRouter);
 router.use('/schools', schoolsRouter);
 
 router.get('/health', (_req, res) => {
-  res.json({ group: 'curriculum', status: 'ok', modules: 9 });
+  res.json({ group: 'curriculum', status: 'ok', modules: 9, timestamp: new Date().toISOString() });
 });
 
 export default router;

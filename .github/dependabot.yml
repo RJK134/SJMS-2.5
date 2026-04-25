@@ -1,0 +1,66 @@
+version: 2
+
+# Automated dependency update proposals for SJMS 2.5.
+#
+# Policy:
+# - Weekly cadence, Mondays 07:00 UTC, to batch noise into one day.
+# - Minor and patch updates are grouped per ecosystem so a single
+#   review absorbs a week's worth of low-risk updates; major
+#   version bumps are kept as individual PRs so each receives
+#   dedicated BugBot review and human sign-off.
+# - `open-pull-requests-limit` caps churn to a reviewable volume.
+# - Commits use the repository's conventional-commit style so they
+#   flow through the existing PR template and changelog conventions.
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/London
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    # Prisma 7 introduces a breaking schema/runtime change: the
+    # `datasource.url = env(...)` form is no longer permitted; the URL
+    # must move to a `prisma.config.ts` file and the runtime
+    # PrismaClient must be constructed with an explicit adapter or
+    # accelerateUrl. That is an architectural decision (connection
+    # management, pooling, migration story) and belongs to a planned
+    # `chore/prisma-7-migration` branch rather than an automated
+    # dependabot bump that lands silently. Until that branch ships,
+    # ignore prisma major upgrades.
+    ignore:
+      - dependency-name: 'prisma'
+        update-types:
+          - 'version-update:semver-major'
+      - dependency-name: '@prisma/client'
+        update-types:
+          - 'version-update:semver-major'
+
+  # npm updates must run from the workspace root because the repository
+  # has a single root package-lock.json for both `/client` and `/server`.
+  # Per-workspace Dependabot entries update nested package.json files
+  # without regenerating the root lockfile, which breaks `npm ci` in CI.
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+      include: scope

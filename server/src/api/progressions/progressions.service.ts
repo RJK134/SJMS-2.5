@@ -31,7 +31,17 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ProgressionRecordUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('ProgressionRecord', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('progressions.created', { id: result.id });
+  emitEvent({
+    event: 'progressions.created',
+    entityType: 'ProgressionRecord',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      enrolmentId: result.enrolmentId,
+      decision: result.progressionDecision,
+      academicYear: (result as { academicYear?: string }).academicYear ?? null,
+    },
+  });
   return result;
 }
 
@@ -39,7 +49,29 @@ export async function update(id: string, data: Prisma.ProgressionRecordUpdateInp
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('ProgressionRecord', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('progressions.updated', { id });
+  emitEvent({
+    event: 'progressions.updated',
+    entityType: 'ProgressionRecord',
+    entityId: id,
+    actorId: userId,
+    data: {
+      enrolmentId: result.enrolmentId,
+      decision: result.progressionDecision,
+    },
+  });
+  if (result.progressionDecision !== previous.progressionDecision) {
+    emitEvent({
+      event: 'progressions.decision_changed',
+      entityType: 'ProgressionRecord',
+      entityId: id,
+      actorId: userId,
+      data: {
+        enrolmentId: result.enrolmentId,
+        previousDecision: previous.progressionDecision,
+        newDecision: result.progressionDecision,
+      },
+    });
+  }
   return result;
 }
 
@@ -47,5 +79,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('ProgressionRecord', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('progressions.deleted', { id });
+  emitEvent({
+    event: 'progressions.deleted',
+    entityType: 'ProgressionRecord',
+    entityId: id,
+    actorId: userId,
+    data: { enrolmentId: previous.enrolmentId },
+  });
 }

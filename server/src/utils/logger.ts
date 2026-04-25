@@ -1,6 +1,15 @@
 import winston from "winston";
+import { getRequestId } from "./request-context";
 
 const { combine, timestamp, json, printf, colorize } = winston.format;
+
+const requestContextFormat = winston.format((info) => {
+  const requestId = getRequestId();
+  if (requestId && info.requestId === undefined) {
+    info.requestId = requestId;
+  }
+  return info;
+});
 
 const devFormat = printf(({ level, message, timestamp, ...meta }) => {
   const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
@@ -14,8 +23,8 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format:
         process.env.NODE_ENV === "production"
-          ? combine(timestamp(), json())
-          : combine(timestamp({ format: "HH:mm:ss" }), colorize(), devFormat),
+          ? combine(timestamp(), requestContextFormat(), json())
+          : combine(timestamp({ format: "HH:mm:ss" }), requestContextFormat(), colorize(), devFormat),
     }),
   ],
 });

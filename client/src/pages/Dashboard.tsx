@@ -1,10 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { Redirect } from "wouter";
 import StaffLayout from "@/components/layout/StaffLayout";
-import AcademicLayout from "@/components/layout/AcademicLayout";
-import StudentLayout from "@/components/layout/StudentLayout";
-import ApplicantLayout from "@/components/layout/ApplicantLayout";
+import { ADMIN_STAFF_ROLES, ACADEMIC_STAFF_ROLES } from "@/constants/roles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/shared/StatCard";
@@ -193,43 +190,65 @@ export function DashboardContent() {
   );
 }
 
+/**
+ * Central dashboard entry point — synchronous role-based routing.
+ *
+ * ROLE PRIORITY ORDER (BugBot fixes fc25deae, d4d88bae, f47c14aa):
+ *   1. isLoading         → spinner (no render, no API calls)
+ *   2. !isAuthenticated  → <Redirect to="/login" />
+ *   3. hasAdminRole      → render <StaffLayout><DashboardContent />
+ *   4. hasAcademicRole   → <Redirect to="/academic/dashboard" />
+ *   5. isStudent         → <Redirect to="/student/dashboard" />
+ *   6. isApplicant       → <Redirect to="/applicant/dashboard" />
+ *   7. fallback          → render <StaffLayout><DashboardContent />
+ *
+ * This is a SYNCHRONOUS render-time check — no useEffect. Non-admin users
+ * never render StaffLayout or DashboardContent, so no admin API calls fire
+ * and no institutional KPIs flash on screen.
+ */
 export default function Dashboard() {
   const { roles, isAuthenticated, isLoading, authError } = useAuth();
-  const [, navigate] = useLocation();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isLoading, isAuthenticated, navigate]);
-
+  // 1. Loading / auth error → spinner
   if (isLoading || authError) {
     return <AuthLoadingOrError />;
   }
 
-  // Route to appropriate layout based on roles
-  const hasAdminRole = roles.some((r) =>
-    ["system_admin", "registry_manager", "registry_officer", "admissions_manager", "admissions_officer", "finance_manager", "finance_officer", "qa_manager"].includes(r)
-  );
-  const hasAcademicRole = roles.some((r) =>
-    ["dean", "associate_dean", "programme_leader", "module_leader", "lecturer", "personal_tutor"].includes(r)
-  );
-  const hasStudentRole = roles.includes("student") || roles.includes("student_rep");
-  const hasApplicantRole = roles.includes("applicant");
+  // 2. Not authenticated → login
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
 
+  // 3. Admin/staff → institutional KPI dashboard.
+  //    Checked FIRST because admin personas may also hold overlapping
+  //    academic roles (e.g. 'dean'). Uses the canonical ADMIN_STAFF_ROLES
+  //    constant from constants/roles.ts.
+  const hasAdminRole = roles.some((r) =>
+    (ADMIN_STAFF_ROLES as readonly string[]).includes(r),
+  );
   if (hasAdminRole) {
     return <StaffLayout><DashboardContent /></StaffLayout>;
   }
+
+  // 4. Academic-only (no admin overlap) → academic portal.
+  //    Uses ACADEMIC_STAFF_ROLES which includes personal_tutor (fix d4d88bae).
+  const hasAcademicRole = roles.some((r) =>
+    (ACADEMIC_STAFF_ROLES as readonly string[]).includes(r),
+  );
   if (hasAcademicRole) {
-    return <AcademicLayout><DashboardContent /></AcademicLayout>;
-  }
-  if (hasStudentRole) {
-    return <StudentLayout><DashboardContent /></StudentLayout>;
-  }
-  if (hasApplicantRole) {
-    return <ApplicantLayout><DashboardContent /></ApplicantLayout>;
+    return <Redirect to="/academic/dashboard" />;
   }
 
-  // Default fallback
+  // 5. Student → student portal
+  if (roles.includes("student") || roles.includes("student_rep")) {
+    return <Redirect to="/student/dashboard" />;
+  }
+
+  // 6. Applicant → applicant portal
+  if (roles.includes("applicant")) {
+    return <Redirect to="/applicant/dashboard" />;
+  }
+
+  // 7. Fallback — unknown role → render admin dashboard
   return <StaffLayout><DashboardContent /></StaffLayout>;
 }

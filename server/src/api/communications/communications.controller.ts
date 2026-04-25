@@ -38,3 +38,10 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     res.status(204).send();
   } catch (err) { next(err); }
 }
+
+export async function send(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await service.send(req.body as service.SendRequest, req.user?.sub ?? 'system', req);
+    res.status(201).json({ success: true, data });
+  } catch (err) { next(err); }
+}

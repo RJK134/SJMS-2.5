@@ -1,0 +1,144 @@
+{
+  "name": "SJMS: Marks Ratified",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "sjms/marks/ratified",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "rat-00001-trigger",
+      "name": "Webhook — Marks",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "sjms-marks-ratified"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "rat-cond-01",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "marks.ratified",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "rat-00002-filter",
+      "name": "Filter — Ratified",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://api:3001/api/v1/marks/{{ $json.entityId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "rat-00003-fetch",
+      "name": "Fetch Mark Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 200],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "outputIndex": 0, "conditions": { "conditions": [{ "leftValue": "={{ $json.data?.grade }}", "rightValue": "FAIL", "operator": { "type": "string", "operation": "notEquals" } }] } },
+            { "outputIndex": 1, "conditions": { "conditions": [{ "leftValue": "={{ $json.data?.grade }}", "rightValue": "FAIL", "operator": { "type": "string", "operation": "equals" } }] } }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "rat-00004-switch",
+      "name": "Switch — Pass or Fail",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [940, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $json.data?.moduleRegistrationId }}" },
+            { "name": "templateKey", "value": "marks_pass_notification" },
+            { "name": "channel", "value": "email" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "rat-00005-pass",
+      "name": "Notify — Pass",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 100],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $json.data?.moduleRegistrationId }}" },
+            { "name": "templateKey", "value": "marks_fail_notification" },
+            { "name": "channel", "value": "email" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "rat-00006-fail",
+      "name": "Notify — Fail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 300],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    }
+  ],
+  "connections": {
+    "Webhook — Marks": {
+      "main": [[{ "node": "Filter — Ratified", "type": "main", "index": 0 }]]
+    },
+    "Filter — Ratified": {
+      "main": [
+        [{ "node": "Fetch Mark Details", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Fetch Mark Details": {
+      "main": [[{ "node": "Switch — Pass or Fail", "type": "main", "index": 0 }]]
+    },
+    "Switch — Pass or Fail": {
+      "main": [
+        [{ "node": "Notify — Pass", "type": "main", "index": 0 }],
+        [{ "node": "Notify — Fail", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": [{ "name": "sjms" }, { "name": "phase-6" }, { "name": "assessment" }]
+}
