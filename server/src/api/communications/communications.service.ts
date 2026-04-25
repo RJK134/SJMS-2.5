@@ -128,7 +128,8 @@ export async function send(input: SendRequest, userId: string, req: Request) {
     await logRepo.updateStatus(logEntry.id, 'SENT');
   } catch (err) {
     deliveryStatus = 'FAILED';
-    logger.error(`Communication delivery failed: ${(err as Error).message}`);
+    const e = err as Error;
+    logger.error('Communication delivery failed', { errorMessage: e.message, errorName: e.name });
     await logRepo.updateStatus(logEntry.id, 'FAILED');
   }
 
