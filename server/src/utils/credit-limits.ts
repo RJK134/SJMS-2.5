@@ -19,7 +19,7 @@ const DEFAULT_CREDIT_LIMITS: Record<string, number> = {
  * @returns A positive whole number of credits, at most 240 when the setting
  *   value is accepted; otherwise a default per known modes (e.g. 75 for
  *   `PART_TIME`) or 120 when the mode is not in the map.
- * @throws Rethrows Prisma `findUnique` errors (e.g. database connection or
+ * @throws Propagates any error from Prisma `findUnique` (e.g. connection or
  *   query failure).
  *
  * @example
