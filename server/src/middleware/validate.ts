@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError, type ZodTypeAny } from "zod";
 
+function replaceRequestProperty<T>(req: Request, key: "body" | "params" | "query", value: T): void {
+  Object.defineProperty(req, key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
+}
+
 function formatZodErrors(error: ZodError): Record<string, string[]> {
   const formatted: Record<string, string[]> = {};
   for (const issue of error.issues) {
@@ -25,7 +34,7 @@ export function validate<TSchema extends ZodTypeAny>(schema: TSchema) {
       });
       return;
     }
-    req.body = result.data as Request['body'];
+    replaceRequestProperty(req, "body", result.data as Request["body"]);
     next();
   };
 }
@@ -42,7 +51,7 @@ export function validateParams<TSchema extends ZodTypeAny>(schema: TSchema) {
       });
       return;
     }
-    req.params = result.data as Request['params'];
+    replaceRequestProperty(req, "params", result.data as Request["params"]);
     next();
   };
 }
@@ -59,7 +68,7 @@ export function validateQuery<TSchema extends ZodTypeAny>(schema: TSchema) {
       });
       return;
     }
-    req.query = result.data as Request['query'];
+    replaceRequestProperty(req, "query", result.data as Request["query"]);
     next();
   };
 }

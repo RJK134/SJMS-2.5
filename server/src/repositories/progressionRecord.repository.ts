@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { PROGRESSION_RECORD_SORT } from '../utils/repository-sort-allow-lists';
 
 export interface ProgressionRecordFilters {
   enrolmentId?: string;
@@ -19,7 +20,7 @@ export async function list(filters: ProgressionRecordFilters = {}, pagination: C
       where,
       include: { enrolment: { include: { student: { include: { person: true } }, programme: true } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, PROGRESSION_RECORD_SORT),
     }),
     prisma.progressionRecord.count({ where }),
   ]);
