@@ -155,7 +155,7 @@ export function emitEvent(
     resolved = {
       ...eventTypeOrPayload,
       timestamp: eventTypeOrPayload.timestamp || new Date().toISOString(),
-      requestId: eventTypeOrPayload.requestId || getRequestId() ?? '',
+            requestId: (eventTypeOrPayload.requestId || getRequestId()) ?? '',
     };
   }
 
