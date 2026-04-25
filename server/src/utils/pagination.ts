@@ -69,9 +69,15 @@ export function safeOrderBy<T extends string>(
   allowed: readonly T[],
   fallback?: T,
 ): Record<T, 'asc' | 'desc'> {
+  const allowedList = allowed as readonly string[];
   const candidate = pagination.sort as T;
-  const field: T = (allowed as readonly string[]).includes(candidate)
+  /** Matches typical API default sort=createdAt when the client omits or spoofs the field. */
+  const defaultWhenUnrecognised = (allowedList.find((f) => f === 'createdAt') ??
+    allowed[0]) as T;
+  const field: T = allowedList.includes(candidate)
     ? candidate
-    : (fallback ?? allowed[0]);
+    : fallback !== undefined
+      ? fallback
+      : defaultWhenUnrecognised;
   return { [field]: pagination.order } as Record<T, 'asc' | 'desc'>;
 }
