@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 // ── Filter interfaces ────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export async function listBlocks(filters: BlockFilters = {}, pagination: CursorP
       include: { rooms: true },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
     }),
     prisma.accommodationBlock.count({ where }),
   ]);
@@ -94,7 +94,7 @@ export async function listRooms(filters: RoomFilters = {}, pagination: CursorPag
       include: { block: true },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
     }),
     prisma.accommodationRoom.count({ where }),
   ]);
@@ -153,7 +153,7 @@ export async function listBookings(filters: BookingFilters = {}, pagination: Cur
       },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
     }),
     prisma.accommodationBooking.count({ where }),
   ]);

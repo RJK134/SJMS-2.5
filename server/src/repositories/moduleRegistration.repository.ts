@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
 
 export interface ModuleRegistrationFilters {
   enrolmentId?: string;
@@ -31,7 +31,7 @@ export async function list(filters: ModuleRegistrationFilters = {}, pagination: 
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
       // Include the module so list consumers (the student MyModules
       // page, the student dashboard) can render moduleCode / title
       // without a separate fetch. Without this, those pages showed

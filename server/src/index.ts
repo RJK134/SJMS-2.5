@@ -19,11 +19,25 @@ const PORT = parseInt(process.env.PORT || "3001", 10);
 // ── Core middleware ──────────────────────────────────────────────────────
 app.use(helmet());
 app.use(requestId);
+// CORS — never reflect arbitrary origins (CodeQL js/cors-permissive-configuration).
+// Production: explicit allow-list from CORS_ORIGIN env var (comma-separated).
+// Non-production: explicit dev allow-list (Vite dev server, plus optional
+// override via CORS_ORIGIN for local tunnels).
+const DEV_CORS_ORIGINS = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3001",
+];
+const corsOrigins =
+  process.env.NODE_ENV === "production"
+    ? (process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean) ?? [])
+    : [
+        ...DEV_CORS_ORIGINS,
+        ...(process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
+      ];
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production"
-      ? (process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173"])
-      : true,
+    origin: corsOrigins,
     credentials: true,
     exposedHeaders: ["x-request-id"],
   })

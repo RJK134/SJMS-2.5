@@ -51,3 +51,27 @@ export function clampLimit(raw: number | undefined): number {
   if (!raw || raw < 1) return DEFAULT_LIMIT;
   return Math.min(raw, MAX_LIMIT);
 }
+
+/**
+ * Build a Prisma `orderBy` clause from user-controlled pagination params,
+ * validating the sort field against an allow-list to prevent
+ * remote-property-injection (CodeQL js/remote-property-injection).
+ *
+ * Always pass a literal tuple of allowed field names. If the user's
+ * `sort` is not in the allow-list, falls back to the supplied default
+ * (or the first allowed field).
+ *
+ * @example
+ *   orderBy: safeOrderBy(pagination, ['createdAt', 'updatedAt', 'blockName'], 'createdAt')
+ */
+export function safeOrderBy<T extends string>(
+  pagination: Pick<CursorPaginationParams, 'sort' | 'order'>,
+  allowed: readonly T[],
+  fallback?: T,
+): Record<T, 'asc' | 'desc'> {
+  const candidate = pagination.sort as T;
+  const field: T = (allowed as readonly string[]).includes(candidate)
+    ? candidate
+    : (fallback ?? allowed[0]);
+  return { [field]: pagination.order } as Record<T, 'asc' | 'desc'>;
+}

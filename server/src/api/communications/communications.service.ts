@@ -117,7 +117,14 @@ export async function send(input: SendRequest, userId: string, req: Request) {
   let deliveryStatus: 'SENT' | 'FAILED' = 'SENT';
   try {
     // TODO(Phase 8): Wire actual email/SMS delivery via SMTP_* env vars
-    logger.info(`Communication queued: ${input.channel} to ${input.recipientId} (template: ${input.templateKey})`);
+    // Use structured logging (Winston meta object) so user-controlled values
+    // are field values, not free-form strings interpolated into the log line.
+    // Fixes CodeQL js/log-injection.
+    logger.info('Communication queued', {
+      channel: input.channel,
+      recipientId: input.recipientId,
+      templateKey: input.templateKey,
+    });
     await logRepo.updateStatus(logEntry.id, 'SENT');
   } catch (err) {
     deliveryStatus = 'FAILED';

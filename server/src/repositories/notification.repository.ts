@@ -1,6 +1,6 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
 
 // Notification has no deletedAt field — notifications are state-driven
 // (isRead / expiresAt) and ephemeral. Hard-delete is intentional when called.
@@ -26,7 +26,7 @@ export async function list(filters: NotificationFilters = {}, pagination: Cursor
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
     }),
     prisma.notification.count({ where }),
   ]);

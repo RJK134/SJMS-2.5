@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
 import { type Prisma } from '@prisma/client';
 
 export interface AttendanceFilters {
@@ -36,7 +36,7 @@ export async function list(filters: AttendanceFilters = {}, pagination: CursorPa
       include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } },
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
     }),
     prisma.attendanceRecord.count({ where }),
   ]);
@@ -76,7 +76,7 @@ export async function listAlerts(filters: AttendanceAlertFilters = {}, paginatio
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ['id', 'createdAt', 'updatedAt', 'triggerDate', 'startDate', 'dayOfWeek', 'timestamp', 'settingKey', 'postedDate', 'dueDate', 'contactDate'] as const),
       include: {
         student: {
           include: {
