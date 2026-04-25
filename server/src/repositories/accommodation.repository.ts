@@ -1,5 +1,10 @@
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import {
+  ACCOMMODATION_BLOCK_SORT,
+  ACCOMMODATION_BOOKING_SORT,
+  ACCOMMODATION_ROOM_SORT,
+} from '../utils/repository-sort-allow-lists';
 import { type Prisma } from '@prisma/client';
 
 // ── Filter interfaces ────────────────────────────────────────────────────
@@ -42,7 +47,7 @@ export async function listBlocks(filters: BlockFilters = {}, pagination: CursorP
       include: { rooms: true },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ACCOMMODATION_BLOCK_SORT, 'blockName'),
     }),
     prisma.accommodationBlock.count({ where }),
   ]);
@@ -94,7 +99,7 @@ export async function listRooms(filters: RoomFilters = {}, pagination: CursorPag
       include: { block: true },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ACCOMMODATION_ROOM_SORT, 'roomNumber'),
     }),
     prisma.accommodationRoom.count({ where }),
   ]);
@@ -153,7 +158,7 @@ export async function listBookings(filters: BookingFilters = {}, pagination: Cur
       },
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ACCOMMODATION_BOOKING_SORT),
     }),
     prisma.accommodationBooking.count({ where }),
   ]);

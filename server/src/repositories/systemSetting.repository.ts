@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { SYSTEM_SETTING_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma } from '@prisma/client';
 
 export interface SystemSettingFilters {
@@ -23,7 +24,7 @@ export async function list(filters: SystemSettingFilters, pagination: CursorPagi
       where,
       take: pagination.limit + 1,
       ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order },
+      orderBy: safeOrderBy(pagination, SYSTEM_SETTING_SORT),
     }),
     prisma.systemSetting.count({ where }),
   ]);
