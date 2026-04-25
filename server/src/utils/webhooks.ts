@@ -24,9 +24,8 @@ export interface WebhookPayload {
   data: Record<string, unknown>;
 }
 
-type ResolvedWebhookPayload = WebhookPayload & {
-  timestamp: string;
-};
+/** Resolved webhook payload — all optional fields filled in before dispatch. */
+export type ResolvedWebhookPayload = Required<WebhookPayload>;
 
 // ── Configuration ───────────────────────────────────────────────────────────
 // WEBHOOK_BASE_URL is preferred; falls back to legacy WEBHOOK_URL for compat.
@@ -92,19 +91,6 @@ const EVENT_ROUTES: Record<string, string> = {
   'ukvi.compliance_changed':          '/webhook/sjms/ukvi/compliance-changed',
   'ukvi.record_deleted':              '/webhook/sjms/ukvi/record-deleted',
 
-  // ── Appeals & EC lifecycle (used for regulatory reporting) ────────────
-  'appeals.created':                  '/webhook/sjms/appeals/created',
-  'appeals.updated':                  '/webhook/sjms/appeals/updated',
-  'appeals.status_changed':           '/webhook/sjms/appeals/status-changed',
-  'appeals.deleted':                  '/webhook/sjms/appeals/deleted',
-  'ec_claim.submitted':               '/webhook/sjms/ec-claim/submitted',
-  'ec_claim.status_changed':          '/webhook/sjms/ec-claim/status-changed',
-
-  // ── Attendance threshold events (used for UKVI & engagement) ──────────
-  'attendance.recorded':              '/webhook/sjms/attendance/recorded',
-  'attendance.alert_triggered':       '/webhook/sjms/attendance/alert-triggered',
-  'attendance.ukvi_breach_risk':      '/webhook/sjms/attendance/ukvi-breach-risk',
-
   // ── Prefix-based fallback for domains without dedicated workflows ─────
   'finance':                          '/webhook/sjms/finance',
   'ec_claim':                         '/webhook/sjms/ec-claim',
@@ -162,14 +148,14 @@ export function emitEvent(
       entityId: String(raw.id ?? 'unknown'),
       actorId: 'system',
       timestamp: new Date().toISOString(),
-      requestId: getRequestId(),
+      requestId: getRequestId() ?? '',
       data: raw,
     };
   } else {
     resolved = {
       ...eventTypeOrPayload,
       timestamp: eventTypeOrPayload.timestamp || new Date().toISOString(),
-      requestId: eventTypeOrPayload.requestId || getRequestId(),
+            requestId: (eventTypeOrPayload.requestId || getRequestId()) ?? '',
     };
   }
 
@@ -204,7 +190,7 @@ async function fireWithRetry(
       headers: {
         'Content-Type': 'application/json',
         'x-webhook-signature': signature,
-        ...(payload.requestId ? { 'x-request-id': payload.requestId } : {}),
+                  'x-request-id': payload.requestId,
       },
       body,
       signal: AbortSignal.timeout(5000),

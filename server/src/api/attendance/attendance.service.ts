@@ -245,6 +245,12 @@ export async function listAlerts(query: AttendanceAlertListQuery) {
   );
 }
 
+// ── Attendance monitoring event helpers ──────────────────────────────────
+// Called by attendance-monitoring logic (n8n webhook handler or scheduled job)
+// when a student's attendance rate crosses a configured threshold.
+
+// TODO(Phase 7): Wire emitAttendanceAlert into attendance monitoring pipeline
+// once attendance threshold checking is confirmed. Currently unused.
 // ── Attendance monitoring event helpers (kept for n8n handler use) ───────
 // These are still exported because an external attendance-monitoring job
 // (e.g. a weekly cron in n8n) also calls them. The in-process threshold

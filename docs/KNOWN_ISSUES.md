@@ -408,6 +408,95 @@ grep -E 'lines:\s*0|functions:\s*0|branches:\s*0' server/vitest.config.ts
 # → The schema at prisma/schema.prisma is valid 🚀 ; EXIT=0
 ```
 
+### KI-P6-002: webhooks.ts response body not consumed before retry — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/utils/webhooks.ts` ~line 147  
+**Problem:** When a webhook POST returns a non-2xx response, the response body is not consumed (`res.body` not drained) before the retry fires. Under high webhook failure rates this degrades HTTP connection reuse.  
+**Deferral reason:** No impact at current webhook volume; requires careful async body drain logic.  
+**Resolution plan:** Phase 8 QA hardening pass.
+
+### KI-P6-003: UKVI attendance threshold (70%) hardcoded magic number — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/api/attendance/attendance.service.ts` `emitUkviBreach()`  
+**Problem:** The 70% UKVI attendance threshold is hardcoded. Cannot be changed without a code deployment; should be configuration-driven via the SystemSetting table.  
+**Deferral reason:** Functional for current use; config-driven thresholds are a Phase 7/8 concern.  
+**Resolution plan:** Phase 7 or 8 — add to system configuration table.
+
+### KI-P6-004: webhooks.ts docstring says "3 retries" but logic performs 4 attempts — OPEN 2026-04-13
+
+**Severity:** INFO | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/utils/webhooks.ts` ~line 73  
+**Problem:** JSDoc comment says "3 attempts at 1 s, 2 s, 4 s" but the retry loop runs attempts 0–3 (initial + 3 retries = 4 total attempts). Documentation-only; no behaviour change needed.  
+**Deferral reason:** Cosmetic — no runtime impact.  
+**Resolution plan:** Fix in next routine maintenance pass.
+
+### KI-P6-005: Shared webhook paths — n8n single-path-per-workflow constraint — CLOSED 2026-04-13
+
+**Closed by:** Phase 6.6 workflow remediation — every webhook-triggered workflow now has a unique path.  
+**Verification:** `grep -oh '"path": "[^"]*"' server/src/workflows/workflow-*.json | sort | uniq -d` returns empty.
+
+~~ORIGINAL ISSUE BELOW~~
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/workflows/workflow-*.json` (8 of 11 webhook-triggered workflows)  
+**Problem:** Multiple workflows share the same n8n webhook path. `sjms/applications` is used by 3 workflows (enquiry-received, application-submitted, offer-decision). `sjms/enrolment-changes` is used by 3 workflows (withdrawal-processed, progression-decision, award-confirmed). `sjms/marks` is used by 2 workflows (submission-received, marks-ratified). n8n only allows one active webhook per path, so only the last-activated workflow per group would receive events.  
+**Deferral reason:** Cannot be validated without a running n8n instance; workflow definitions are version-controlled intent that will be refined during integration testing.  
+**Resolution plan:** Phase 7 integration pass. Options: (a) give each workflow a unique path suffix (e.g. `sjms/applications/created`, `sjms/applications/offer-decision`) and update `EVENT_ROUTES` accordingly, or (b) consolidate related workflows into a single branching workflow per path.
+
+### KI-P6-006: workflow-award-confirmed filters only on data field, not event name — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/workflows/workflow-award-confirmed.json` (IF node)  
+**Problem:** The workflow filters on `$json.data?.newStatus == 'COMPLETED'` without first verifying `$json.event == 'enrolment.status_changed'`. Any event delivered to `/webhook/sjms/enrolment-changes` that happens to have `data.newStatus == 'COMPLETED'` could incorrectly trigger this workflow.  
+**Deferral reason:** Functional risk is low while workflows are inactive; will be caught during integration testing.  
+**Resolution plan:** Phase 7 — add an explicit event-name check before the data-field check.
+
+### KI-P6-007: enquiry-received and application-submitted both triggered by application.created — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `server/src/workflows/workflow-enquiry-received.json`, `server/src/workflows/workflow-application-submitted.json`  
+**Problem:** Both workflows filter on the same event (`application.created`) and listen on the same webhook path (`sjms/applications`). Once the path-sharing issue (KI-P6-005) is resolved, both would fire for every new application, duplicating acknowledgement emails and tasks.  
+**Deferral reason:** Requires a design decision on whether enquiry and application are distinct events or should be handled in one workflow with branching.  
+**Resolution plan:** Phase 7 — either differentiate enquiry from application at the event level or merge into one workflow with conditional branching.
+
+### KI-P6-008: Communications API payload shape speculative — OPEN 2026-04-13
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** All 15 workflow JSON files (HTTP Request nodes POSTing to `/api/v1/communications`)  
+**Problem:** Workflows POST to `/api/v1/communications` with `templateKey`, `channel`, `recipientId`, and optional `data` fields. The communications module exists but its final POST request/response contract has not been validated against these payload shapes.  
+**Deferral reason:** Communication payloads are best-effort placeholders; the exact contract will be finalised when the communications module is fully implemented.  
+**Resolution plan:** Phase 7 or 8 integration pass to align workflow payloads with the finalised communications API schema.
+
+### KI-P6-009: n8n v2 task runner blocks $env access in workflow expressions — CLOSED 2026-04-13
+
+**Closed by:** Phase 6.6 — replaced `{{ $env.API_BASE_URL }}` with literal `http://api:3001` in all workflow JSON. Credential values use n8n credential store (not $env).  
+**Verification:** `grep '\$env' server/src/workflows/workflow-*.json | wc -l` returns 0.
+
+~~ORIGINAL ISSUE BELOW~~
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** All 15 workflow JSON files; `docker-compose.yml` n8n service  
+**Problem:** n8n v2's task runner (enabled by default in recent versions) blocks `{{ $env.VAR }}` references in workflow expressions. All HTTP Request nodes that use `$env.API_BASE_URL` or credential nodes referencing `$env.WORKFLOW_INTERNAL_SECRET` fail at runtime with "access to env vars denied". Webhook triggers and event filter nodes execute correctly; only downstream API call nodes are affected. The n8n Variables feature (an alternative to `$env`) requires a paid licence.  
+**Smoke test evidence:** Confirmed in Phase 6.5 smoke test (executions 3–5). Workaround for testing: replace `$env` references with hardcoded URLs via the n8n API.  
+**Deferral reason:** Requires an architectural decision on how to inject runtime configuration into n8n workflows without `$env`.  
+**Resolution plan:** Phase 7 — options include (a) rewriting workflow HTTP Request nodes to use n8n's built-in credential expressions for the base URL, (b) using a Set node at the start of each workflow to inject configuration, or (c) pinning n8n to a v1.x release that permits `$env` access.
+
+### KI-P6-010: Credential template not linked to workflow nodes by provisioning script — CLOSED 2026-04-13
+
+**Closed by:** Phase 6.6 — provisioning script now creates the credential via n8n API and injects the real ID into workflow JSON before import.  
+**Verification:** Run `npm run provision:workflows` — output shows credential created/found + workflows imported with real ID.
+
+~~ORIGINAL ISSUE BELOW~~
+
+**Severity:** AMBER | **Phase:** 6 — n8n Workflow Automation  
+**Location:** `scripts/provision-n8n-workflows.ts`; all 15 workflow JSON files referencing `"id": "sjms-internal"`  
+**Problem:** The provisioning script creates workflows but does not create or link the SJMS Internal API credential. Workflow HTTP Request nodes reference a credential by the placeholder ID `sjms-internal`, but n8n assigns a random ID when credentials are created. Nodes fail with "Credential with ID 'sjms-internal' does not exist" until the credential is manually created and linked.  
+**Smoke test evidence:** Confirmed in Phase 6.5 smoke test (execution 5). Manual credential creation via the n8n API resolved the issue for individual test runs.  
+**Deferral reason:** Provisioning script scope was limited to workflow import; credential lifecycle is a separate concern.  
+**Resolution plan:** Phase 7 — update provisioning script to (a) create the HTTP Header Auth credential via the n8n API if absent, (b) retrieve its assigned ID, and (c) patch workflow JSON with the real credential ID before importing.
+
 ---
 
 ## Closed issues

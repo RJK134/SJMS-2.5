@@ -142,12 +142,21 @@ complete until BugBot HIGH findings are resolved.
 - n8n workflows authenticate to the SJMS API using an HTTP Header Auth credential
 - Header: `x-internal-key` with value from `WORKFLOW_INTERNAL_SECRET` env var
 - This must match the `INTERNAL_SERVICE_KEY` configured on the Express server
+- **No secrets are embedded in workflow JSON** — all credentials are resolved at runtime via n8n environment variables
 - Provisioning script creates the credential via n8n API and injects its real ID into workflow JSON
 - **No secrets are embedded in workflow JSON** — credentials are stored in n8n's encrypted credential store
 
 ### How emitEvent() Connects to n8n
 1. Service mutations call `emitEvent()` in `server/src/utils/webhooks.ts`
 2. `emitEvent()` POSTs the webhook payload to `WEBHOOK_BASE_URL` + the path resolved by `EVENT_ROUTES`
+3. n8n webhook trigger nodes listen on those paths and execute the corresponding workflow
+4. Workflows call back into the SJMS API via HTTP Request nodes authenticated with the internal service key
+
+### Rules
+- **Never hardcode secrets** in workflow JSON — use `{{ $env.VARIABLE }}` expressions
+- **British English** in all workflow names, node names, and task descriptions
+- **One webhook path per workflow** to avoid n8n shared-path conflicts
+- Workflow JSON files are the source of truth — the n8n visual editor may be used for testing but changes must be exported back to version control
 3. `EVENT_ROUTES` maps each event name to a **unique** webhook path (one path per workflow)
 4. n8n webhook trigger nodes listen on those paths and execute the corresponding workflow
 5. Workflows call back into the SJMS API via HTTP Request nodes at `http://api:3001` (Docker service name)

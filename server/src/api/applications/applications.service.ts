@@ -181,17 +181,12 @@ export async function update(id: string, data: Prisma.ApplicationUpdateInput, us
 
   const result = await repo.update(id, writeData);
   await logAudit('Application', id, 'UPDATE', userId, previous, result, req);
-
-  emitEvent({
+    emitEvent({
     event: 'application.updated',
     entityType: 'Application',
     entityId: id,
     actorId: userId,
-    data: {
-      applicantId: result.applicantId,
-      programmeId: result.programmeId,
-      status: result.status,
-    },
+    data: result as Record<string, unknown>,
   });
 
   // Detect status transition and emit domain-specific events
