@@ -148,14 +148,14 @@ export function emitEvent(
       entityId: String(raw.id ?? 'unknown'),
       actorId: 'system',
       timestamp: new Date().toISOString(),
-      requestId: getRequestId(),
+      requestId: getRequestId() ?? '',
       data: raw,
     };
   } else {
     resolved = {
       ...eventTypeOrPayload,
       timestamp: eventTypeOrPayload.timestamp || new Date().toISOString(),
-      requestId: eventTypeOrPayload.requestId || getRequestId(),
+      requestId: eventTypeOrPayload.requestId || getRequestId() ?? '',
     };
   }
 
