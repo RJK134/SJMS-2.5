@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { PROGRAMME_APPROVAL_SORT } from '../utils/repository-sort-allow-lists';
 
 export interface ProgrammeApprovalFilters {
   programmeId?: string;
@@ -22,7 +23,7 @@ export async function list(filters: ProgrammeApprovalFilters = {}, pagination: C
       include: { programme: true },
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, PROGRAMME_APPROVAL_SORT),
     }),
     prisma.programmeApproval.count({ where }),
   ]);

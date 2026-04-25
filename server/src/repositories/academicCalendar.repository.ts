@@ -1,6 +1,7 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { ACADEMIC_CALENDAR_SORT } from '../utils/repository-sort-allow-lists';
 
 // AcademicCalendar is a reference model with no deletedAt field.
 // Calendar entries remain on the record permanently for audit.
@@ -29,7 +30,7 @@ export async function list(filters: AcademicCalendarFilters = {}, pagination: Cu
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ACADEMIC_CALENDAR_SORT, 'startDate'),
     }),
     prisma.academicCalendar.count({ where }),
   ]);

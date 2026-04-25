@@ -629,19 +629,6 @@ First vertical golden journey. Batch 16A enforces the canonical admissions lifec
 | `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('evaluateOfferConditionsAndAutoPromote()')` block: 9 cases covering MET-only promotion, WAIVED-counts-as-satisfied, PENDING / NOT_MET blocks, soft-deleted conditions ignored, zero-conditions no-op, wrong-status no-op, event payload `conditionIds`, and NotFound propagation. |
 | `server/src/__tests__/unit/offers.service.test.ts` | **New file.** 6 cases exercising `getById` NotFound, `create()` evaluator invocation, `update()` status-change vs no-status-change event emission plus evaluator invocation on both paths, and `remove()` evaluator invocation. |
 
-**Batch 16C — Applicant-to-student conversion and enrolment orchestration:**
-
-| File | Change |
-|---|---|
-| `server/src/repositories/student.repository.ts` | Added `getByPersonId(personId)` (idempotency guard — find existing Student for a person) and `countStudents()` (student number generation counter) |
-| `server/src/repositories/enrolment.repository.ts` | Added `findForJourney(studentId, programmeId, academicYear)` (idempotency guard — find existing Enrolment before creating) |
-| `server/src/api/applications/applications.service.ts` | `CONVERTIBLE_STATUSES = {FIRM, UNCONDITIONAL_OFFER}`; `APPLICATION_ROUTE_TO_ENTRY_ROUTE` map; `generateStudentNumber()` produces `STU-YYYY-NNNNN`; exported `convertToStudent(applicationId, input, userId, req)` — validates status, resolves personId from applicant, creates Student if not found (via `students.service.create`), creates Enrolment if not found (via `enrolments.service.create`), emits `application.converted`, writes audit log |
-| `server/src/api/applications/applications.schema.ts` | `convertSchema` — `yearOfStudy` (default 1), `modeOfStudy`, `startDate`, `feeStatus`, `originalEntryDate` (optional) |
-| `server/src/api/applications/applications.controller.ts` | `convert()` handler |
-| `server/src/api/applications/applications.router.ts` | `POST /:id/convert` route — REGISTRY role, uses `paramsSchema` + `convertSchema` |
-| `server/src/utils/webhooks.ts` | `application.converted` → `/webhook/sjms/application/converted` added to `EVENT_ROUTES` |
-| `server/src/__tests__/unit/admissions.service.test.ts` | New `describe('convertToStudent()')` block: 12 cases covering new-student+enrolment happy path; UNCONDITIONAL_OFFER accepted; student idempotency; full idempotency (both exist); non-convertible status rejection; missing applicant/person rejection; UCAS route mapping; event payload correctness; audit log correctness; student number format; NotFound propagation |
-
 **Transition map (UK HE with UCAS response states):**
 
 ```
@@ -655,6 +642,16 @@ INSURANCE          → FIRM, WITHDRAWN   (results-day insurance promotion)
 DECLINED, WITHDRAWN, REJECTED          (terminal)
 ```
 
+**Verification (Batches 16A + 16B):**
+- Server Vitest: **159/159** passing (up from 133 on `main`; +11 state-machine cases in 16A, +15 evaluator / offers.service cases in 16B)
+- `npx prisma validate`: pass
+- Server / client tsc: **0 new errors** — the one pre-existing `TS5101` diagnostic on each workspace is from the TypeScript 6.0 dependabot bump (PR #69) and is tracked separately under **KI-P16-001**
+- `npx prisma generate`: pre-existing runtime WASM error from the Prisma 7 client bump (PR #64) — tracked under **KI-P16-002**; unit suite unaffected because tests mock Prisma
+
+**Deliberately out-of-scope (sequenced to later batches of Phase 16):**
+- 16C — Applicant-to-Student conversion and enrolment creation on `FIRM`
+- 16D — Module-registration cascade repository cleanup (KI-P12-001) and finance handoff hooks
+- 16E — Portal completion for the applicant/admin sides of this journey
 **Conversion eligibility:** FIRM or UNCONDITIONAL_OFFER. FIRM is the primary path; UNCONDITIONAL_OFFER is accepted to support direct-entry and clearing routes.
 
 **Batch 16D — Cascade repository cleanup, clearance-checks test coverage, and applicant/admissions UI honesty:**

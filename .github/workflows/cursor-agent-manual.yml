@@ -40,6 +40,7 @@ jobs:
           echo "::warning::Model '${{ inputs.model }}' draws from your $20/mo Cursor Pro credit pool. Auto mode is unlimited; use premium only when quality is critical."
 
       - name: Create Cursor Background Agent
+      - name: Verify CURSOR_API_KEY
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
