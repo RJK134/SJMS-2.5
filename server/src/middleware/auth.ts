@@ -44,7 +44,7 @@ if (process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV === 'production')
 }
 
 const AUTH_BYPASS =
-  process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV !== 'production';
+    process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV === 'development' && process.env.SJMS_ALLOW_DEV_AUTH === '1';
 
 export type DevPersona = 'admin' | 'academic' | 'student' | 'applicant';
 
@@ -156,7 +156,7 @@ function resolveDevPersona(raw: string | string[] | undefined): DevPersona {
   return 'admin';
 }
 
-if (AUTH_BYPASS) {
+if (AUTH_BYPASS && process.env.NODE_ENV === 'development' && process.env.SJMS_ALLOW_DEV_AUTH === '1') {
   console.warn(
     '[auth] AUTH_BYPASS is enabled — API requests are authenticated as one of ' +
       '4 dev personas (admin / academic / student / applicant), selected by the ' +
@@ -246,7 +246,7 @@ function getUserRoles(payload: JWTPayload): string[] {
  */
 export function authenticateJWT(req: Request, _res: Response, next: NextFunction): void {
   // Dev auth bypass — local development only, gated on NODE_ENV !== 'production'
-  if (AUTH_BYPASS) {
+  if (AUTH_BYPASS && process.env.NODE_ENV === 'development' && process.env.SJMS_ALLOW_DEV_AUTH === '1') {
     const persona = resolveDevPersona(req.headers['x-dev-persona'] as string | undefined);
     req.user = DEV_PERSONA_PAYLOADS[persona];
     return next();
@@ -325,7 +325,7 @@ export function requireRole(...roles: readonly Role[]) {
  * Does not reject unauthenticated requests.
  */
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
-  if (AUTH_BYPASS) {
+  if (AUTH_BYPASS && process.env.NODE_ENV === 'development' && process.env.SJMS_ALLOW_DEV_AUTH === '1') {
     const persona = resolveDevPersona(req.headers['x-dev-persona'] as string | undefined);
     req.user = DEV_PERSONA_PAYLOADS[persona];
     return next();
