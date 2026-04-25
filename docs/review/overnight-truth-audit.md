@@ -19,7 +19,7 @@ reviewers can re-verify in seconds.
 |---|---|---|---|
 | `CLAUDE.md` "Target Metrics" | 197 Prisma models | `grep -c "^model " prisma/schema.prisma` → **197** | ✅ matches |
 | `CLAUDE.md` | 246 API endpoints across **44 routers** | `find server/src/api -name '*.router.ts' \| wc -l` → **44** flat routers + **9** group barrels | ✅ matches |
-| `CLAUDE.md` | 36 roles | `ALL_AUTHENTICATED` array in `server/src/constants/roles.ts` → **36** entries; Keycloak realm → **36** roles + 1 `public` | ✅ matches |
+| `CLAUDE.md` | 36 roles | `ALL_AUTHENTICATED` in `roles.ts` → **35** entries; Keycloak realm → **35 authenticated + 1 `public` = 36 total** | ⚠️ ambiguous (see F-007 below) |
 | `CLAUDE.md` | 15 n8n workflows | `ls server/src/workflows/workflow-*.json \| wc -l` → **15** | ✅ matches |
 | `prisma/schema.prisma` header banner | "183 models · 24 domains" | actual: **197 models** | ❌ **stale header** |
 | `server/src/index.ts:104` comment | "37 domain modules" | actual: **44 flat + 9 grouped** | ❌ **stale comment** |
@@ -181,6 +181,11 @@ Each of these is recorded here and will be repeated in any HIGH-risk PR's body s
 **File:** `prisma/schema.prisma:4`
 **Finding:** Header says "183 models · 24 domains". Reality: 197 models.
 **Recommendation:** Banner-only fix is technically a schema-file edit. Not a semantic schema change. Treat as comment-only and include in Workstream A or schedule under Workstream F as a no-op edit.
+
+### F-007 — "36 roles" claim is ambiguous and undercounted in code
+**Files:** `CLAUDE.md` (multiple sites), `.claude/CLAUDE.md`, `server/src/middleware/auth.ts:8` header comment, `server/src/constants/roles.ts:2` header comment.
+**Finding:** `ROLE_GROUPS.ALL_AUTHENTICATED` contains **35** roles. The Keycloak realm contains **36** roles (the 35 authenticated set plus the `public` role). CLAUDE.md asserts "36 roles" without saying which set it means. The `roles.ts` header comment says `(36 roles)` and is therefore wrong if read as the authenticated set. Discovered when the docs-truth-check script ran.
+**Recommendation:** Phrase both numbers explicitly going forward: **35 authenticated + 1 public = 36 realm roles**. The truth-check script now locks both numbers (35 and 36) so this can never silently drift again. Updating the header comment in `roles.ts` is technically a *touch* of `roles.ts`, which is HIGH-RISK per the controller's hard-stop rules. Recommendation logged here; no edit performed in Workstream A.
 
 ### F-006 — KNOWN_ISSUES.md has duplicate KI entries
 **File:** `docs/KNOWN_ISSUES.md`
