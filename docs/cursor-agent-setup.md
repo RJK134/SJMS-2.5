@@ -98,6 +98,30 @@ you're willing to lose (e.g. `$10`). Enable email alerts at 50 / 80 / 100 %.
 - **Run an ad-hoc task:** Actions → *Cursor Agent (Manual Dispatch)* → Run
   workflow → enter task.
 
+## Read-only Q&A from the GitHub mobile app
+
+For quick questions on your phone where you do **not** want a PR or any code
+changes, start your `@cursor` comment with one of these triggers and the
+agent will reply with a single comment only — no branches, no commits, no PR:
+
+- `@cursor explain ...`
+- `@cursor question: ...` or `@cursor q: ...`
+- `@cursor what / why / how / where / when / which / who ...`
+- `@cursor describe ...` / `@cursor summarise ...` / `@cursor summarize ...`
+- `@cursor review (no fix) ...`
+- `@cursor read-only: ...` (explicit override for any phrasing)
+
+Examples that work well from a phone:
+- `@cursor explain what server/src/services/enrollment.ts does in plain English`
+- `@cursor q: why is the test in student.service.test.ts failing?`
+- `@cursor review (no fix) the security implications of this PR`
+- `@cursor read-only: should I use a transaction here?`
+
+If the answer suggests a change you want made, follow up with
+`@cursor implement the above` and the agent switches back to normal mode and
+opens a PR. This replaces the Copilot mobile chat workflow without consuming
+tokens on every question.
+
 ## What the agent will NOT do
 
 - Modify auth, session, RBAC, or Prisma migrations without a human review

@@ -65,6 +65,33 @@ system. Handles PR review, PR auto-fix, issue-to-PR implementation, and
 - If the comment asks a question, reply with an analysis comment and do not
   modify code.
 
+### Read-only Q&A mode (mobile-friendly)
+When a comment matches any of these patterns, treat the request as **strictly
+read-only**. Reply in a single GitHub comment. **Do not** create branches,
+push commits, modify files, run mutating commands, or open PRs.
+
+Trigger patterns (case-insensitive, must appear at the start of the
+`@cursor` request):
+- `@cursor explain ...`
+- `@cursor question: ...` or `@cursor q: ...`
+- `@cursor what / why / how / where / when / which / who ...`
+- `@cursor describe ...` / `@cursor summarise ...` / `@cursor summarize ...`
+- `@cursor review (no fix) ...` — review-only, no commits
+- `@cursor read-only: ...` — explicit override for any other phrasing
+
+In read-only mode:
+- Read code, diffs, logs, and docs as needed to answer.
+- Reply with a concise comment (markdown allowed). Cite file paths and line
+  numbers where helpful.
+- If the question implies a change, **do not make it**. End the comment with:
+  *"This was a read-only response. Reply `@cursor implement the above` to make
+  these changes."*
+- If a follow-up comment says `@cursor implement` (or similar), exit read-only
+  mode and proceed under the normal `@cursor mention` rules above.
+
+Purpose: this lets the user drive the agent from the GitHub mobile app for
+quick Q&A without spawning PRs, replacing the Copilot mobile chat workflow.
+
 ### CI failure on a PR branch
 - Investigate logs.
 - Fix the root cause.

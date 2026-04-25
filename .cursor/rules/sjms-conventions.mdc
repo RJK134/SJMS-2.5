@@ -36,6 +36,13 @@ alwaysApply: true
 - Service layer in `server/src/services/*`; DB access in repositories, not routes
 - Tests colocated in `__tests__/` adjacent to source
 
+## Read-only Q&A mode
+Comments starting with `@cursor explain`, `@cursor question:`, `@cursor q:`,
+`@cursor what/why/how/where/when/which/who`, `@cursor describe`,
+`@cursor summarise`, `@cursor summarize`, `@cursor review (no fix)`, or
+`@cursor read-only:` are answered with a single comment only. No branches,
+commits, or PRs are created. See `.cursor/agents/SJMS-Agent.md` for full rules.
+
 ## PR hygiene
 - Commit prefix for agent-pushed fixes: `fix(agent):`
 - Commit prefix for agent-implemented features: `feat(agent):`
