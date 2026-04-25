@@ -11,6 +11,9 @@ vi.mock('../../repositories/attendance.repository', () => ({
   listAlerts: vi.fn(),
   getStudentAttendanceRate: vi.fn(),
   createAlert: vi.fn(),
+  findActiveEnrolmentForStudent: vi.fn(),
+  getUkviRecordForStudent: vi.fn(),
+  findActiveAlert: vi.fn(),
 }));
 vi.mock('../../repositories/systemSetting.repository', () => ({
   getByKey: vi.fn(),
@@ -407,9 +410,9 @@ describe('attendance.service', () => {
 
     it('emits a LOW_ATTENDANCE alert when rate falls below the general threshold', async () => {
       mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
-      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
-      mockedPrisma.uKVIRecord.findFirst.mockResolvedValue(null);
-      mockedPrisma.attendanceAlert.findFirst.mockResolvedValue(null);
+      mockedRepo.findActiveEnrolmentForStudent.mockResolvedValue(activeEnrolment as any);
+      mockedRepo.getUkviRecordForStudent.mockResolvedValue(null as any);
+      mockedRepo.findActiveAlert.mockResolvedValue(null as any);
       mockedSettingsRepo.getByKey.mockResolvedValue(null as any);
       mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 10, present: 7, rate: 70 });
 
@@ -429,9 +432,9 @@ describe('attendance.service', () => {
 
     it('emits TIER4_RISK alert when a sponsored visa holder is under UKVI threshold', async () => {
       mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
-      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
-      mockedPrisma.uKVIRecord.findFirst.mockResolvedValue({ tier4Status: 'SPONSORED' } as any);
-      mockedPrisma.attendanceAlert.findFirst.mockResolvedValue(null);
+      mockedRepo.findActiveEnrolmentForStudent.mockResolvedValue(activeEnrolment as any);
+      mockedRepo.getUkviRecordForStudent.mockResolvedValue({ tier4Status: 'SPONSORED' } as any);
+      mockedRepo.findActiveAlert.mockResolvedValue(null as any);
       mockedSettingsRepo.getByKey.mockResolvedValue(null as any);
       // 68 < UKVI default threshold of 70
       mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 25, present: 17, rate: 68 });
@@ -450,9 +453,9 @@ describe('attendance.service', () => {
 
     it('does NOT duplicate alerts when an ACTIVE alert of the same type already exists', async () => {
       mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
-      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
-      mockedPrisma.uKVIRecord.findFirst.mockResolvedValue(null);
-      mockedPrisma.attendanceAlert.findFirst.mockResolvedValue({ id: 'existing-alert' } as any);
+      mockedRepo.findActiveEnrolmentForStudent.mockResolvedValue(activeEnrolment as any);
+      mockedRepo.getUkviRecordForStudent.mockResolvedValue(null as any);
+      mockedRepo.findActiveAlert.mockResolvedValue({ id: 'existing-alert' } as any);
       mockedSettingsRepo.getByKey.mockResolvedValue(null as any);
       mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 10, present: 5, rate: 50 });
 
@@ -464,19 +467,19 @@ describe('attendance.service', () => {
 
     it('skips evaluation when sample size is below 5', async () => {
       mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
-      mockedPrisma.enrolment.findFirst.mockResolvedValue(activeEnrolment as any);
+      mockedRepo.findActiveEnrolmentForStudent.mockResolvedValue(activeEnrolment as any);
       mockedRepo.getStudentAttendanceRate.mockResolvedValue({ total: 3, present: 1, rate: 33 });
 
       await attendanceService.create({ studentId: 'stu-1' } as any, 'user-1', fakeReq);
       await new Promise((r) => setImmediate(r));
 
       expect(mockedRepo.createAlert).not.toHaveBeenCalled();
-      expect(mockedPrisma.uKVIRecord.findFirst).not.toHaveBeenCalled();
+      expect(mockedRepo.getUkviRecordForStudent).not.toHaveBeenCalled();
     });
 
     it('skips evaluation when the student has no active enrolment', async () => {
       mockedRepo.create.mockResolvedValue({ ...fakeRecord } as any);
-      mockedPrisma.enrolment.findFirst.mockResolvedValue(null);
+      mockedRepo.findActiveEnrolmentForStudent.mockResolvedValue(null as any);
 
       await attendanceService.create({ studentId: 'stu-1' } as any, 'user-1', fakeReq);
       await new Promise((r) => setImmediate(r));

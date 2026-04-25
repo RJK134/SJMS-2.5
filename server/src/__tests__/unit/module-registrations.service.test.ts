@@ -7,16 +7,17 @@ vi.mock('../../repositories/moduleRegistration.repository', () => ({
   create: vi.fn(),
   update: vi.fn(),
   softDelete: vi.fn(),
+  findMandatoryPrerequisites: vi.fn(),
+  getEnrolmentForRuleChecks: vi.fn(),
+  findPassedPrerequisiteResults: vi.fn(),
+  getModuleCredits: vi.fn(),
+  findModuleCredits: vi.fn(),
+  findActiveCreditRegistrations: vi.fn(),
 }));
 vi.mock('../../utils/audit', () => ({ logAudit: vi.fn() }));
 vi.mock('../../utils/webhooks', () => ({ emitEvent: vi.fn() }));
 vi.mock('../../utils/prisma', () => ({
   default: {
-    modulePrerequisite: { findMany: vi.fn() },
-    enrolment: { findUnique: vi.fn() },
-    moduleResult: { findMany: vi.fn() },
-    module: { findUnique: vi.fn(), findMany: vi.fn() },
-    moduleRegistration: { findMany: vi.fn() },
     systemSetting: { findUnique: vi.fn() },
   },
 }));
@@ -41,14 +42,14 @@ const baseRegistrationInput = {
 describe('module-registrations.service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mockedPrisma.moduleRegistration.findMany.mockResolvedValue([]);
-    mockedPrisma.module.findMany.mockResolvedValue([]);
+    mockedRepo.findActiveCreditRegistrations.mockResolvedValue([]);
+    mockedRepo.findModuleCredits.mockResolvedValue([]);
   });
 
   describe('validatePrerequisites via create()', () => {
     it('passes when module has no prerequisites', async () => {
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([]);
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([]);
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
       mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
 
       await expect(
@@ -57,38 +58,42 @@ describe('module-registrations.service', () => {
     });
 
     it('passes on LEVEL_6 programme with aggregateMark 65 (>=40)', async () => {
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([
         { prerequisiteModuleId: 'mod-pre', isMandatory: true, prerequisiteModule: { id: 'mod-pre', title: 'Pre', moduleCode: 'PRE101' } },
       ]);
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
-      mockedPrisma.moduleResult.findMany.mockResolvedValue([{ moduleId: 'mod-pre' }]);
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedRepo.findPassedPrerequisiteResults.mockResolvedValue([{ moduleId: 'mod-pre' }]);
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
       mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
 
       await expect(
         service.create(baseRegistrationInput as any, 'user-1', fakeReq),
       ).resolves.toBeDefined();
 
-      const whereArg = (mockedPrisma.moduleResult.findMany as any).mock.calls[0][0].where;
-      expect(whereArg.OR[0].aggregateMark.gte).toBe(40);
+      expect(mockedRepo.findPassedPrerequisiteResults).toHaveBeenCalledWith(
+        'stu-1',
+        ['mod-pre'],
+        40,
+        expect.arrayContaining(['PASS']),
+      );
     });
 
     it('fails on LEVEL_6 with no passing results (aggregateMark 20)', async () => {
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([
         { prerequisiteModuleId: 'mod-pre', isMandatory: true, prerequisiteModule: { id: 'mod-pre', title: 'Pre', moduleCode: 'PRE101' } },
       ]);
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
-      mockedPrisma.moduleResult.findMany.mockResolvedValue([]);
+      mockedRepo.findPassedPrerequisiteResults.mockResolvedValue([]);
 
       await expect(
         service.create(baseRegistrationInput as any, 'user-1', fakeReq),
@@ -96,54 +101,60 @@ describe('module-registrations.service', () => {
     });
 
     it('passes with aggregateMark null but grade=PASS', async () => {
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([
         { prerequisiteModuleId: 'mod-pre', isMandatory: true, prerequisiteModule: { id: 'mod-pre', title: 'Pre', moduleCode: 'PRE101' } },
       ]);
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
-      mockedPrisma.moduleResult.findMany.mockResolvedValue([{ moduleId: 'mod-pre' }]);
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedRepo.findPassedPrerequisiteResults.mockResolvedValue([{ moduleId: 'mod-pre' }]);
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
       mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
 
       await expect(
         service.create(baseRegistrationInput as any, 'user-1', fakeReq),
       ).resolves.toBeDefined();
 
-      const whereArg = (mockedPrisma.moduleResult.findMany as any).mock.calls[0][0].where;
-      const fallbackClause = whereArg.OR[1];
-      expect(fallbackClause.aggregateMark).toBe(null);
-      expect(fallbackClause.grade.in).toContain('PASS');
+      expect(mockedRepo.findPassedPrerequisiteResults).toHaveBeenCalledWith(
+        'stu-1',
+        ['mod-pre'],
+        40,
+        expect.arrayContaining(['PASS']),
+      );
     });
 
     it('uses LEVEL_7 pass mark of 50', async () => {
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([
         { prerequisiteModuleId: 'mod-pre', isMandatory: true, prerequisiteModule: { id: 'mod-pre', title: 'Pre', moduleCode: 'PRE101' } },
       ]);
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_7' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
-      mockedPrisma.moduleResult.findMany.mockResolvedValue([{ moduleId: 'mod-pre' }]);
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedRepo.findPassedPrerequisiteResults.mockResolvedValue([{ moduleId: 'mod-pre' }]);
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
       mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
 
       await service.create(baseRegistrationInput as any, 'user-1', fakeReq);
 
-      const whereArg = (mockedPrisma.moduleResult.findMany as any).mock.calls[0][0].where;
-      expect(whereArg.OR[0].aggregateMark.gte).toBe(50);
+      expect(mockedRepo.findPassedPrerequisiteResults).toHaveBeenCalledWith(
+        'stu-1',
+        ['mod-pre'],
+        50,
+        expect.arrayContaining(['PASS']),
+      );
     });
 
     it('respects SystemSetting override for pass mark', async () => {
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([
         { prerequisiteModuleId: 'mod-pre', isMandatory: true, prerequisiteModule: { id: 'mod-pre', title: 'Pre', moduleCode: 'PRE101' } },
       ]);
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
@@ -152,38 +163,42 @@ describe('module-registrations.service', () => {
         settingKey: 'assessment.pass_mark.level_6',
         settingValue: '45',
       });
-      mockedPrisma.moduleResult.findMany.mockResolvedValue([{ moduleId: 'mod-pre' }]);
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedRepo.findPassedPrerequisiteResults.mockResolvedValue([{ moduleId: 'mod-pre' }]);
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
       mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
 
       await service.create(baseRegistrationInput as any, 'user-1', fakeReq);
 
-      const whereArg = (mockedPrisma.moduleResult.findMany as any).mock.calls[0][0].where;
-      expect(whereArg.OR[0].aggregateMark.gte).toBe(45);
+      expect(mockedRepo.findPassedPrerequisiteResults).toHaveBeenCalledWith(
+        'stu-1',
+        ['mod-pre'],
+        45,
+        expect.arrayContaining(['PASS']),
+      );
     });
   });
 
   describe('validateCreditLimit via create()', () => {
     beforeEach(() => {
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([]);
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([]);
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
     });
 
     it('allows full-time student registering a 120-credit load', async () => {
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
-      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
+      mockedRepo.findActiveCreditRegistrations.mockResolvedValue([
         { moduleId: 'mod-a' },
         { moduleId: 'mod-b' },
         { moduleId: 'mod-c' },
         { moduleId: 'mod-d' },
         { moduleId: 'mod-e' },
       ]);
-      mockedPrisma.module.findMany.mockResolvedValue([
+      mockedRepo.findModuleCredits.mockResolvedValue([
         { id: 'mod-a', credits: 20 },
         { id: 'mod-b', credits: 20 },
         { id: 'mod-c', credits: 20 },
@@ -198,16 +213,16 @@ describe('module-registrations.service', () => {
     });
 
     it('blocks full-time student exceeding 120 credits', async () => {
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 30 });
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
-      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 30 } as any);
+      mockedRepo.findActiveCreditRegistrations.mockResolvedValue([
         { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' }, { moduleId: 'mod-d' }, { moduleId: 'mod-e' }, { moduleId: 'mod-f' },
       ]);
-      mockedPrisma.module.findMany.mockResolvedValue([
+      mockedRepo.findModuleCredits.mockResolvedValue([
         { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 }, { id: 'mod-d', credits: 20 }, { id: 'mod-e', credits: 20 }, { id: 'mod-f', credits: 20 },
       ]);
 
@@ -217,16 +232,16 @@ describe('module-registrations.service', () => {
     });
 
     it('allows part-time student registering 60 credits', async () => {
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'PART_TIME',
         programme: { level: 'LEVEL_6' },
       });
-      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
+      mockedRepo.findActiveCreditRegistrations.mockResolvedValue([
         { moduleId: 'mod-a' }, { moduleId: 'mod-b' },
       ]);
-      mockedPrisma.module.findMany.mockResolvedValue([
+      mockedRepo.findModuleCredits.mockResolvedValue([
         { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 },
       ]);
       mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
@@ -237,16 +252,16 @@ describe('module-registrations.service', () => {
     });
 
     it('blocks part-time student exceeding 75 credits', async () => {
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'PART_TIME',
         programme: { level: 'LEVEL_6' },
       });
-      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
+      mockedRepo.findActiveCreditRegistrations.mockResolvedValue([
         { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' },
       ]);
-      mockedPrisma.module.findMany.mockResolvedValue([
+      mockedRepo.findModuleCredits.mockResolvedValue([
         { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 },
       ]);
 
@@ -256,8 +271,7 @@ describe('module-registrations.service', () => {
     });
 
     it('respects SystemSetting override for part-time credit limit', async () => {
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'PART_TIME',
         programme: { level: 'LEVEL_6' },
@@ -268,10 +282,11 @@ describe('module-registrations.service', () => {
         }
         return null;
       });
-      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 20 } as any);
+      mockedRepo.findActiveCreditRegistrations.mockResolvedValue([
         { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' },
       ]);
-      mockedPrisma.module.findMany.mockResolvedValue([
+      mockedRepo.findModuleCredits.mockResolvedValue([
         { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 },
       ]);
       mockedRepo.create.mockResolvedValue({ id: 'reg-1', ...baseRegistrationInput });
@@ -297,17 +312,16 @@ describe('module-registrations.service', () => {
 
     it('blocks PATCH to a new module whose prerequisite is unmet', async () => {
       mockedRepo.getById.mockResolvedValue(existingReg as any);
-      mockedPrisma.modulePrerequisite.findMany.mockResolvedValue([
+      mockedRepo.findMandatoryPrerequisites.mockResolvedValue([
         { prerequisiteModuleId: 'mod-pre', isMandatory: true, prerequisiteModule: { id: 'mod-pre', title: 'Pre', moduleCode: 'PRE101' } },
       ]);
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
-      mockedPrisma.moduleResult.findMany.mockResolvedValue([]); // No passed prereqs
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 20 });
+      mockedRepo.findPassedPrerequisiteResults.mockResolvedValue([]); // No passed prereqs
 
       await expect(
         service.update(
@@ -331,25 +345,25 @@ describe('module-registrations.service', () => {
       );
 
       // No prerequisite lookup was performed
-      expect(mockedPrisma.modulePrerequisite.findMany).not.toHaveBeenCalled();
+      expect(mockedRepo.findMandatoryPrerequisites).not.toHaveBeenCalled();
     });
 
     it('blocks PATCH to a different academic year that would breach credit limit', async () => {
       mockedRepo.getById.mockResolvedValue(existingReg as any);
       // No prereq change because moduleId unchanged; but academic year flipped
       // triggers credit-limit check against the new year load.
-      mockedPrisma.enrolment.findUnique.mockResolvedValue({
+      mockedRepo.getEnrolmentForRuleChecks.mockResolvedValue({
         studentId: 'stu-1',
         modeOfStudy: 'FULL_TIME',
         programme: { level: 'LEVEL_6' },
       });
       mockedPrisma.systemSetting.findUnique.mockResolvedValue(null);
-      mockedPrisma.module.findUnique.mockResolvedValue({ credits: 30 });
-      mockedPrisma.moduleRegistration.findMany.mockResolvedValue([
+      mockedRepo.getModuleCredits.mockResolvedValue({ credits: 30 } as any);
+      mockedRepo.findActiveCreditRegistrations.mockResolvedValue([
         { moduleId: 'mod-a' }, { moduleId: 'mod-b' }, { moduleId: 'mod-c' },
         { moduleId: 'mod-d' }, { moduleId: 'mod-e' }, { moduleId: 'mod-f' },
       ]);
-      mockedPrisma.module.findMany.mockResolvedValue([
+      mockedRepo.findModuleCredits.mockResolvedValue([
         { id: 'mod-a', credits: 20 }, { id: 'mod-b', credits: 20 }, { id: 'mod-c', credits: 20 },
         { id: 'mod-d', credits: 20 }, { id: 'mod-e', credits: 20 }, { id: 'mod-f', credits: 20 },
       ]);
