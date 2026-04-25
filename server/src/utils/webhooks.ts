@@ -24,6 +24,9 @@ export interface WebhookPayload {
   data: Record<string, unknown>;
 }
 
+/** Resolved webhook payload — all optional fields filled in before dispatch. */
+export type ResolvedWebhookPayload = Required<WebhookPayload>;
+
 // ── Configuration ───────────────────────────────────────────────────────────
 // WEBHOOK_BASE_URL is preferred; falls back to legacy WEBHOOK_URL for compat.
 const WEBHOOK_BASE_URL =
