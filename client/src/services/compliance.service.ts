@@ -45,55 +45,55 @@ export interface AuditEntry {
 // ── UKVI ──────────────────────────────────────────────────────────────────────
 
 export const getUkviRecords = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<UkviRecord>>('/compliance/ukvi', { params });
+  api.get<PaginatedResponse<UkviRecord>>('/v1/compliance/ukvi', { params });
 
 export const getUkviRecordById = (id: string) =>
-  api.get<SingleResponse<UkviRecord>>(`/compliance/ukvi/${id}`);
+  api.get<SingleResponse<UkviRecord>>(`/v1/compliance/ukvi/${id}`);
 
 export const createUkviRecord = (data: Partial<UkviRecord>) =>
-  api.post<SingleResponse<UkviRecord>>('/compliance/ukvi', data);
+  api.post<SingleResponse<UkviRecord>>('/v1/compliance/ukvi', data);
 
 export const updateUkviRecord = (id: string, data: Partial<UkviRecord>) =>
-  api.patch<SingleResponse<UkviRecord>>(`/compliance/ukvi/${id}`, data);
+  api.patch<SingleResponse<UkviRecord>>(`/v1/compliance/ukvi/${id}`, data);
 
 export const deleteUkviRecord = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/compliance/ukvi/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/compliance/ukvi/${id}`);
 
 // ── Attendance ────────────────────────────────────────────────────────────────
 
 export const getAttendanceRecords = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<AttendanceRecord>>('/compliance/attendance', { params });
+  api.get<PaginatedResponse<AttendanceRecord>>('/v1/compliance/attendance', { params });
 
 export const getAttendanceRecordById = (id: string) =>
-  api.get<SingleResponse<AttendanceRecord>>(`/compliance/attendance/${id}`);
+  api.get<SingleResponse<AttendanceRecord>>(`/v1/compliance/attendance/${id}`);
 
 export const createAttendanceRecord = (data: Partial<AttendanceRecord>) =>
-  api.post<SingleResponse<AttendanceRecord>>('/compliance/attendance', data);
+  api.post<SingleResponse<AttendanceRecord>>('/v1/compliance/attendance', data);
 
 export const updateAttendanceRecord = (id: string, data: Partial<AttendanceRecord>) =>
-  api.patch<SingleResponse<AttendanceRecord>>(`/compliance/attendance/${id}`, data);
+  api.patch<SingleResponse<AttendanceRecord>>(`/v1/compliance/attendance/${id}`, data);
 
 export const deleteAttendanceRecord = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/compliance/attendance/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/compliance/attendance/${id}`);
 
 // ── Audit ─────────────────────────────────────────────────────────────────────
 
 export const getAuditEntries = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<AuditEntry>>('/compliance/audit', { params });
+  api.get<PaginatedResponse<AuditEntry>>('/v1/compliance/audit', { params });
 
 export const getAuditEntryById = (id: string) =>
-  api.get<SingleResponse<AuditEntry>>(`/compliance/audit/${id}`);
+  api.get<SingleResponse<AuditEntry>>(`/v1/compliance/audit/${id}`);
 
 export const createAuditEntry = (data: Partial<AuditEntry>) =>
-  api.post<SingleResponse<AuditEntry>>('/compliance/audit', data);
+  api.post<SingleResponse<AuditEntry>>('/v1/compliance/audit', data);
 
 export const updateAuditEntry = (id: string, data: Partial<AuditEntry>) =>
-  api.patch<SingleResponse<AuditEntry>>(`/compliance/audit/${id}`, data);
+  api.patch<SingleResponse<AuditEntry>>(`/v1/compliance/audit/${id}`, data);
 
 export const deleteAuditEntry = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/compliance/audit/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/compliance/audit/${id}`);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
 export const getComplianceHealth = () =>
-  api.get<{ group: string; status: string; modules: number }>('/compliance/health');
+  api.get<{ group: string; status: string; modules: number }>('/v1/compliance/health');

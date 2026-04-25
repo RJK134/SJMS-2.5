@@ -66,89 +66,89 @@ export interface WebhookSubscription {
 // ── Finance ───────────────────────────────────────────────────────────────────
 
 export const getFinanceRecords = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<FinanceRecord>>('/platform/finance', { params });
+  api.get<PaginatedResponse<FinanceRecord>>('/v1/platform/finance', { params });
 
 export const getFinanceRecordById = (id: string) =>
-  api.get<SingleResponse<FinanceRecord>>(`/platform/finance/${id}`);
+  api.get<SingleResponse<FinanceRecord>>(`/v1/platform/finance/${id}`);
 
 export const createFinanceRecord = (data: Partial<FinanceRecord>) =>
-  api.post<SingleResponse<FinanceRecord>>('/platform/finance', data);
+  api.post<SingleResponse<FinanceRecord>>('/v1/platform/finance', data);
 
 export const updateFinanceRecord = (id: string, data: Partial<FinanceRecord>) =>
-  api.patch<SingleResponse<FinanceRecord>>(`/platform/finance/${id}`, data);
+  api.patch<SingleResponse<FinanceRecord>>(`/v1/platform/finance/${id}`, data);
 
 export const deleteFinanceRecord = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/platform/finance/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/platform/finance/${id}`);
 
 // ── Reports ───────────────────────────────────────────────────────────────────
 
 export const getReports = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<Report>>('/platform/reports', { params });
+  api.get<PaginatedResponse<Report>>('/v1/platform/reports', { params });
 
 export const getReportById = (id: string) =>
-  api.get<SingleResponse<Report>>(`/platform/reports/${id}`);
+  api.get<SingleResponse<Report>>(`/v1/platform/reports/${id}`);
 
 export const createReport = (data: Partial<Report>) =>
-  api.post<SingleResponse<Report>>('/platform/reports', data);
+  api.post<SingleResponse<Report>>('/v1/platform/reports', data);
 
 export const updateReport = (id: string, data: Partial<Report>) =>
-  api.patch<SingleResponse<Report>>(`/platform/reports/${id}`, data);
+  api.patch<SingleResponse<Report>>(`/v1/platform/reports/${id}`, data);
 
 export const deleteReport = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/platform/reports/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/platform/reports/${id}`);
 
 // ── Transcripts ───────────────────────────────────────────────────────────────
 
 export const getTranscripts = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<Transcript>>('/platform/transcripts', { params });
+  api.get<PaginatedResponse<Transcript>>('/v1/platform/transcripts', { params });
 
 export const getTranscriptById = (id: string) =>
-  api.get<SingleResponse<Transcript>>(`/platform/transcripts/${id}`);
+  api.get<SingleResponse<Transcript>>(`/v1/platform/transcripts/${id}`);
 
 export const createTranscript = (data: Partial<Transcript>) =>
-  api.post<SingleResponse<Transcript>>('/platform/transcripts', data);
+  api.post<SingleResponse<Transcript>>('/v1/platform/transcripts', data);
 
 export const updateTranscript = (id: string, data: Partial<Transcript>) =>
-  api.patch<SingleResponse<Transcript>>(`/platform/transcripts/${id}`, data);
+  api.patch<SingleResponse<Transcript>>(`/v1/platform/transcripts/${id}`, data);
 
 export const deleteTranscript = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/platform/transcripts/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/platform/transcripts/${id}`);
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
 export const getPlatformConfigs = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<PlatformConfig>>('/platform/config', { params });
+  api.get<PaginatedResponse<PlatformConfig>>('/v1/platform/config', { params });
 
 export const getPlatformConfigById = (id: string) =>
-  api.get<SingleResponse<PlatformConfig>>(`/platform/config/${id}`);
+  api.get<SingleResponse<PlatformConfig>>(`/v1/platform/config/${id}`);
 
 export const createPlatformConfig = (data: Partial<PlatformConfig>) =>
-  api.post<SingleResponse<PlatformConfig>>('/platform/config', data);
+  api.post<SingleResponse<PlatformConfig>>('/v1/platform/config', data);
 
 export const updatePlatformConfig = (id: string, data: Partial<PlatformConfig>) =>
-  api.patch<SingleResponse<PlatformConfig>>(`/platform/config/${id}`, data);
+  api.patch<SingleResponse<PlatformConfig>>(`/v1/platform/config/${id}`, data);
 
 export const deletePlatformConfig = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/platform/config/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/platform/config/${id}`);
 
 // ── Webhooks ──────────────────────────────────────────────────────────────────
 
 export const getWebhookSubscriptions = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<WebhookSubscription>>('/platform/webhooks', { params });
+  api.get<PaginatedResponse<WebhookSubscription>>('/v1/platform/webhooks', { params });
 
 export const getWebhookSubscriptionById = (id: string) =>
-  api.get<SingleResponse<WebhookSubscription>>(`/platform/webhooks/${id}`);
+  api.get<SingleResponse<WebhookSubscription>>(`/v1/platform/webhooks/${id}`);
 
 export const createWebhookSubscription = (data: Partial<WebhookSubscription>) =>
-  api.post<SingleResponse<WebhookSubscription>>('/platform/webhooks', data);
+  api.post<SingleResponse<WebhookSubscription>>('/v1/platform/webhooks', data);
 
 export const updateWebhookSubscription = (id: string, data: Partial<WebhookSubscription>) =>
-  api.patch<SingleResponse<WebhookSubscription>>(`/platform/webhooks/${id}`, data);
+  api.patch<SingleResponse<WebhookSubscription>>(`/v1/platform/webhooks/${id}`, data);
 
 export const deleteWebhookSubscription = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/platform/webhooks/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/platform/webhooks/${id}`);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
 export const getPlatformHealth = () =>
-  api.get<{ group: string; status: string; modules: number }>('/platform/health');
+  api.get<{ group: string; status: string; modules: number }>('/v1/platform/health');

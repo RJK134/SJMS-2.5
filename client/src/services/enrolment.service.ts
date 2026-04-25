@@ -25,55 +25,55 @@ export interface ClearanceCheck {
 // ── Enrolments ────────────────────────────────────────────────────────────────
 
 export const getEnrolments = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<Enrolment>>('/enrolment/enrolments', { params });
+  api.get<PaginatedResponse<Enrolment>>('/v1/enrolment/enrolments', { params });
 
 export const getEnrolmentById = (id: string) =>
-  api.get<SingleResponse<Enrolment>>(`/enrolment/enrolments/${id}`);
+  api.get<SingleResponse<Enrolment>>(`/v1/enrolment/enrolments/${id}`);
 
 export const createEnrolment = (data: Partial<Enrolment>) =>
-  api.post<SingleResponse<Enrolment>>('/enrolment/enrolments', data);
+  api.post<SingleResponse<Enrolment>>('/v1/enrolment/enrolments', data);
 
 export const updateEnrolment = (id: string, data: Partial<Enrolment>) =>
-  api.patch<SingleResponse<Enrolment>>(`/enrolment/enrolments/${id}`, data);
+  api.patch<SingleResponse<Enrolment>>(`/v1/enrolment/enrolments/${id}`, data);
 
 export const deleteEnrolment = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/enrolment/enrolments/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/enrolment/enrolments/${id}`);
 
 // ── Students ──────────────────────────────────────────────────────────────────
 
 export const getStudents = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<Student>>('/enrolment/students', { params });
+  api.get<PaginatedResponse<Student>>('/v1/enrolment/students', { params });
 
 export const getStudentById = (id: string) =>
-  api.get<SingleResponse<Student>>(`/enrolment/students/${id}`);
+  api.get<SingleResponse<Student>>(`/v1/enrolment/students/${id}`);
 
 export const createStudent = (data: Partial<Student>) =>
-  api.post<SingleResponse<Student>>('/enrolment/students', data);
+  api.post<SingleResponse<Student>>('/v1/enrolment/students', data);
 
 export const updateStudent = (id: string, data: Partial<Student>) =>
-  api.patch<SingleResponse<Student>>(`/enrolment/students/${id}`, data);
+  api.patch<SingleResponse<Student>>(`/v1/enrolment/students/${id}`, data);
 
 export const deleteStudent = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/enrolment/students/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/enrolment/students/${id}`);
 
 // ── Clearance Checks ──────────────────────────────────────────────────────────
 
 export const getClearanceChecks = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<ClearanceCheck>>('/enrolment/clearance-checks', { params });
+  api.get<PaginatedResponse<ClearanceCheck>>('/v1/enrolment/clearance-checks', { params });
 
 export const getClearanceCheckById = (id: string) =>
-  api.get<SingleResponse<ClearanceCheck>>(`/enrolment/clearance-checks/${id}`);
+  api.get<SingleResponse<ClearanceCheck>>(`/v1/enrolment/clearance-checks/${id}`);
 
 export const createClearanceCheck = (data: Partial<ClearanceCheck>) =>
-  api.post<SingleResponse<ClearanceCheck>>('/enrolment/clearance-checks', data);
+  api.post<SingleResponse<ClearanceCheck>>('/v1/enrolment/clearance-checks', data);
 
 export const updateClearanceCheck = (id: string, data: Partial<ClearanceCheck>) =>
-  api.patch<SingleResponse<ClearanceCheck>>(`/enrolment/clearance-checks/${id}`, data);
+  api.patch<SingleResponse<ClearanceCheck>>(`/v1/enrolment/clearance-checks/${id}`, data);
 
 export const deleteClearanceCheck = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/enrolment/clearance-checks/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/enrolment/clearance-checks/${id}`);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
 export const getEnrolmentHealth = () =>
-  api.get<{ group: string; status: string; modules: number }>('/enrolment/health');
+  api.get<{ group: string; status: string; modules: number }>('/v1/enrolment/health');

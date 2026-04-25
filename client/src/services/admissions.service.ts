@@ -66,106 +66,106 @@ export interface AdmissionsQualification {
 // ── Applications ──────────────────────────────────────────────────────────────
 
 export const getApplications = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<Application>>('/admissions/applications', { params });
+  api.get<PaginatedResponse<Application>>('/v1/admissions/applications', { params });
 
 export const getApplicationById = (id: string) =>
-  api.get<SingleResponse<Application>>(`/admissions/applications/${id}`);
+  api.get<SingleResponse<Application>>(`/v1/admissions/applications/${id}`);
 
 export const createApplication = (data: Partial<Application>) =>
-  api.post<SingleResponse<Application>>('/admissions/applications', data);
+  api.post<SingleResponse<Application>>('/v1/admissions/applications', data);
 
 export const updateApplication = (id: string, data: Partial<Application>) =>
-  api.patch<SingleResponse<Application>>(`/admissions/applications/${id}`, data);
+  api.patch<SingleResponse<Application>>(`/v1/admissions/applications/${id}`, data);
 
 export const deleteApplication = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/admissions/applications/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/admissions/applications/${id}`);
 
 // ── Offers ────────────────────────────────────────────────────────────────────
 
 export const getOffers = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<Offer>>('/admissions/offers', { params });
+  api.get<PaginatedResponse<Offer>>('/v1/admissions/offers', { params });
 
 export const getOfferById = (id: string) =>
-  api.get<SingleResponse<Offer>>(`/admissions/offers/${id}`);
+  api.get<SingleResponse<Offer>>(`/v1/admissions/offers/${id}`);
 
 export const createOffer = (data: Partial<Offer>) =>
-  api.post<SingleResponse<Offer>>('/admissions/offers', data);
+  api.post<SingleResponse<Offer>>('/v1/admissions/offers', data);
 
 export const updateOffer = (id: string, data: Partial<Offer>) =>
-  api.patch<SingleResponse<Offer>>(`/admissions/offers/${id}`, data);
+  api.patch<SingleResponse<Offer>>(`/v1/admissions/offers/${id}`, data);
 
 export const deleteOffer = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/admissions/offers/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/admissions/offers/${id}`);
 
 // ── Interviews ────────────────────────────────────────────────────────────────
 
 export const getInterviews = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<Interview>>('/admissions/interviews', { params });
+  api.get<PaginatedResponse<Interview>>('/v1/admissions/interviews', { params });
 
 export const getInterviewById = (id: string) =>
-  api.get<SingleResponse<Interview>>(`/admissions/interviews/${id}`);
+  api.get<SingleResponse<Interview>>(`/v1/admissions/interviews/${id}`);
 
 export const createInterview = (data: Partial<Interview>) =>
-  api.post<SingleResponse<Interview>>('/admissions/interviews', data);
+  api.post<SingleResponse<Interview>>('/v1/admissions/interviews', data);
 
 export const updateInterview = (id: string, data: Partial<Interview>) =>
-  api.patch<SingleResponse<Interview>>(`/admissions/interviews/${id}`, data);
+  api.patch<SingleResponse<Interview>>(`/v1/admissions/interviews/${id}`, data);
 
 export const deleteInterview = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/admissions/interviews/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/admissions/interviews/${id}`);
 
 // ── Admissions Events ─────────────────────────────────────────────────────────
 
 export const getAdmissionsEvents = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<AdmissionsEvent>>('/admissions/admissions-events', { params });
+  api.get<PaginatedResponse<AdmissionsEvent>>('/v1/admissions/admissions-events', { params });
 
 export const getAdmissionsEventById = (id: string) =>
-  api.get<SingleResponse<AdmissionsEvent>>(`/admissions/admissions-events/${id}`);
+  api.get<SingleResponse<AdmissionsEvent>>(`/v1/admissions/admissions-events/${id}`);
 
 export const createAdmissionsEvent = (data: Partial<AdmissionsEvent>) =>
-  api.post<SingleResponse<AdmissionsEvent>>('/admissions/admissions-events', data);
+  api.post<SingleResponse<AdmissionsEvent>>('/v1/admissions/admissions-events', data);
 
 export const updateAdmissionsEvent = (id: string, data: Partial<AdmissionsEvent>) =>
-  api.patch<SingleResponse<AdmissionsEvent>>(`/admissions/admissions-events/${id}`, data);
+  api.patch<SingleResponse<AdmissionsEvent>>(`/v1/admissions/admissions-events/${id}`, data);
 
 export const deleteAdmissionsEvent = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/admissions/admissions-events/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/admissions/admissions-events/${id}`);
 
 // ── References ────────────────────────────────────────────────────────────────
 
 export const getAdmissionsReferences = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<AdmissionsReference>>('/admissions/references', { params });
+  api.get<PaginatedResponse<AdmissionsReference>>('/v1/admissions/references', { params });
 
 export const getAdmissionsReferenceById = (id: string) =>
-  api.get<SingleResponse<AdmissionsReference>>(`/admissions/references/${id}`);
+  api.get<SingleResponse<AdmissionsReference>>(`/v1/admissions/references/${id}`);
 
 export const createAdmissionsReference = (data: Partial<AdmissionsReference>) =>
-  api.post<SingleResponse<AdmissionsReference>>('/admissions/references', data);
+  api.post<SingleResponse<AdmissionsReference>>('/v1/admissions/references', data);
 
 export const updateAdmissionsReference = (id: string, data: Partial<AdmissionsReference>) =>
-  api.patch<SingleResponse<AdmissionsReference>>(`/admissions/references/${id}`, data);
+  api.patch<SingleResponse<AdmissionsReference>>(`/v1/admissions/references/${id}`, data);
 
 export const deleteAdmissionsReference = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/admissions/references/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/admissions/references/${id}`);
 
 // ── Qualifications ────────────────────────────────────────────────────────────
 
 export const getAdmissionsQualifications = (params?: Record<string, unknown>) =>
-  api.get<PaginatedResponse<AdmissionsQualification>>('/admissions/qualifications', { params });
+  api.get<PaginatedResponse<AdmissionsQualification>>('/v1/admissions/qualifications', { params });
 
 export const getAdmissionsQualificationById = (id: string) =>
-  api.get<SingleResponse<AdmissionsQualification>>(`/admissions/qualifications/${id}`);
+  api.get<SingleResponse<AdmissionsQualification>>(`/v1/admissions/qualifications/${id}`);
 
 export const createAdmissionsQualification = (data: Partial<AdmissionsQualification>) =>
-  api.post<SingleResponse<AdmissionsQualification>>('/admissions/qualifications', data);
+  api.post<SingleResponse<AdmissionsQualification>>('/v1/admissions/qualifications', data);
 
 export const updateAdmissionsQualification = (id: string, data: Partial<AdmissionsQualification>) =>
-  api.patch<SingleResponse<AdmissionsQualification>>(`/admissions/qualifications/${id}`, data);
+  api.patch<SingleResponse<AdmissionsQualification>>(`/v1/admissions/qualifications/${id}`, data);
 
 export const deleteAdmissionsQualification = (id: string) =>
-  api.delete<SingleResponse<{ id: string }>>(`/admissions/qualifications/${id}`);
+  api.delete<SingleResponse<{ id: string }>>(`/v1/admissions/qualifications/${id}`);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
 export const getAdmissionsHealth = () =>
-  api.get<{ group: string; status: string; modules: number }>('/admissions/health');
+  api.get<{ group: string; status: string; modules: number }>('/v1/admissions/health');
