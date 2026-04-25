@@ -1,0 +1,10 @@
+{
+  "$schema": "https://cursor.sh/schemas/environment.json",
+  "install": "npm ci && npx prisma generate --schema=prisma/schema.prisma",
+  "start": "npm run dev:server",
+  "terminals": [
+    { "name": "server", "command": "npm run dev:server" },
+    { "name": "client", "command": "npm run dev:client" },
+    { "name": "db",     "command": "docker-compose up postgres" }
+  ]
+}
