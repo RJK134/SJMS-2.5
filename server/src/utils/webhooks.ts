@@ -190,6 +190,7 @@ async function fireWithRetry(
       headers: {
         'Content-Type': 'application/json',
         'x-webhook-signature': signature,
+                  'x-request-id': payload.requestId,
       },
       body,
       signal: AbortSignal.timeout(5000),
