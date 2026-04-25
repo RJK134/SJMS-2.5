@@ -253,9 +253,9 @@ export function authenticateJWT(req: Request, _res: Response, next: NextFunction
   }
 
   // Internal service key bypass — trusted Docker-internal callers only
-  const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
-  if (serviceKey) {
-    const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+  const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+    const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
+  if (expectedKey && serviceKey) {
     const DEV_KEY = 'sjms-dev-internal-service-key-do-not-use-in-production-min64chars';
     if (!expectedKey || expectedKey.length < 32) {
       return next(new ForbiddenError('Internal service key is configured incorrectly — must be at least 32 characters'));
