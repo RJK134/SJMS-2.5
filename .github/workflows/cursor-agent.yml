@@ -190,6 +190,53 @@ jobs:
           fi
           echo "API key valid for: $(jq -r '.email // .name // "user"' /tmp/me.json)"
 
+      - name: Discover available models
+        id: models
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          set -e
+          # Fetch live model list from the API
+          curl -sS -H "Authorization: Bearer $CURSOR_API_KEY" \
+            https://api.cursor.com/v0/models > /tmp/models.json
+
+          echo "::group::Available models"
+          cat /tmp/models.json | jq .
+          echo "::endgroup::"
+
+          # Pick the first matching model from a preference list
+          # (the API may return either an array of strings or an array of objects with .id)
+          MODELS_FLAT=$(jq -r 'if type == "array" then
+                                  if (.[0] | type) == "string" then .[]
+                                  else .[].id end
+                                elif .models then
+                                  if (.models[0] | type) == "string" then .models[]
+                                  else .models[].id end
+                                else empty end' /tmp/models.json)
+
+          if [ -z "$MODELS_FLAT" ]; then
+            echo "::warning::Could not parse model list; defaulting to claude-4.6-sonnet"
+            CHOSEN="claude-4.6-sonnet"
+          else
+            # Preference order — prefer Claude Sonnet for reliability, fall back to others
+            CHOSEN=""
+            for pref in "claude-4.6-sonnet" "claude-sonnet-4.6" "composer-2" "composer-1.5" \
+                        "gpt-5.5-high" "gpt-5.5" "gpt-5.4-high" "gpt-5.4" \
+                        "claude-4.7-opus" "claude-opus-4.7" "gemini-3.1-pro" "gemini-3-pro"; do
+              if echo "$MODELS_FLAT" | grep -qx "$pref"; then
+                CHOSEN="$pref"
+                break
+              fi
+            done
+            # Last-ditch: pick the first one
+            if [ -z "$CHOSEN" ]; then
+              CHOSEN=$(echo "$MODELS_FLAT" | head -1)
+            fi
+          fi
+
+          echo "Selected model: $CHOSEN"
+          echo "model=$CHOSEN" >> "$GITHUB_OUTPUT"
+
       - name: Launch Cursor Background Agent
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -225,7 +272,7 @@ jobs:
             --arg prompt "$PROMPT" \
             --arg repo "https://github.com/${{ github.repository }}" \
             --arg ref "$REF" \
-            --arg model "gpt-5.5" \
+            --arg model "${{ steps.models.outputs.model }}" \
             --argjson autoPr "$AUTO_PR" \
             --arg branch "$BRANCH" \
             '{
