@@ -102,7 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // calling keycloak.updateToken() on an uninitialised instance.
     if (AUTH_MODE === 'keycloak') {
       keycloak.onTokenExpired = () => {
-        console.log('[auth] Token expired, refreshing...');
         keycloak.updateToken(30).catch(() => {
           console.error('[auth] Auto-refresh failed');
         });

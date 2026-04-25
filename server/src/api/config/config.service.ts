@@ -34,7 +34,13 @@ export async function getByKey(settingKey: string) {
 export async function create(data: Prisma.SystemSettingCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('SystemSetting', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('config.created', { id: result.id, key: result.settingKey });
+  emitEvent({
+    event: 'config.created',
+    entityType: 'SystemSetting',
+    entityId: result.id,
+    actorId: userId,
+    data: { settingKey: result.settingKey, category: result.category },
+  });
   return result;
 }
 
@@ -42,7 +48,13 @@ export async function update(id: string, data: Prisma.SystemSettingUpdateInput, 
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('SystemSetting', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('config.updated', { id, key: result.settingKey });
+  emitEvent({
+    event: 'config.updated',
+    entityType: 'SystemSetting',
+    entityId: id,
+    actorId: userId,
+    data: { settingKey: result.settingKey, category: result.category },
+  });
   return result;
 }
 
@@ -50,5 +62,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('SystemSetting', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('config.deleted', { id });
+  emitEvent({
+    event: 'config.deleted',
+    entityType: 'SystemSetting',
+    entityId: id,
+    actorId: userId,
+    data: { settingKey: previous.settingKey },
+  });
 }

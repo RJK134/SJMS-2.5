@@ -1,6 +1,7 @@
 import { createHmac } from 'crypto';
 import logger from './logger';
 import prisma from './prisma';
+import { getRequestId } from './request-context';
 
 // ── Canonical webhook payload contract ──────────────────────────────────────
 // All SJMS events MUST use this shape.
@@ -17,6 +18,8 @@ export interface WebhookPayload {
   actorId: string;
   /** ISO 8601 UTC timestamp — auto-generated if omitted */
   timestamp?: string;
+  /** Correlation identifier propagated from the inbound HTTP request when present. */
+  requestId?: string;
   /** Relevant fields only (never the full Prisma object) */
   data: Record<string, unknown>;
 }
@@ -45,11 +48,19 @@ const MAX_RETRIES = 3;
 // that do not yet have a dedicated workflow.
 const EVENT_ROUTES: Record<string, string> = {
   // ── Admissions (unique path per workflow) ──────────────────────────────
+  'enquiry.created':                  '/webhook/sjms/enquiry/created',
   'application.created':              '/webhook/sjms/application/created',
+  'application.updated':              '/webhook/sjms/application/updated',
   'application.status_changed':       '/webhook/sjms/application/status-changed',
   'application.offer_made':           '/webhook/sjms/offer/decision-made',
+  'application.offer_conditions_met': '/webhook/sjms/application/offer-conditions-met',
+  'application.firm_accepted':        '/webhook/sjms/application/firm-accepted',
   'application.withdrawn':            '/webhook/sjms/application/withdrawn',
   'application.deleted':              '/webhook/sjms/application/deleted',
+  'application.converted':            '/webhook/sjms/application/converted',
+
+  // ── Student lifecycle (created on applicant-to-student conversion) ────
+  'students.created':                 '/webhook/sjms/student/created',
 
   // ── Enrolment ─────────────────────────────────────────────────────────
   'enrolment.created':                '/webhook/sjms/enrolment/created',
@@ -123,7 +134,7 @@ export function emitEvent(
   eventTypeOrPayload: string | WebhookPayload,
   legacyData?: unknown,
 ): void {
-  let resolved: Required<WebhookPayload>;
+  let resolved: ResolvedWebhookPayload;
 
   if (typeof eventTypeOrPayload === 'string') {
     // Legacy two-argument form — best-effort conversion for backward compat
@@ -134,12 +145,14 @@ export function emitEvent(
       entityId: String(raw.id ?? 'unknown'),
       actorId: 'system',
       timestamp: new Date().toISOString(),
+      requestId: getRequestId(),
       data: raw,
     };
   } else {
     resolved = {
       ...eventTypeOrPayload,
       timestamp: eventTypeOrPayload.timestamp || new Date().toISOString(),
+      requestId: eventTypeOrPayload.requestId || getRequestId(),
     };
   }
 
@@ -149,6 +162,7 @@ export function emitEvent(
       event: resolved.event,
       entityType: resolved.entityType,
       entityId: resolved.entityId,
+      requestId: resolved.requestId,
     });
     // Persist failure to AuditLog for operational visibility
     logWebhookFailure(resolved, (err as Error).message).catch(() => {
@@ -160,7 +174,7 @@ export function emitEvent(
 // ── Internal helpers ────────────────────────────────────────────────────────
 
 async function fireWithRetry(
-  payload: Required<WebhookPayload>,
+  payload: ResolvedWebhookPayload,
   attempt: number,
 ): Promise<void> {
   const path = resolveWebhookPath(payload.event);
@@ -211,7 +225,7 @@ async function fireWithRetry(
 
 /** Write a WebhookDelivery failure record to AuditLog. */
 async function logWebhookFailure(
-  payload: Required<WebhookPayload>,
+  payload: ResolvedWebhookPayload,
   errorMessage: string,
 ): Promise<void> {
   try {
@@ -226,6 +240,7 @@ async function logWebhookFailure(
           targetEntityType: payload.entityType,
           error: errorMessage,
           failedAt: new Date().toISOString(),
+          requestId: payload.requestId ?? null,
         },
       },
     });

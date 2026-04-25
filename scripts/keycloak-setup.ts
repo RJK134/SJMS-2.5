@@ -9,6 +9,14 @@ const KC_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD || 'changeme';
 const REALM = 'fhe';
 const CLIENT = 'sjms-client';
 
+// Production hardening: driven by NODE_ENV. In dev mode these remain relaxed.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = process.env.SMTP_PORT || '587';
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+const SMTP_FROM = process.env.SMTP_FROM || 'noreply@futurehorizons.ac.uk';
+
 // ─── Role Definitions ───────────────────────────────────────────────────────
 
 const ALL_ROLES = [
@@ -118,6 +126,19 @@ async function setupRealm(): Promise<void> {
   const delRes = await kc('DELETE', `/admin/realms/${REALM}`);
   if (delRes.ok) console.log('    Deleted existing realm');
 
+  // Build SMTP config if credentials are available
+  const smtpServer = SMTP_HOST ? {
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    from: SMTP_FROM,
+    fromDisplayName: 'SJMS — Future Horizons Education',
+    auth: 'true',
+    user: SMTP_USER ?? '',
+    password: SMTP_PASSWORD ?? '',
+    starttls: 'true',
+    ssl: 'false',
+  } : undefined;
+
   // Create realm
   const res = await kc('POST', '/admin/realms', {
     realm: REALM,
@@ -129,12 +150,38 @@ async function setupRealm(): Promise<void> {
     resetPasswordAllowed: true,
     editUsernameAllowed: false,
     registrationAllowed: false,
-    rememberMe: true,
-    verifyEmail: false,
-    sslRequired: 'none', // dev only
-    accessTokenLifespan: 300, // 5 minutes
-    ssoSessionIdleTimeout: 1800, // 30 minutes
-    ssoSessionMaxLifespan: 36000, // 10 hours
+
+    // Session and security — production-hardened when NODE_ENV=production
+    rememberMe: !IS_PRODUCTION,                        // disable remember-me on shared workstations
+    verifyEmail: IS_PRODUCTION && !!SMTP_HOST,         // require email verification only when SMTP available
+    sslRequired: IS_PRODUCTION ? 'external' : 'none',  // enforce HTTPS for external connections
+    accessTokenLifespan: 300,                           // 5 minutes
+    ssoSessionIdleTimeout: 1800,                        // 30 minutes
+    ssoSessionMaxLifespan: IS_PRODUCTION ? 28800 : 36000, // 8 hours prod, 10 hours dev
+
+    // Brute force protection
+    bruteForceProtected: true,
+    failureFactor: IS_PRODUCTION ? 5 : 30,             // lock after 5 failures in prod (30 in dev)
+    maxDeltaTimeSeconds: 43200,                         // 12 hour observation window
+    waitIncrementSeconds: 60,                           // progressive lockout increment
+    maxFailureWaitSeconds: 900,                         // max 15 minute lockout
+
+    // Password policy (production only — dev has no restrictions for convenience)
+    ...(IS_PRODUCTION && {
+      passwordPolicy: 'length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and passwordHistory(3)',
+    }),
+
+    // OTP policy — TOTP (time-based), SHA1, 6 digits, 30 second period
+    otpPolicyType: 'totp',
+    otpPolicyAlgorithm: 'HmacSHA1',
+    otpPolicyDigits: 6,
+    otpPolicyPeriod: 30,
+    otpPolicyInitialCounter: 0,
+    otpPolicyLookAheadWindow: 1,
+
+    // SMTP — only included if credentials are provided
+    ...(smtpServer && { smtpServer }),
+
     internationalizationEnabled: true,
     supportedLocales: ['en'],
     defaultLocale: 'en',
@@ -142,6 +189,54 @@ async function setupRealm(): Promise<void> {
 
   if (!res.ok) throw new Error(`Failed to create realm: ${res.status} ${await res.text()}`);
   console.log('    Realm created');
+
+  // Log security settings applied
+  console.log(`    SSL required: ${IS_PRODUCTION ? 'external' : 'none'}`);
+  console.log(`    Brute force: lockout after ${IS_PRODUCTION ? 5 : 30} failures`);
+  console.log(`    Session max: ${IS_PRODUCTION ? '8 hours' : '10 hours'}`);
+  console.log(`    Password policy: ${IS_PRODUCTION ? 'enforced (12 chars, mixed)' : 'none (dev)'}`);
+  console.log(`    OTP policy: TOTP SHA1 6-digit 30s`);
+  console.log(`    SMTP: ${SMTP_HOST ? `configured (${SMTP_HOST})` : 'not configured'}`);
+  console.log(`    Email verification: ${IS_PRODUCTION && !!SMTP_HOST ? 'enabled' : 'disabled'}`);
+  console.log(`    Remember me: ${IS_PRODUCTION ? 'disabled' : 'enabled'}`);
+}
+
+async function setupRequiredActions(): Promise<void> {
+  console.log('  Configuring required actions...');
+
+  // Enable "Configure OTP" as an available required action
+  // This does NOT force OTP on all users — that is done per-user or via
+  // conditional auth flow (Batch A3). This just makes the action available.
+  const res = await kc('PUT', `/admin/realms/${REALM}/authentication/required-actions/CONFIGURE_TOTP`, {
+    alias: 'CONFIGURE_TOTP',
+    name: 'Configure OTP',
+    providerId: 'CONFIGURE_TOTP',
+    enabled: true,
+    defaultAction: false, // not default — only assigned to staff via Batch A3
+    priority: 20,
+  });
+
+  if (res.ok || res.status === 409) {
+    console.log('    Configure OTP: enabled (not default — staff enforcement via auth flow)');
+  } else {
+    console.warn(`    Warning: Could not configure OTP action: ${res.status}`);
+  }
+
+  // Enable "Verify Email" required action
+  const emailRes = await kc('PUT', `/admin/realms/${REALM}/authentication/required-actions/VERIFY_EMAIL`, {
+    alias: 'VERIFY_EMAIL',
+    name: 'Verify Email',
+    providerId: 'VERIFY_EMAIL',
+    enabled: true,
+    defaultAction: IS_PRODUCTION && !!SMTP_HOST, // default in prod when SMTP available
+    priority: 10,
+  });
+
+  if (emailRes.ok || emailRes.status === 409) {
+    console.log(`    Verify Email: enabled (default: ${IS_PRODUCTION && !!SMTP_HOST})`);
+  } else {
+    console.warn(`    Warning: Could not configure Verify Email action: ${emailRes.status}`);
+  }
 }
 
 async function setupRoles(): Promise<void> {
@@ -312,6 +407,9 @@ async function main() {
 
   await setupRealm();
   await getAdminToken(); // refresh token after realm operations
+
+  await setupRequiredActions();
+  await getAdminToken(); // refresh
 
   await setupRoles();
   await getAdminToken(); // refresh

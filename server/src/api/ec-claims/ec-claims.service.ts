@@ -3,7 +3,32 @@ import type { Request } from 'express';
 import * as repo from '../../repositories/ecClaim.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, ValidationError } from '../../utils/errors';
+
+// Canonical EC claim lifecycle. CLOSED is terminal; once closed the only
+// way to reopen is via an Appeal row referencing this EC claim. Regulator
+// guidance: QAA Chapter B9 — progression, assessment and academic appeals.
+const VALID_EC_TRANSITIONS: Record<string, readonly string[]> = {
+  SUBMITTED: ['EVIDENCE_RECEIVED', 'CLOSED'],
+  EVIDENCE_RECEIVED: ['PRE_PANEL', 'CLOSED'],
+  PRE_PANEL: ['PANEL', 'CLOSED'],
+  PANEL: ['DECIDED', 'CLOSED'],
+  DECIDED: ['CLOSED'],
+  CLOSED: [],
+};
+
+function assertValidECTransition(from: string, to: string): void {
+  if (from === to) return;
+  const allowed = VALID_EC_TRANSITIONS[from] ?? [];
+  if (!allowed.includes(to)) {
+    throw new ValidationError(
+      `Invalid EC claim status transition: ${from} → ${to}. Allowed from ${from}: ${
+        allowed.length ? allowed.join(', ') : '(terminal)'
+      }`,
+      { status: [`Cannot move an EC claim from ${from} to ${to}`] },
+    );
+  }
+}
 
 export interface ECClaimListQuery {
   cursor?: string;
@@ -12,13 +37,12 @@ export interface ECClaimListQuery {
   order: 'asc' | 'desc';
   studentId?: string;
   status?: string;
-  claimType?: string;
 }
 
 export async function list(query: ECClaimListQuery) {
-  const { cursor, limit, sort, order, studentId, status, claimType } = query;
+  const { cursor, limit, sort, order, studentId, status } = query;
   return repo.list(
-    { studentId, status, claimType },
+    { studentId, status },
     { cursor, limit, sort, order },
   );
 }
@@ -49,6 +73,17 @@ export async function create(data: Prisma.ECClaimUncheckedCreateInput, userId: s
 
 export async function update(id: string, data: Prisma.ECClaimUpdateInput, userId: string, req: Request) {
   const previous = await getById(id);
+
+  const newStatus =
+    typeof data.status === 'string'
+      ? data.status
+      : data.status && typeof data.status === 'object' && 'set' in data.status
+        ? (data.status as { set: string }).set
+        : undefined;
+  if (newStatus && newStatus !== previous.status) {
+    assertValidECTransition(previous.status, newStatus);
+  }
+
   const result = await repo.update(id, data);
   await logAudit('ECClaim', id, 'UPDATE', userId, previous, result, req);
   emitEvent({

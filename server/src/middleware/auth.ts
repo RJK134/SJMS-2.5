@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { timingSafeEqual } from 'crypto';
 import jwt from 'jsonwebtoken';
 import jwksRsa from 'jwks-rsa';
@@ -7,11 +7,9 @@ import type { Role } from '../constants/roles';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JWTPayload;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: JWTPayload;
   }
 }
 
@@ -40,6 +38,11 @@ export interface JWTPayload {
 // to /#/student/... arrives at the server with X-Dev-Persona: student and
 // downstream scoping middleware sees a plausible student identity instead
 // of the old super-admin short-circuit. See client/src/lib/auth.ts.
+if (process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV === 'production') {
+  console.error('[auth] FATAL: AUTH_BYPASS must not be enabled in production. Exiting.');
+  process.exit(1);
+}
+
 const AUTH_BYPASS =
   process.env.AUTH_BYPASS === 'true' && process.env.NODE_ENV !== 'production';
 
@@ -52,7 +55,6 @@ const ADMIN_PERSONA_ROLES = [
   'super_admin',
   'system_admin',
   'registrar',
-  'registry_manager',
   'senior_registry_officer',
   'registry_officer',
   'admissions_manager',
@@ -155,7 +157,6 @@ function resolveDevPersona(raw: string | string[] | undefined): DevPersona {
 }
 
 if (AUTH_BYPASS) {
-  // eslint-disable-next-line no-console
   console.warn(
     '[auth] AUTH_BYPASS is enabled — API requests are authenticated as one of ' +
       '4 dev personas (admin / academic / student / applicant), selected by the ' +
@@ -252,9 +253,9 @@ export function authenticateJWT(req: Request, _res: Response, next: NextFunction
   }
 
   // Internal service key bypass — trusted Docker-internal callers only
-  const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
-  if (serviceKey) {
-    const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+  const expectedKey = process.env.INTERNAL_SERVICE_KEY;
+    const serviceKey = req.headers['x-internal-service-key'] as string | undefined;
+  if (expectedKey && serviceKey) {
     const DEV_KEY = 'sjms-dev-internal-service-key-do-not-use-in-production-min64chars';
     if (!expectedKey || expectedKey.length < 32) {
       return next(new ForbiddenError('Internal service key is configured incorrectly — must be at least 32 characters'));

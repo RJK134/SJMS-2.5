@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import * as repo from '../../repositories/enrolment.repository';
+import * as moduleRegRepo from '../../repositories/moduleRegistration.repository';
 import { logAudit } from '../../utils/audit';
 import { emitEvent } from '../../utils/webhooks';
 import { NotFoundError } from '../../utils/errors';
@@ -77,6 +78,38 @@ export async function update(id: string, data: Prisma.EnrolmentUpdateInput, user
         newStatus: result.status,
       },
     });
+
+    const NON_ACTIVE_STATUSES = ['INTERRUPTED', 'SUSPENDED', 'WITHDRAWN'];
+    if (NON_ACTIVE_STATUSES.includes(result.status)) {
+      const regStatus: 'WITHDRAWN' | 'DEFERRED' =
+        result.status === 'WITHDRAWN' ? 'WITHDRAWN' : 'DEFERRED';
+      // Repository-mediated cascade — the previous implementation called
+      // `prisma.moduleRegistration.*` directly from this service and
+      // bypassed the repository layer (KI-P12-001). The two calls below
+      // route the same writes through `moduleRegistration.repository`
+      // so the repository remains the single source of truth for
+      // ModuleRegistration persistence.
+      const activeRegs = await moduleRegRepo.findActiveByEnrolment(id);
+
+      for (const reg of activeRegs) {
+        await moduleRegRepo.cascadeStatusForEnrolment(reg.id, regStatus, userId);
+        await logAudit('ModuleRegistration', reg.id, 'UPDATE', userId,
+          { status: 'REGISTERED' }, { status: regStatus }, req);
+        emitEvent({
+          event: 'module_registration.status_changed',
+          entityType: 'ModuleRegistration',
+          entityId: reg.id,
+          actorId: userId,
+          data: {
+            enrolmentId: id,
+            moduleId: reg.moduleId,
+            previousStatus: 'REGISTERED',
+            newStatus: regStatus,
+            reason: `Enrolment ${result.status.toLowerCase()}`,
+          },
+        });
+      }
+    }
   }
   return result;
 }

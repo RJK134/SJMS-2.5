@@ -14,7 +14,13 @@ export const querySchema = z.object({
 
 export const createSchema = z.object({
   studentId: z.string().min(1),
-    category: z.enum(['ACADEMIC','FINANCIAL','WELLBEING','ACCOMMODATION','DISABILITY','COMPLAINTS','IT','OTHER']),
+    category: z.enum([
+      'ACADEMIC', 'FINANCIAL', 'WELLBEING', 'ACCOMMODATION', 'DISABILITY',
+      'COMPLAINTS', 'IT', 'OTHER',
+      // Extended categories used by n8n workflow automation
+      'ADMISSIONS', 'REGISTRY', 'FINANCE', 'IT_SERVICES', 'LIBRARY',
+      'ASSESSMENT', 'COMPLIANCE',
+    ]),
     subject: z.string().min(1), description: z.string().min(1),
     priority: z.enum(['LOW','NORMAL','HIGH','URGENT','CRITICAL']).default('NORMAL'),
 });

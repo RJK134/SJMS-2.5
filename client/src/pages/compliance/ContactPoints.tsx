@@ -1,11 +1,11 @@
 import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function ContactPoints() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Contact Points" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Compliance'},{label:'Contact Points'}]} />
-      <Card><CardHeader><CardTitle>Contact Point Schedule</CardTitle></CardHeader><CardContent><p className="text-muted-foreground">Schedule and track mandatory UKVI contact points — registration, attendance, and meeting verification.</p></CardContent></Card>
+      <PageHeader title="Contact Points" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Compliance' }, { label: 'Contact Points' }]} />
+      <ComingSoon title="UKVI Contact Points" description="UKVI contact point scheduling and tracking will be available once the attendance monitoring workflow is fully operational. Contact points are currently recorded via the attendance module." />
     </div>
   );
 }

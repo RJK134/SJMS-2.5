@@ -1,13 +1,10 @@
-import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function Sponsors() {
   return (
-    <div className="space-y-6">
-      <PageHeader title="Sponsor Agreements" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Sponsors' }]} />
-      <Card><CardHeader><CardTitle>Sponsor Agreements</CardTitle></CardHeader>
-        <CardContent><p className="text-muted-foreground">Manage SLC, employer, government, charity, and embassy sponsorship agreements. Track amounts agreed vs received.</p></CardContent>
-      </Card>
-    </div>
+    <ComingSoon
+      title="Sponsor Agreements"
+      description="Sponsor agreement management requires a dedicated sponsorship API with sponsor entities, payment schedules, and invoice linking. This feature is planned for a future phase. Use the Invoicing page to view student account balances."
+    />
   );
 }

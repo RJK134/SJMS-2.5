@@ -32,7 +32,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.PersonIdentifierUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('PersonIdentifier', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('identifiers.created', { id: result.id });
+  emitEvent({
+    event: 'identifiers.created',
+    entityType: 'PersonIdentifier',
+    entityId: result.id,
+    actorId: userId,
+    data: { personId: result.personId, identifierType: result.identifierType },
+  });
   return result;
 }
 
@@ -40,7 +46,13 @@ export async function update(id: string, data: Prisma.PersonIdentifierUpdateInpu
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('PersonIdentifier', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('identifiers.updated', { id });
+  emitEvent({
+    event: 'identifiers.updated',
+    entityType: 'PersonIdentifier',
+    entityId: id,
+    actorId: userId,
+    data: { personId: result.personId, identifierType: result.identifierType },
+  });
   return result;
 }
 
@@ -48,5 +60,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('PersonIdentifier', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('identifiers.deleted', { id });
+  emitEvent({
+    event: 'identifiers.deleted',
+    entityType: 'PersonIdentifier',
+    entityId: id,
+    actorId: userId,
+    data: { personId: previous.personId, identifierType: previous.identifierType },
+  });
 }

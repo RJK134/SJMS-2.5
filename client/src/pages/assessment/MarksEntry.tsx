@@ -170,7 +170,7 @@ export default function MarksEntry() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Assessment</label>
-              <Select value={selectedAssessment} onValueChange={v => { setSelectedAssessment(v); setMarks({}); setSubmitted(false); }}>
+              <Select value={selectedAssessment} onValueChange={(v: string) => { setSelectedAssessment(v); setMarks({}); setSubmitted(false); }}>
                 <SelectTrigger><SelectValue placeholder="Select assessment" /></SelectTrigger>
                 <SelectContent>
                   {(assessments?.data ?? []).map(a => (

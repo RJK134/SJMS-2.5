@@ -1,0 +1,50 @@
+---
+description: SJMS 2.5 project conventions for all Cursor agent work
+alwaysApply: true
+---
+
+# SJMS 2.5 Conventions
+
+## Stack facts
+- Monorepo: `client/` (Next.js) + `server/` (Node/TS) npm workspaces
+- DB: PostgreSQL via Prisma ORM (`prisma/schema.prisma`)
+- Infra: Docker Compose (`docker-compose.yml`)
+- Integrations: n8n, Moodle, Azure AD, SharePoint, Dynamics 365
+
+## Build & test commands
+- Install: `npm ci`
+- Lint: `npm run lint`
+- Build: `npm run build`
+- Server dev: `npm run dev:server`
+- Client dev: `npm run dev:client`
+- Prisma generate: `npm run prisma:generate`
+- Prisma migrate (dev only): `npm run prisma:migrate`
+
+## Hard rules
+1. Never log PII. Student names, DOB, email, address, and direct identifiers
+   are PII under UK GDPR. Log internal IDs only.
+2. Wrap multi-table writes in `prisma.$transaction`.
+3. Validate all API inputs with Zod.
+4. Use HESA field names for student attributes.
+5. Do not modify auth, session, RBAC, or Prisma migrations without flagging
+   `requires-human-review` and asking for explicit approval.
+6. Do not disable tests or suppress type errors to make CI pass.
+
+## Code style
+- TypeScript `strict: true`
+- Prefer named exports over default exports for shared modules
+- Service layer in `server/src/services/*`; DB access in repositories, not routes
+- Tests colocated in `__tests__/` adjacent to source
+
+## Read-only Q&A mode
+Comments starting with `@cursor explain`, `@cursor question:`, `@cursor q:`,
+`@cursor what/why/how/where/when/which/who`, `@cursor describe`,
+`@cursor summarise`, `@cursor summarize`, `@cursor review (no fix)`, or
+`@cursor read-only:` are answered with a single comment only. No branches,
+commits, or PRs are created. See `.cursor/agents/SJMS-Agent.md` for full rules.
+
+## PR hygiene
+- Commit prefix for agent-pushed fixes: `fix(agent):`
+- Commit prefix for agent-implemented features: `feat(agent):`
+- PR body must end with the self-review checklist from
+  `.cursor/agents/SJMS-Agent.md`

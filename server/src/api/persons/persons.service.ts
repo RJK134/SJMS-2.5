@@ -30,7 +30,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.PersonUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('Person', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('persons.created', { id: result.id });
+  emitEvent({
+    event: 'persons.created',
+    entityType: 'Person',
+    entityId: result.id,
+    actorId: userId,
+    data: {},
+  });
   return result;
 }
 
@@ -38,7 +44,13 @@ export async function update(id: string, data: Prisma.PersonUpdateInput, userId:
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Person', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('persons.updated', { id });
+  emitEvent({
+    event: 'persons.updated',
+    entityType: 'Person',
+    entityId: id,
+    actorId: userId,
+    data: {},
+  });
   return result;
 }
 
@@ -46,5 +58,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Person', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('persons.deleted', { id });
+  emitEvent({
+    event: 'persons.deleted',
+    entityType: 'Person',
+    entityId: id,
+    actorId: userId,
+    data: {},
+  });
 }
