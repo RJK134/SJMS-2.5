@@ -33,7 +33,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.AssessmentUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('Assessment', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('assessments.created', { id: result.id });
+  emitEvent({
+    event: 'assessments.created',
+    entityType: 'Assessment',
+    entityId: result.id,
+    actorId: userId,
+    data: { moduleId: result.moduleId, title: result.title, assessmentType: result.assessmentType },
+  });
   return result;
 }
 
@@ -41,7 +47,13 @@ export async function update(id: string, data: Prisma.AssessmentUpdateInput, use
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Assessment', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('assessments.updated', { id });
+  emitEvent({
+    event: 'assessments.updated',
+    entityType: 'Assessment',
+    entityId: id,
+    actorId: userId,
+    data: { moduleId: result.moduleId, title: result.title, assessmentType: result.assessmentType },
+  });
   return result;
 }
 
@@ -49,5 +61,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Assessment', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('assessments.deleted', { id });
+  emitEvent({
+    event: 'assessments.deleted',
+    entityType: 'Assessment',
+    entityId: id,
+    actorId: userId,
+    data: { moduleId: previous.moduleId, status: 'DELETED' },
+  });
 }

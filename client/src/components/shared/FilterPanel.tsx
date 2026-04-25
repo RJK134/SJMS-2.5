@@ -29,7 +29,7 @@ export default function FilterPanel({ filters, values, onChange, onClear }: Filt
       <div className="flex items-center gap-2 flex-wrap">
         <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
         {filters.map(filter => (
-          <Select key={filter.key} value={values[filter.key] || ''} onValueChange={v => onChange(filter.key, v)}>
+          <Select key={filter.key} value={values[filter.key] || ''} onValueChange={(v: string) => onChange(filter.key, v)}>
             <SelectTrigger className="w-[180px] h-9 text-sm">
               <SelectValue placeholder={filter.label} />
             </SelectTrigger>

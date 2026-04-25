@@ -10,7 +10,7 @@ router.use('/students', studentsRouter);
 router.use('/clearance-checks', clearanceChecksRouter);
 
 router.get('/health', (_req, res) => {
-  res.json({ group: 'enrolment', status: 'ok', modules: 3 });
+  res.json({ group: 'enrolment', status: 'ok', modules: 3, timestamp: new Date().toISOString() });
 });
 
 export default router;

@@ -31,7 +31,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ApplicationQualificationUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('ApplicationQualification', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('qualifications.created', { id: result.id });
+  emitEvent({
+    event: 'qualifications.created',
+    entityType: 'ApplicationQualification',
+    entityId: result.id,
+    actorId: userId,
+    data: { applicationId: result.applicationId },
+  });
   return result;
 }
 
@@ -39,7 +45,13 @@ export async function update(id: string, data: Prisma.ApplicationQualificationUp
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('ApplicationQualification', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('qualifications.updated', { id });
+  emitEvent({
+    event: 'qualifications.updated',
+    entityType: 'ApplicationQualification',
+    entityId: id,
+    actorId: userId,
+    data: { applicationId: result.applicationId },
+  });
   return result;
 }
 
@@ -47,5 +59,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('ApplicationQualification', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('qualifications.deleted', { id });
+  emitEvent({
+    event: 'qualifications.deleted',
+    entityType: 'ApplicationQualification',
+    entityId: id,
+    actorId: userId,
+    data: { applicationId: previous.applicationId },
+  });
 }

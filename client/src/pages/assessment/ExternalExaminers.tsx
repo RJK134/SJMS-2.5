@@ -1,14 +1,11 @@
 import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function ExternalExaminers() {
   return (
     <div className="space-y-6">
       <PageHeader title="External Examiners" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Assessment' }, { label: 'External Examiners' }]} />
-      <Card>
-        <CardHeader><CardTitle>External Examiner Appointments</CardTitle></CardHeader>
-        <CardContent><p className="text-muted-foreground">Manage external examiner appointments, programme assignments, and annual reports.</p></CardContent>
-      </Card>
+      <ComingSoon title="External Examiner Management" description="External examiner appointment management, programme assignments, and annual report tracking will be built alongside the exam board ratification workflow in Phase 12." />
     </div>
   );
 }

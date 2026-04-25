@@ -12,6 +12,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
     networks:
       - sjms-network
     healthcheck:
@@ -115,6 +116,11 @@ services:
       N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678}
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?INTERNAL_SERVICE_KEY must be set in .env — no default}
+      # Workflow JSON uses http://api:3001 directly (no $env runtime access
+      # needed — resolves KI-P6-009). WORKFLOW_INTERNAL_SECRET is read by the
+      # provisioning script to create the n8n credential at import time.
+      API_BASE_URL: http://api:3001
+      WORKFLOW_INTERNAL_SECRET: ${WORKFLOW_INTERNAL_SECRET:-${INTERNAL_SERVICE_KEY}}
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
       DB_POSTGRESDB_PORT: "5432"
@@ -128,6 +134,12 @@ services:
         condition: service_healthy
     networks:
       - sjms-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # ── API Server ─────────────────────────────────────────────────
   # Rebuilt 2026-04-11 (Phase 2.5 Task 4): multi-stage Dockerfile with a
@@ -171,46 +183,38 @@ services:
       retries: 5
       start_period: 30s
 
-  # ── RETIRED 2026-04-10 ─────────────────────────────────────────
-  # client and nginx services remain commented out pending separate fixes
-  # for the client Dockerfile (stale bundle from old commit). See
-  # docs/SESSION-HANDOFF-2026-04-10.md for context. Dev workflow:
-  #   `cd client && npm run dev` (Vite, port 5173)
-  # ───────────────────────────────────────────────────────────────
-  #
-  # # ── Client (React Frontend) ───────────────────────────────────
-  # client:
-  #   build:
-  #     context: ./client
-  #     dockerfile: Dockerfile
-  #   container_name: sjms-client
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5173:80"
-  #   depends_on:
-  #     - api
-  #   networks:
-  #     - sjms-network
-  #
-  # # ── Nginx (Reverse Proxy) ─────────────────────────────────────
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: sjms-nginx
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_healthy
-  #     api:
-  #       condition: service_healthy
-  #     client:
-  #       condition: service_started
-  #   networks:
-  #     - sjms-network
+  # ── Client (React Frontend) ───────────────────────────────────
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    container_name: sjms-client
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    networks:
+      - sjms-network
+
+  # ── Nginx (Reverse Proxy) ─────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: sjms-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      client:
+        condition: service_started
+    networks:
+      - sjms-network
 
 networks:
   sjms-network:

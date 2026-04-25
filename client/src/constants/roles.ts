@@ -35,7 +35,9 @@ export const ADMIN_STAFF_ROLES = [
 
 /**
  * All teaching / academic staff roles. Used to gate AcademicPortal (/academic/*) entry.
- * Mirrors server `ROLE_GROUPS.ACADEMIC_STAFF` / `TEACHING` (9 roles).
+ * Mirrors server `ROLE_GROUPS.ACADEMIC_STAFF` / `TEACHING` (9 roles) plus
+ * personal_tutor (from ROLE_GROUPS.SUPPORT) who access the academic portal
+ * to manage tutees.
  */
 export const ACADEMIC_STAFF_ROLES = [
   'dean',
@@ -47,6 +49,7 @@ export const ACADEMIC_STAFF_ROLES = [
   'lecturer',
   'senior_lecturer',
   'professor',
+  'personal_tutor',
 ] as const;
 
 /**

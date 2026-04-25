@@ -1,13 +1,10 @@
-import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function Refunds() {
   return (
-    <div className="space-y-6">
-      <PageHeader title="Refund Approvals" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Refunds' }]} />
-      <Card><CardHeader><CardTitle>Refund Queue</CardTitle></CardHeader>
-        <CardContent><p className="text-muted-foreground">Review and approve refund requests. Track processing status and completion.</p></CardContent>
-      </Card>
-    </div>
+    <ComingSoon
+      title="Refund Approvals"
+      description="Refund processing requires a dedicated refunds API with approval workflows, credit note generation, and payment gateway integration. This feature is planned for a future phase. Use the Invoicing page to view student account balances."
+    />
   );
 }

@@ -38,3 +38,24 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     res.status(204).send();
   } catch (err) { next(err); }
 }
+
+/**
+ * POST /applications/:id/convert
+ *
+ * Converts an accepted application (FIRM or UNCONDITIONAL_OFFER) into a live
+ * Student record and initial Enrolment. The operation is idempotent: calling
+ * it twice for the same application returns the existing student/enrolment
+ * rather than creating duplicates.
+ */
+export async function convert(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.params.id as string;
+    const result = await service.convertToStudent(
+      id,
+      req.body as service.ConversionInput,
+      req.user?.sub ?? 'system',
+      req,
+    );
+    res.status(201).json({ success: true, data: result });
+  } catch (err) { next(err); }
+}

@@ -1,13 +1,10 @@
-import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function Bursaries() {
   return (
-    <div className="space-y-6">
-      <PageHeader title="Bursary Management" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Bursaries' }]} />
-      <Card><CardHeader><CardTitle>Bursary Funds</CardTitle></CardHeader>
-        <CardContent><p className="text-muted-foreground">Manage bursary, scholarship, and hardship funds. Review applications, allocate awards, and track budgets.</p></CardContent>
-      </Card>
-    </div>
+    <ComingSoon
+      title="Bursary Management"
+      description="Bursary management requires a dedicated bursary API with eligibility rules, award tracking, and disbursement records. This feature is planned for a future phase. Use the Invoicing page to view student account balances."
+    />
   );
 }

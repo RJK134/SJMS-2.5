@@ -12,7 +12,7 @@ router.use('/marks', marksRouter);
 router.use('/module-results', moduleResultsRouter);
 
 router.get('/health', (_req, res) => {
-  res.json({ group: 'assessment', status: 'ok', modules: 4 });
+  res.json({ group: 'assessment', status: 'ok', modules: 4, timestamp: new Date().toISOString() });
 });
 
 export default router;

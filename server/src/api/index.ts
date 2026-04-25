@@ -42,6 +42,19 @@ import { auditRouter } from './audit/audit.router';
 import { reportsRouter } from './reports/reports.router';
 import { webhooksRouter } from './webhooks/webhooks.router';
 import { configRouter } from './config/config.router';
+import { hesaRouter } from './hesa/hesa.router';
+import { accommodationRouter } from './accommodation/accommodation.router';
+import { governanceRouter } from './governance/governance.router';
+
+import identityGroupRouter from './identity/group-index';
+import admissionsGroupRouter from './admissions/group-index';
+import enrolmentGroupRouter from './enrolment/group-index';
+import curriculumGroupRouter from './curriculum/group-index';
+import assessmentGroupRouter from './assessment/group-index';
+import progressionGroupRouter from './progression/group-index';
+import studentSupportGroupRouter from './student-support/group-index';
+import complianceGroupRouter from './compliance/group-index';
+import platformGroupRouter from './platform/group-index';
 
 import identityGroupRouter from './identity/group-index';
 import admissionsGroupRouter from './admissions/group-index';
@@ -97,13 +110,27 @@ apiV1Router.use('/audit', auditRouter);
 apiV1Router.use('/reports', reportsRouter);
 apiV1Router.use('/webhooks', webhooksRouter);
 apiV1Router.use('/config', configRouter);
+apiV1Router.use('/hesa', hesaRouter);
+apiV1Router.use('/accommodation', accommodationRouter);
+apiV1Router.use('/governance', governanceRouter);
 
-apiV1Router.use('/identity', identityGroupRouter);
-apiV1Router.use('/admissions', admissionsGroupRouter);
-apiV1Router.use('/enrolment', enrolmentGroupRouter);
-apiV1Router.use('/curriculum', curriculumGroupRouter);
-apiV1Router.use('/assessment', assessmentGroupRouter);
-apiV1Router.use('/progression', progressionGroupRouter);
-apiV1Router.use('/student-support', studentSupportGroupRouter);
-apiV1Router.use('/compliance', complianceGroupRouter);
-apiV1Router.use('/platform', platformGroupRouter);
+// ── Domain Group Mounts (Phase 12a — additive, flat routes preserved above) ──
+import identityGroup from './identity/group-index';
+import admissionsGroup from './admissions/group-index';
+import enrolmentGroup from './enrolment/group-index';
+import curriculumGroup from './curriculum/group-index';
+import assessmentGroup from './assessment/group-index';
+import progressionGroup from './progression/group-index';
+import studentSupportGroup from './student-support/group-index';
+import complianceGroup from './compliance/group-index';
+import platformGroup from './platform/group-index';
+
+apiV1Router.use('/identity', identityGroup);
+apiV1Router.use('/admissions', admissionsGroup);
+apiV1Router.use('/enrolment', enrolmentGroup);
+apiV1Router.use('/curriculum', curriculumGroup);
+apiV1Router.use('/assessment', assessmentGroup);
+apiV1Router.use('/progression', progressionGroup);
+apiV1Router.use('/student-support', studentSupportGroup);
+apiV1Router.use('/compliance', complianceGroup);
+apiV1Router.use('/platform', platformGroup);

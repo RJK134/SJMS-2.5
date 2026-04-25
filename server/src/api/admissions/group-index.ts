@@ -16,7 +16,7 @@ router.use('/references', referencesRouter);
 router.use('/qualifications', qualificationsRouter);
 
 router.get('/health', (_req, res) => {
-  res.json({ group: 'admissions', status: 'ok', modules: 6 });
+  res.json({ group: 'admissions', status: 'ok', modules: 6, timestamp: new Date().toISOString() });
 });
 
 export default router;

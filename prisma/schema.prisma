@@ -556,6 +556,14 @@ enum SupportCategory {
   COMPLAINTS
   IT
   OTHER
+  // Extended categories for n8n workflow automation tasks
+  ADMISSIONS
+  REGISTRY
+  FINANCE
+  IT_SERVICES
+  LIBRARY
+  ASSESSMENT
+  COMPLIANCE
 }
 
 enum SupportPriority {
@@ -804,6 +812,13 @@ enum HESAReturnStatus {
   VALIDATION
   SUBMITTED
   ACCEPTED
+  REJECTED
+}
+
+enum HESANotificationStatus {
+  PENDING
+  SUBMITTED
+  ACKNOWLEDGED
   REJECTED
 }
 
@@ -2574,7 +2589,7 @@ model GradeBoundary {
 model AnonymousMarking {
   id           String     @id @default(cuid())
   assessmentId String     @map("assessment_id")
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
   studentId    String     @map("student_id")
   anonymousId  String     @unique @map("anonymous_id")
   revealed     Boolean    @default(false)
@@ -2626,6 +2641,7 @@ model AssessmentComponent {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("assessment_components")
   @@index([assessmentId])
@@ -2650,6 +2666,7 @@ model MarkEntry {
 
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("mark_entries")
   @@index([assessmentComponentId])
@@ -2894,6 +2911,7 @@ model ChargeLine {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("charge_lines")
   @@index([studentAccountId])
@@ -2920,6 +2938,7 @@ model Invoice {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("invoices")
   @@index([studentAccountId])
@@ -2941,6 +2960,7 @@ model Payment {
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("payments")
   @@index([studentAccountId])
@@ -4339,6 +4359,27 @@ model HESAReturn {
 
   @@map("hesa_returns")
   @@index([academicYear])
+}
+
+model HESANotification {
+  id              String                @id @default(cuid())
+  entityType      String                @map("entity_type")
+  entityId        String                @map("entity_id")
+  changeType      String                @map("change_type")
+  status          HESANotificationStatus @default(PENDING)
+  submittedAt     DateTime?             @map("submitted_at")
+  acknowledgedAt  DateTime?             @map("acknowledged_at")
+  payload         Json?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdBy String?   @map("created_by")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("hesa_notifications")
+  @@index([entityType, entityId])
+  @@index([status])
 }
 
 model HESASnapshot {

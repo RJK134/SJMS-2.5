@@ -27,9 +27,25 @@ export default function BulkModuleRegistration() {
   const students = enrolments?.data ?? [];
   const modules = (progModules?.data ?? []).filter(pm => pm.yearOfStudy === Number(yearOfStudy));
 
-  const toggleStudent = (id: string) => setSelectedStudents(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleStudent = (id: string) => setSelectedStudents(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    return next;
+  });
   const toggleAllStudents = () => setSelectedStudents(prev => prev.size === students.length ? new Set() : new Set(students.map(s => s.id)));
-  const toggleModule = (id: string) => setSelectedModules(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleModule = (id: string) => setSelectedModules(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    return next;
+  });
 
   const handleSubmit = async () => {
     setIsSubmitting(true);

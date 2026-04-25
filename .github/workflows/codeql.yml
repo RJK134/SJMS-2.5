@@ -1,0 +1,66 @@
+name: CodeQL
+
+# Static security analysis for the SJMS 2.5 JavaScript/TypeScript
+# codebase. Results are published to the repository's Security tab
+# under "Code scanning". This workflow is not an enforcement gate —
+# the `CI` workflow is — so treat findings as advisories until we
+# agree a triage policy in a later phase.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly re-scan on Mondays at 03:17 UTC so baseline findings
+    # refresh even when there is no PR traffic. The time is offset
+    # from the hour to avoid contention with other scheduled jobs.
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+          # Skip node_modules and generated build output so CodeQL
+          # does not analyse third-party code or Prisma client code.
+          config: |
+            paths-ignore:
+              - '**/node_modules/**'
+              - '**/dist/**'
+              - '**/build/**'
+              - 'prisma/generated/**'
+              - 'client/dist/**'
+              - 'server/dist/**'
+              - 'coverage/**'
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:${{ matrix.language }}'

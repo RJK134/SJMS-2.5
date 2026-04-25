@@ -10,7 +10,7 @@ router.use('/identifiers', identifiersRouter);
 router.use('/demographics', demographicsRouter);
 
 router.get('/health', (_req, res) => {
-  res.json({ group: 'identity', status: 'ok', modules: 3 });
+  res.json({ group: 'identity', status: 'ok', modules: 3, timestamp: new Date().toISOString() });
 });
 
 export default router;

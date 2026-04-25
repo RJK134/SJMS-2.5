@@ -33,7 +33,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.StudentProgrammeRouteUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('StudentProgrammeRoute', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('programme_routes.created', { id: result.id });
+  emitEvent({
+    event: 'programme_routes.created',
+    entityType: 'StudentProgrammeRoute',
+    entityId: result.id,
+    actorId: userId,
+    data: { studentId: result.studentId, programmeId: result.programmeId },
+  });
   return result;
 }
 
@@ -41,7 +47,13 @@ export async function update(id: string, data: Prisma.StudentProgrammeRouteUpdat
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('StudentProgrammeRoute', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('programme_routes.updated', { id });
+  emitEvent({
+    event: 'programme_routes.updated',
+    entityType: 'StudentProgrammeRoute',
+    entityId: id,
+    actorId: userId,
+    data: { studentId: result.studentId, programmeId: result.programmeId },
+  });
   return result;
 }
 
@@ -49,5 +61,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('StudentProgrammeRoute', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('programme_routes.deleted', { id });
+  emitEvent({
+    event: 'programme_routes.deleted',
+    entityType: 'StudentProgrammeRoute',
+    entityId: id,
+    actorId: userId,
+    data: { studentId: previous.studentId, programmeId: previous.programmeId },
+  });
 }

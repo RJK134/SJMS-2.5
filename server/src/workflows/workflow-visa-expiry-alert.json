@@ -1,0 +1,120 @@
+{
+  "name": "SJMS: Visa Expiry Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 24, "triggerAtHour": 9 }] }
+      },
+      "id": "vis-00001-trigger",
+      "name": "Schedule — Daily 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://api:3001/api/v1/ukvi?tier4Status=ACTIVE&limit=200",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "vis-00002-fetch",
+      "name": "Fetch Active UKVI Records",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "vis-cond-90",
+              "leftValue": "={{ $json.data?.length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
+      },
+      "id": "vis-00003-check90",
+      "name": "Has Expiring (90 days)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [710, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "templateKey", "value": "visa_expiry_90_day" },
+            { "name": "channel", "value": "email" },
+            { "name": "bulk", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "vis-00004-alert90",
+      "name": "Send 90-day Alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 100],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "templateKey", "value": "visa_expiry_30_day_urgent" },
+            { "name": "channel", "value": "email" },
+            { "name": "bulk", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "vis-00005-alert30",
+      "name": "Send 30-day Urgent Alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 400],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    }
+  ],
+  "connections": {
+    "Schedule — Daily 09:00": {
+      "main": [[{ "node": "Fetch Active UKVI Records", "type": "main", "index": 0 }]]
+    },
+    "Fetch Active UKVI Records": {
+      "main": [[{ "node": "Has Expiring (90 days)?", "type": "main", "index": 0 }]]
+    },
+    "Has Expiring (90 days)?": {
+      "main": [
+        [
+          { "node": "Send 90-day Alerts", "type": "main", "index": 0 },
+          { "node": "Send 30-day Urgent Alerts", "type": "main", "index": 0 }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": [{ "name": "sjms" }, { "name": "phase-6" }, { "name": "ukvi" }]
+}

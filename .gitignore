@@ -31,6 +31,14 @@ yarn-error.log*
 *.swo
 *~
 
+# Claude Code — personal overrides, never tracked
+.claude/settings.local.json
+
+# Claude Code — transient agent worktrees and captured chat transcripts.
+# These are created by interactive sessions and must never be committed.
+.claude/worktrees/
+.claude/*.txt
+
 # OS
 .DS_Store
 Thumbs.db
@@ -41,6 +49,16 @@ pgdata/
 redisdata/
 miniodata/
 n8ndata/
+
+# TLS certificates and private keys — NEVER commit
+docker/nginx/certs/*.pem
+docker/nginx/certs/*.crt
+docker/nginx/certs/*.key
+docker/nginx/certs/*.bak
+*.pem
+*.crt
+*.key
+!docker/nginx/certs/.gitkeep
 
 # Test coverage
 coverage/

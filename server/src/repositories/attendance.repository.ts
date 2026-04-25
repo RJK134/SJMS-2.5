@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { ATTENDANCE_ALERT_SORT, ATTENDANCE_RECORD_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma } from '@prisma/client';
 
 export interface AttendanceFilters {
@@ -36,7 +37,7 @@ export async function list(filters: AttendanceFilters = {}, pagination: CursorPa
       include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } },
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ATTENDANCE_RECORD_SORT, 'date'),
     }),
     prisma.attendanceRecord.count({ where }),
   ]);
@@ -76,7 +77,7 @@ export async function listAlerts(filters: AttendanceAlertFilters = {}, paginatio
       where,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ATTENDANCE_ALERT_SORT, 'triggerDate'),
       include: {
         student: {
           include: {
@@ -118,4 +119,26 @@ export async function getEngagementScores(studentId: string, academicYear: strin
 
 export async function createAlert(data: Prisma.AttendanceAlertUncheckedCreateInput) {
   return prisma.attendanceAlert.create({ data });
+}
+
+export async function findActiveEnrolmentForStudent(studentId: string) {
+  return prisma.enrolment.findFirst({
+    where: { studentId, status: 'ENROLLED', deletedAt: null },
+    select: { academicYear: true },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function getUkviRecordForStudent(studentId: string) {
+  return prisma.uKVIRecord.findFirst({
+    where: { studentId, deletedAt: null },
+    select: { tier4Status: true, complianceStatus: true },
+  });
+}
+
+export async function findActiveAlert(studentId: string, alertType: 'LOW_ATTENDANCE' | 'TIER4_RISK') {
+  return prisma.attendanceAlert.findFirst({
+    where: { studentId, alertType, status: 'ACTIVE' },
+    select: { id: true },
+  });
 }
