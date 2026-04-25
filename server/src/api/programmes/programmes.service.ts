@@ -33,7 +33,13 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ProgrammeUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('Programme', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('programmes.created', { id: result.id });
+  emitEvent({
+    event: 'programmes.created',
+    entityType: 'Programme',
+    entityId: result.id,
+    actorId: userId,
+    data: { title: result.title, level: result.level, status: result.status },
+  });
   return result;
 }
 
@@ -41,7 +47,22 @@ export async function update(id: string, data: Prisma.ProgrammeUpdateInput, user
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('Programme', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('programmes.updated', { id });
+  emitEvent({
+    event: 'programmes.updated',
+    entityType: 'Programme',
+    entityId: id,
+    actorId: userId,
+    data: { title: result.title, status: result.status },
+  });
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'programmes.status_changed',
+      entityType: 'Programme',
+      entityId: id,
+      actorId: userId,
+      data: { previousStatus: previous.status, newStatus: result.status },
+    });
+  }
   return result;
 }
 
@@ -49,5 +70,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('Programme', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('programmes.deleted', { id });
+  emitEvent({
+    event: 'programmes.deleted',
+    entityType: 'Programme',
+    entityId: id,
+    actorId: userId,
+    data: { title: previous.title },
+  });
 }

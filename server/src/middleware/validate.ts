@@ -1,5 +1,14 @@
 import { Request, Response, NextFunction } from "express";
-import { ZodSchema, ZodError } from "zod";
+import { ZodError, type ZodTypeAny } from "zod";
+
+function replaceRequestProperty<T>(req: Request, key: "body" | "params" | "query", value: T): void {
+  Object.defineProperty(req, key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
+}
 
 function formatZodErrors(error: ZodError): Record<string, string[]> {
   const formatted: Record<string, string[]> = {};
@@ -13,7 +22,7 @@ function formatZodErrors(error: ZodError): Record<string, string[]> {
   return formatted;
 }
 
-export function validate(schema: ZodSchema) {
+export function validate<TSchema extends ZodTypeAny>(schema: TSchema) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req.body);
     if (!result.success) {
@@ -25,12 +34,12 @@ export function validate(schema: ZodSchema) {
       });
       return;
     }
-    req.body = result.data;
+    replaceRequestProperty(req, "body", result.data as Request["body"]);
     next();
   };
 }
 
-export function validateParams(schema: ZodSchema) {
+export function validateParams<TSchema extends ZodTypeAny>(schema: TSchema) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req.params);
     if (!result.success) {
@@ -42,12 +51,12 @@ export function validateParams(schema: ZodSchema) {
       });
       return;
     }
-    req.params = result.data;
+    replaceRequestProperty(req, "params", result.data as Request["params"]);
     next();
   };
 }
 
-export function validateQuery(schema: ZodSchema) {
+export function validateQuery<TSchema extends ZodTypeAny>(schema: TSchema) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req.query);
     if (!result.success) {
@@ -59,7 +68,7 @@ export function validateQuery(schema: ZodSchema) {
       });
       return;
     }
-    req.query = result.data;
+    replaceRequestProperty(req, "query", result.data as Request["query"]);
     next();
   };
 }

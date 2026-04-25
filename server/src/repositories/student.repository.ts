@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { STUDENT_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma } from '@prisma/client';
 
 const detailInclude = {
@@ -59,7 +60,7 @@ export async function list(filters: StudentFilters = {}, pagination: CursorPagin
       include: listInclude,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, STUDENT_SORT),
     }),
     prisma.student.count({ where }),
   ]);
@@ -85,6 +86,21 @@ export async function getByStudentNumber(studentNumber: string) {
   return prisma.student.findUnique({ where: { studentNumber }, include: detailInclude });
 }
 
+// Idempotency helper for the applicant-to-student converter (Phase 16C).
+// The personId column is the real identity key for a human record — a
+// student is created exactly once per person, regardless of how many
+// applications that person submits over time. Returns the non-deleted
+// Student with the full detailInclude shape (person + addresses/
+// contacts/identifiers/demographic), consistent with
+// `getByStudentNumber`. The conversion service only reads `id` and
+// `studentNumber` off the result, so either projection is safe at the
+// call site; the rich include is kept because future callers
+// (detail/profile views) will likely want the relation.
+//
+// Note: PR #109 landed a duplicate unincluded version of this helper
+// at the same time PR #107 landed this one. The duplicate has been
+// removed in `chore/tooling-tsc-baseline` — TS2323/TS2393 on main
+// would otherwise keep the server quality gate red.
 export async function create(data: Prisma.StudentUncheckedCreateInput) {
   return prisma.student.create({ data });
 }
@@ -120,4 +136,25 @@ export async function getStudentsByProgramme(programmeId: string, pagination: Cu
     prisma.student.count({ where }),
   ]);
   return buildCursorPaginatedResponse(data, total, pagination.limit);
+}
+
+/**
+ * Find a student by the linked Person id. Used during applicant-to-student
+ * conversion to establish whether a Student record already exists for the
+ * person before attempting to create one (idempotency guard).
+ */
+export async function getByPersonId(personId: string) {
+  return prisma.student.findFirst({
+    where: { personId, deletedAt: null },
+    include: detailInclude,
+  });
+}
+
+/**
+ * Count all non-deleted student records. Used to generate the next sequential
+ * student number during conversion. The caller is responsible for handling
+ * unique-constraint retries if a concurrent conversion races this value.
+ */
+export async function countStudents(): Promise<number> {
+  return prisma.student.count({ where: { deletedAt: null } });
 }

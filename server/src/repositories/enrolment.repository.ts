@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { ENROLMENT_SORT } from '../utils/repository-sort-allow-lists';
 import { type Prisma, type EnrolmentStatus } from '@prisma/client';
 
 export interface EnrolmentFilters {
@@ -29,7 +30,7 @@ export async function list(filters: EnrolmentFilters = {}, pagination: CursorPag
       include: defaultInclude,
       
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, ENROLMENT_SORT),
     }),
     prisma.enrolment.count({ where }),
   ]);
@@ -46,6 +47,21 @@ export async function getById(id: string) {
       statusHistory: { orderBy: { changeDate: 'desc' } },
       progressionRecords: true,
     },
+  });
+}
+
+// Idempotency helper for the applicant-to-student converter (Phase 16C).
+// An enrolment is uniquely identified by the tuple {student, programme,
+// academic year}: the same person cannot be enrolled on the same
+// programme twice in the same year. Returns the non-deleted match, or
+// null when no record exists.
+export async function findOneByStudentProgrammeYear(
+  studentId: string,
+  programmeId: string,
+  academicYear: string,
+) {
+  return prisma.enrolment.findFirst({
+    where: { studentId, programmeId, academicYear, deletedAt: null },
   });
 }
 
@@ -101,5 +117,22 @@ export async function getModuleRegistrations(enrolmentId: string) {
     where: { enrolmentId, deletedAt: null },
     include: { module: true, results: true },
     orderBy: { module: { moduleCode: 'asc' } },
+  });
+}
+
+/**
+ * Find the first non-deleted enrolment for a given student, programme, and
+ * academic year. Used during applicant-to-student conversion to establish
+ * whether an initial enrolment already exists before attempting to create
+ * one (idempotency guard).
+ */
+export async function findForJourney(
+  studentId: string,
+  programmeId: string,
+  academicYear: string,
+) {
+  return prisma.enrolment.findFirst({
+    where: { studentId, programmeId, academicYear, deletedAt: null },
+    include: defaultInclude,
   });
 }

@@ -1,11 +1,11 @@
 import { type Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
-import { type CursorPaginationParams, buildCursorPaginatedResponse } from '../utils/pagination';
+import { type CursorPaginationParams, buildCursorPaginatedResponse, safeOrderBy } from '../utils/pagination';
+import { EC_CLAIM_SORT } from '../utils/repository-sort-allow-lists';
 
 export interface ECClaimFilters {
   studentId?: string;
   status?: string;
-  claimType?: string;
 }
 
 export async function list(filters: ECClaimFilters = {}, pagination: CursorPaginationParams) {
@@ -13,15 +13,14 @@ export async function list(filters: ECClaimFilters = {}, pagination: CursorPagin
     deletedAt: null,
     ...(filters.studentId && { studentId: filters.studentId }),
     ...(filters.status && { status: filters.status as any }),
-    ...(filters.claimType && { claimType: filters.claimType as any }),
   };
 
   const [data, total] = await Promise.all([
     prisma.eCClaim.findMany({
       where,
-      
+      include: { student: { include: { person: true } }, moduleRegistration: { include: { module: true } } },
       take: pagination.limit + 1, ...(pagination.cursor ? { cursor: { id: pagination.cursor }, skip: 1 } : {}),
-      orderBy: { [pagination.sort]: pagination.order } as any,
+      orderBy: safeOrderBy(pagination, EC_CLAIM_SORT),
     }),
     prisma.eCClaim.count({ where }),
   ]);

@@ -44,7 +44,17 @@ export async function getById(id: string) {
 export async function create(data: Prisma.StudentAccountUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('StudentAccount', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('finance.created', { id: result.id });
+  emitEvent({
+    event: 'finance.account_created',
+    entityType: 'StudentAccount',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      academicYear: result.academicYear,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -52,7 +62,29 @@ export async function update(id: string, data: Prisma.StudentAccountUpdateInput,
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('StudentAccount', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('finance.updated', { id });
+  emitEvent({
+    event: 'finance.account_updated',
+    entityType: 'StudentAccount',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: result.studentId,
+      academicYear: result.academicYear,
+    },
+  });
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'finance.status_changed',
+      entityType: 'StudentAccount',
+      entityId: id,
+      actorId: userId,
+      data: {
+        studentId: result.studentId,
+        previousStatus: previous.status,
+        newStatus: result.status,
+      },
+    });
+  }
   return result;
 }
 
@@ -60,7 +92,15 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('StudentAccount', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('finance.deleted', { id });
+  emitEvent({
+    event: 'finance.account_deleted',
+    entityType: 'StudentAccount',
+    entityId: id,
+    actorId: userId,
+    data: {
+      studentId: previous.studentId,
+    },
+  });
 }
 
 // ── Financial Transactions ──────────────────────────────────────────────

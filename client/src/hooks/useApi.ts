@@ -1,6 +1,6 @@
 // Generic API hooks using @tanstack/react-query
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { PaginatedResponse, SingleResponse } from '@/types/api';
 
@@ -21,6 +21,19 @@ export function useList<T>(key: string, endpoint: string, params?: QueryParams, 
       return data;
     },
     enabled: options?.enabled ?? true,
+  });
+}
+
+/** Infinite list that accumulates pages for cursor-based pagination. */
+export function useInfiniteList<T>(key: string, endpoint: string, params?: Omit<QueryParams, 'cursor'>) {
+  return useInfiniteQuery<PaginatedResponse<T>>({
+    queryKey: [key, 'infinite', params],
+    queryFn: async ({ pageParam }) => {
+      const { data } = await api.get(endpoint, { params: { ...params, cursor: pageParam || undefined } });
+      return data;
+    },
+    initialPageParam: '' as string,
+    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor ?? undefined,
   });
 }
 

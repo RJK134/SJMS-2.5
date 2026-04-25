@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
 import {
   LayoutDashboard,
   Users,
@@ -50,6 +52,18 @@ export default function PortalShell({ children, portalName, navItems }: PortalSh
   const filteredNav = navItems.filter(
     (item) => !item.roles || hasAnyRole(item.roles)
   );
+
+  // Fetch unread notification count from real API
+  const { data: notifData } = useQuery<{ success: boolean; data: unknown[]; pagination: { total: number } }>({
+    queryKey: ['unread-notification-count'],
+    queryFn: async () => {
+      const { data } = await api.get('/v1/communications/notifications', { params: { limit: 1, isRead: 'false' } });
+      return data;
+    },
+    refetchInterval: 60_000, // refresh every 60 seconds
+    staleTime: 30_000,
+  });
+  const unreadCount = notifData?.pagination?.total ?? 0;
 
   // Dismiss the mobile sidebar when the user navigates to a new route. Without
   // this, tapping a nav link on mobile would change the route but leave the
@@ -170,9 +184,11 @@ export default function PortalShell({ children, portalName, navItems }: PortalSh
             {/* Notifications */}
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Button>
 
             {/* Profile dropdown */}

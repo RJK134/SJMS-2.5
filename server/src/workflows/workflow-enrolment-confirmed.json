@@ -1,0 +1,169 @@
+{
+  "name": "SJMS: Enrolment Confirmed",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "sjms/enrolment/created",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "enr-00001-trigger",
+      "name": "Webhook — Enrolment",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "sjms-enrolment-confirmed"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "enr-cond-01",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "enrolment.created",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "enr-00002-filter",
+      "name": "Filter — Enrolment Created",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://api:3001/api/v1/enrolments/{{ $json.entityId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "enr-00003-fetch",
+      "name": "Fetch Enrolment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [710, 200],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/communications/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "recipientId", "value": "={{ $json.studentId }}" },
+            { "name": "templateKey", "value": "enrolment_welcome" },
+            { "name": "channel", "value": "email" },
+            { "name": "data", "value": "={{ JSON.stringify({ programmeId: $json.programmeId, academicYear: $json.academicYear }) }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enr-00004-welcome",
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 100],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/support",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "studentId", "value": "={{ $('Fetch Enrolment').item.json.studentId }}" },
+            { "name": "category", "value": "IT_SERVICES" },
+            { "name": "subject", "value": "Provision IT account for new enrolment" },
+            { "name": "description", "value": "Create IT account, email, and system access for newly enrolled student." },
+            { "name": "priority", "value": "HIGH" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enr-00005-it",
+      "name": "Create IT Provisioning Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 300],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:3001/api/v1/support",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "studentId", "value": "={{ $('Fetch Enrolment').item.json.studentId }}" },
+            { "name": "category", "value": "LIBRARY" },
+            { "name": "subject", "value": "Library access setup" },
+            { "name": "description", "value": "Set up library access and student card for newly enrolled student." },
+            { "name": "priority", "value": "NORMAL" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enr-00006-library",
+      "name": "Create Library Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 500],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://api:3001/api/v1/ukvi?studentId={{ $('Fetch Enrolment').item.json.studentId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "enr-00007-cas",
+      "name": "Check UKVI / CAS Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 700],
+      "credentials": { "httpHeaderAuth": { "id": "sjms-internal", "name": "SJMS Internal API" } }
+    }
+  ],
+  "connections": {
+    "Webhook — Enrolment": {
+      "main": [[{ "node": "Filter — Enrolment Created", "type": "main", "index": 0 }]]
+    },
+    "Filter — Enrolment Created": {
+      "main": [
+        [{ "node": "Fetch Enrolment", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Fetch Enrolment": {
+      "main": [[
+        { "node": "Send Welcome Email", "type": "main", "index": 0 },
+        { "node": "Create IT Provisioning Task", "type": "main", "index": 0 },
+        { "node": "Create Library Task", "type": "main", "index": 0 },
+        { "node": "Check UKVI / CAS Status", "type": "main", "index": 0 }
+      ]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": [{ "name": "sjms" }, { "name": "phase-6" }, { "name": "enrolment" }]
+}

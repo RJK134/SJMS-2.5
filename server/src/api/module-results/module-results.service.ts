@@ -33,7 +33,20 @@ export async function getById(id: string) {
 export async function create(data: Prisma.ModuleResultUncheckedCreateInput, userId: string, req: Request) {
   const result = await repo.create(data);
   await logAudit('ModuleResult', result.id, 'CREATE', userId, null, result, req);
-  await emitEvent('module_results.created', { id: result.id });
+  emitEvent({
+    event: 'module_results.created',
+    entityType: 'ModuleResult',
+    entityId: result.id,
+    actorId: userId,
+    data: {
+      moduleId: result.moduleId,
+      moduleRegistrationId: result.moduleRegistrationId,
+      academicYear: result.academicYear,
+      aggregateMark: result.aggregateMark != null ? Number(result.aggregateMark) : null,
+      grade: result.grade,
+      status: result.status,
+    },
+  });
   return result;
 }
 
@@ -41,7 +54,33 @@ export async function update(id: string, data: Prisma.ModuleResultUpdateInput, u
   const previous = await getById(id);
   const result = await repo.update(id, data);
   await logAudit('ModuleResult', id, 'UPDATE', userId, previous, result, req);
-  await emitEvent('module_results.updated', { id });
+  emitEvent({
+    event: 'module_results.updated',
+    entityType: 'ModuleResult',
+    entityId: id,
+    actorId: userId,
+    data: {
+      moduleId: result.moduleId,
+      moduleRegistrationId: result.moduleRegistrationId,
+      status: result.status,
+      grade: result.grade,
+      aggregateMark: result.aggregateMark != null ? Number(result.aggregateMark) : null,
+    },
+  });
+  if (result.status !== previous.status) {
+    emitEvent({
+      event: 'module_results.status_changed',
+      entityType: 'ModuleResult',
+      entityId: id,
+      actorId: userId,
+      data: {
+        moduleId: result.moduleId,
+        moduleRegistrationId: result.moduleRegistrationId,
+        previousStatus: previous.status,
+        newStatus: result.status,
+      },
+    });
+  }
   return result;
 }
 
@@ -49,5 +88,11 @@ export async function remove(id: string, userId: string, req: Request) {
   const previous = await getById(id);
   await repo.softDelete(id);
   await logAudit('ModuleResult', id, 'DELETE', userId, previous, null, req);
-  await emitEvent('module_results.deleted', { id });
+  emitEvent({
+    event: 'module_results.deleted',
+    entityType: 'ModuleResult',
+    entityId: id,
+    actorId: userId,
+    data: { moduleId: previous.moduleId, moduleRegistrationId: previous.moduleRegistrationId },
+  });
 }

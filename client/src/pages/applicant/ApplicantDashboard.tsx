@@ -6,13 +6,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FileText, CheckCircle, Calendar, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { useList } from '@/hooks/useApi';
 
+// The Application Prisma model carries `applicationRoute` (UCAS / DIRECT
+// / CLEARING / INTERNATIONAL); `entryRoute` lives on the Student record
+// after conversion. The previous `entryRoute: string` field on this
+// interface silently rendered as an empty string for every applicant.
+//
+// The list endpoint does not include the `conditions` relation (only the
+// detail endpoint does via admissions.repository.defaultInclude). The
+// dashboard therefore intentionally avoids typing a `conditions` /
+// `offers` array here and instead infers "outstanding conditions" from
+// the application status alone.
 interface Application {
   id: string;
   status: string;
   academicYear: string;
-  entryRoute: string;
+  applicationRoute: string;
   programme?: { title: string; programmeCode: string };
-  offers?: Array<{ id: string; status: string }>;
 }
 
 export default function ApplicantDashboard() {
@@ -21,7 +30,11 @@ export default function ApplicantDashboard() {
   const { data, isLoading, isError } = useList<Application>('my-applications', '/v1/applications', { limit: 1, sort: 'createdAt', order: 'desc' });
 
   const application = data?.data?.[0];
-  const pendingConditions = application?.offers?.filter(o => o.status === 'CONDITIONAL')?.length ?? 0;
+  // CONDITIONAL_OFFER is the only state where the applicant has live
+  // outstanding conditions to satisfy; UNCONDITIONAL_OFFER and onwards
+  // means no further conditions are blocking. Honest summary card label
+  // — the per-condition list lives on the My Offers page.
+  const hasOutstandingConditions = application?.status === 'CONDITIONAL_OFFER';
 
   return (
     <div className="space-y-6">
@@ -41,7 +54,13 @@ export default function ApplicantDashboard() {
         ) : (
           <>
             <StatCard label="Application Status" value={application?.status?.replace(/_/g, ' ') ?? 'None'} icon={FileText} />
-            <StatCard label="Conditions" value={pendingConditions > 0 ? `${pendingConditions} pending` : 'None'} icon={CheckCircle} changeType={pendingConditions > 0 ? 'neutral' : 'positive'} />
+            <StatCard
+              label="Conditions"
+              value={hasOutstandingConditions ? 'Outstanding' : 'None'}
+              icon={CheckCircle}
+              changeType={hasOutstandingConditions ? 'neutral' : 'positive'}
+              change={hasOutstandingConditions ? 'See My Offers' : undefined}
+            />
             <StatCard label="Next Event" value="—" icon={Calendar} change="No events scheduled" />
             <StatCard label="Messages" value="—" icon={Mail} change="No unread messages" />
           </>
@@ -57,7 +76,7 @@ export default function ApplicantDashboard() {
             <>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Programme</span><span>{application.programme?.title ?? '—'}</span></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Academic Year</span><span>{application.academicYear}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Route</span><span>{application.entryRoute?.replace(/_/g, ' ')}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Route</span><span>{application.applicationRoute?.replace(/_/g, ' ')}</span></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status</span><StatusBadge status={application.status} /></div>
             </>
           ) : (

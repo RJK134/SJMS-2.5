@@ -6,26 +6,34 @@ import { useLocation } from 'wouter';
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+interface SupportTicket {
+  id: string;
+  subject: string;
+  category: string;
+  priority: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function TicketList() {
+  const [, navigate] = useLocation();
+  const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
+  const { data, isLoading } = useList<SupportTicket>('tickets', '/v1/support', params);
+  const columns: Column<SupportTicket>[] = [
+    { key: 'subject', label: 'Subject', sortable: true },
+    { key: 'category', label: 'Category' },
+    { key: 'priority', label: 'Priority', render: (row) => <StatusBadge status={row.priority} /> },
+    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
+    { key: 'createdAt', label: 'Created', render: (row) => new Date(row.createdAt).toLocaleDateString('en-GB') },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader title="Support Tickets" breadcrumbs={[{ label: 'Staff', href: '/admin' },{label:'Support'},{label:'Tickets'}]} />
-      {(() => {
-        const [, navigate] = useLocation();
-        const [params, setParams] = useState<QueryParams>({ limit: 25, sort: 'createdAt', order: 'desc' });
-        const { data, isLoading } = useList<any>('tickets', '/v1/support', params);
-        const columns: Column<any>[] = [
-          { key: 'subject', label: 'Subject', sortable: true },
-          { key: 'category', label: 'Category' },
-          { key: 'priority', label: 'Priority', render: (r: any) => <StatusBadge status={r.priority} /> },
-          { key: 'status', label: 'Status', render: (r: any) => <StatusBadge status={r.status} /> },
-          { key: 'createdAt', label: 'Created', render: (r: any) => new Date(r.createdAt).toLocaleDateString('en-GB') },
-        ];
-        return <DataTable columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
-          onRowClick={(row: any) => navigate('/admin/support/tickets/' + row.id)} onPageChange={cursor => setParams(p => ({...p, cursor: cursor ?? undefined}))}
-          searchPlaceholder="Search tickets..." onSearch={s => setParams(p => ({...p, search: s, cursor: undefined}))}
-          currentSort={params.sort} currentOrder={params.order} />;
-      })()}
+      <DataTable columns={columns} data={data?.data ?? []} pagination={data?.pagination} isLoading={isLoading}
+        onRowClick={(row) => navigate('/admin/support/tickets/' + row.id)} onPageChange={cursor => setParams(p => ({...p, cursor: cursor ?? undefined}))}
+        searchPlaceholder="Search tickets..." onSearch={s => setParams(p => ({...p, search: s, cursor: undefined}))}
+        currentSort={params.sort} currentOrder={params.order} />
     </div>
   );
 }

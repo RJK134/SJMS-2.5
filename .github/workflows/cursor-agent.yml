@@ -1,0 +1,89 @@
+name: Cursor Agent (Auto mode)
+
+# Dispatches GitHub events to the Cursor Background Agent automations.
+# Model selection is handled in Cursor (Auto mode — unlimited on Pro plan).
+# Explicit GPT-5.5 is used only when a comment contains [use:gpt-5.5].
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - 'prisma/**'
+      - 'scripts/**'
+      - '!**/*.md'
+      - '!**/*.csv'
+  issues:
+    types: [assigned, labeled]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group: cursor-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    # Skip bots and non-@cursor comments.
+    # Only run on issues assigned to cursor-agent or labelled 'cursor'.
+    if: |
+      github.actor != 'dependabot[bot]' &&
+      github.actor != 'github-actions[bot]' &&
+      (
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@cursor')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@cursor')) ||
+        (github.event_name == 'issues' && github.event.action == 'assigned' && github.event.assignee.login == 'cursor-agent') ||
+        (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'cursor')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Guard against large PRs (cost control)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHANGES=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json additions,deletions -q '.additions + .deletions')
+          echo "PR changes: $CHANGES lines"
+          if [ "$CHANGES" -gt 1500 ]; then
+            echo "::notice::PR exceeds 1500 line-change threshold; skipping agent auto-review to preserve credits."
+            echo "SKIP=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Dispatch to Cursor webhook
+        if: env.SKIP != 'true'
+        env:
+          CURSOR_WEBHOOK_URL: ${{ secrets.CURSOR_WEBHOOK_URL }}
+          CURSOR_WEBHOOK_AUTH: ${{ secrets.CURSOR_WEBHOOK_AUTH }}
+        run: |
+          if [ -z "$CURSOR_WEBHOOK_URL" ]; then
+            echo "::warning::CURSOR_WEBHOOK_URL is not configured. Skipping dispatch."
+            exit 0
+          fi
+
+          curl -sS -X POST "$CURSOR_WEBHOOK_URL" \
+            -H "Authorization: $CURSOR_WEBHOOK_AUTH" \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+          {
+            "event": "${{ github.event_name }}",
+            "action": "${{ github.event.action }}",
+            "repository": "${{ github.repository }}",
+            "ref": "${{ github.ref }}",
+            "pr_number": "${{ github.event.pull_request.number }}",
+            "issue_number": "${{ github.event.issue.number }}",
+            "actor": "${{ github.actor }}",
+            "title": ${{ toJSON(github.event.pull_request.title || github.event.issue.title) }},
+            "comment_body": ${{ toJSON(github.event.comment.body) }},
+            "agent": "SJMS-Agent"
+          }
+          EOF

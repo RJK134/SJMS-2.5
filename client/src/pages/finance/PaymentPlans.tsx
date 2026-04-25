@@ -1,13 +1,11 @@
 import PageHeader from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ComingSoon from '@/components/ComingSoon';
 
 export default function PaymentPlans() {
   return (
     <div className="space-y-6">
       <PageHeader title="Payment Plans" breadcrumbs={[{ label: 'Staff', href: '/admin' }, { label: 'Finance' }, { label: 'Payment Plans' }]} />
-      <Card><CardHeader><CardTitle>Active Payment Plans</CardTitle></CardHeader>
-        <CardContent><p className="text-muted-foreground">Manage instalment plans, track payments against schedule, and identify defaulting plans.</p></CardContent>
-      </Card>
+      <ComingSoon title="Payment Plans" description="Instalment plan management, schedule tracking, and default monitoring require the payment plans API, which depends on the finance integration layer planned for Phase 12." />
     </div>
   );
 }

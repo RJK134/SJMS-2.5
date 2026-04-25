@@ -1,0 +1,69 @@
+name: Cursor Agent (Manual Dispatch)
+
+# Manually invoke a Cursor Background Agent on this repo.
+# Defaults to Auto mode. Override with explicit model only for high-stakes tasks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task for the agent (natural language)'
+        required: true
+        type: string
+      base_ref:
+        description: 'Base branch to work from'
+        required: false
+        default: 'main'
+        type: string
+      model:
+        description: 'Model to use'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - gpt-5.5
+          - gpt-5.5-thinking
+      open_pr:
+        description: 'Open a PR when done'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  invoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warn if premium model selected
+        if: inputs.model != 'auto'
+        run: |
+          echo "::warning::Model '${{ inputs.model }}' draws from your $20/mo Cursor Pro credit pool. Auto mode is unlimited; use premium only when quality is critical."
+
+      - name: Create Cursor Background Agent
+      - name: Verify CURSOR_API_KEY
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          if [ -z "$CURSOR_API_KEY" ]; then
+            echo "::error::CURSOR_API_KEY is not configured in repo secrets."
+            exit 1
+          fi
+
+          BRANCH="cursor/manual-${{ github.run_id }}"
+          curl -sS -X POST "https://api.cursor.com/v0/agents" \
+            -H "Authorization: Bearer $CURSOR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+          {
+            "prompt": { "text": ${{ toJSON(inputs.task) }} },
+            "source": {
+              "repository": "https://github.com/${{ github.repository }}",
+              "ref": "${{ inputs.base_ref }}"
+            },
+            "model": "${{ inputs.model }}",
+            "target": {
+              "autoCreatePr": ${{ inputs.open_pr }},
+              "branchName": "$BRANCH"
+            }
+          }
+          EOF
