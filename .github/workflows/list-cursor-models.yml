@@ -1,0 +1,19 @@
+name: List Cursor models (one-off diagnostic)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch /v0/models
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          set -e
+          echo "=== /v0/models ==="
+          curl -sS -H "Authorization: Bearer $CURSOR_API_KEY" https://api.cursor.com/v0/models | jq .
+          echo ""
+          echo "=== /v0/me ==="
+          curl -sS -H "Authorization: Bearer $CURSOR_API_KEY" https://api.cursor.com/v0/me | jq .
