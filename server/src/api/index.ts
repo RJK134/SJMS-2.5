@@ -56,6 +56,16 @@ import studentSupportGroupRouter from './student-support/group-index';
 import complianceGroupRouter from './compliance/group-index';
 import platformGroupRouter from './platform/group-index';
 
+import identityGroupRouter from './identity/group-index';
+import admissionsGroupRouter from './admissions/group-index';
+import enrolmentGroupRouter from './enrolment/group-index';
+import curriculumGroupRouter from './curriculum/group-index';
+import assessmentGroupRouter from './assessment/group-index';
+import progressionGroupRouter from './progression/group-index';
+import studentSupportGroupRouter from './student-support/group-index';
+import complianceGroupRouter from './compliance/group-index';
+import platformGroupRouter from './platform/group-index';
+
 export const apiV1Router = Router();
 apiV1Router.use(authenticateJWT);
 
