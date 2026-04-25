@@ -192,6 +192,27 @@ Each of these is recorded here and will be repeated in any HIGH-risk PR's body s
 **Finding:** KI-P6-002 / 003 / 004 / 005 / 006 / 007 / 008 / 009 / 010 each appear twice — once at the top with status CLOSED, then again in a lower section as OPEN. This is hygiene-only but undermines confidence in the closed/open record.
 **Recommendation:** Workstream A pass should de-duplicate or split into a clear "Closed" / "Open" section.
 
+### F-008 — `package-lock.json` is out of sync with `client/package.json`; `npm ci` fails on `main`
+**Files:** `package-lock.json`, `client/package.json`.
+**Finding:** Discovered when running PR #140 / #141 CI: `npm ci` fails on `main` with `Missing: @tailwindcss/oxide-linux-x64-gnu@4.2.4 from lock file` (and 9 other "Missing from lock file" errors covering Tailwind v4 platform binaries plus several legacy transitives). Running `npm install` regenerates a clean lockfile that `npm ci` can then use, **but** the regenerated lockfile is a 1500-line diff because it also drops legacy entries for packages no longer in `client/package.json`. This means the `main` branch's CI has been red on every PR since the Tailwind v4 migration commits (`985ab03`, `a7631db`, `583b766`, `2c64678`) landed without a lockfile refresh.
+**Recommendation:** Open a focused `chore/lockfile-regen` PR that only regenerates `package-lock.json` from the current `package.json` files. **Do not** bundle this with anything else. HUMAN-GATED because the lockfile delta is large and the regenerated dep tree should be reviewed for unintended transitive bumps. Until this lands, no PR (including the truth-first hardening PRs) can pass the `Server quality gate` or `Client quality gate` jobs.
+
+### F-009 — Client TypeScript is broken on `main`: 171 errors from missing dependencies
+**Files:** `client/package.json`, `client/src/**/*.tsx`.
+**Finding:** After fixing the lockfile (F-008) so `npm ci` succeeds, `cd client && npx tsc --noEmit` produces **171 errors**. Root cause: the same Tailwind v4 migration PRs removed `wouter`, `@tanstack/react-query`, `keycloak-js`, `date-fns`, `recharts`, and other deps from `client/package.json`, but **the source code still imports them**:
+- `wouter` → 45 files import from `wouter`; **0 files import from `react-router-dom`** even though it has been added to `package.json`. This is a half-finished routing migration.
+- `@tanstack/react-query` → 6 files import from it.
+- `keycloak-js` → 3 files import from it.
+The client cannot type-check, cannot build, and `Client quality gate` has been red on `main` since the migration.
+**Recommendation:** Two options, both HUMAN-GATED:
+1. *Restore the missing deps* (`wouter`, `@tanstack/react-query`, `keycloak-js`, `date-fns`, `recharts`) to `client/package.json` and remove the unused `react-router-dom`. Smallest possible fix; reverts the half-finished migration.
+2. *Complete the migration* — replace every `wouter` import with the `react-router-dom` equivalent, restore the still-needed deps individually. Substantially more work, requires understanding routing intent, and is out of scope for an overnight LOW-RISK pass.
+The CLAUDE.md control-set claim "Client typecheck: passing" is **false** as of 2026-04-25 and must be corrected on whichever branch fixes this.
+
+### F-010 — CI failures on overnight PRs are inherited from `main`, not introduced
+**Finding:** PR #140 (Workstream A) and PR #141 (Workstream C) both show `Server quality gate` and `Client quality gate` as failing. **Neither PR touches any source code, lockfile, or `package.json` deps.** The failures are caused entirely by F-008 (broken lockfile blocks `npm ci`) and F-009 (171 client tsc errors). Verified locally: `cd server && npx tsc --noEmit` exits 0 against the workstream-A branch with no source changes; the failure is upstream of the typecheck step.
+**Recommendation:** Treat both PRs as content-correct and merge-blocked on `main`'s CI baseline. Once the F-008/F-009 chore PR lands, retrigger CI on the overnight PRs and they should turn green without further changes.
+
 ---
 
 ## 10. Other documentation drift recorded for the truth-check script
