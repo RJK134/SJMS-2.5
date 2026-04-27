@@ -16,6 +16,22 @@ permissions:
   contents: read
 
 jobs:
+  docs-truth:
+    name: Docs truth check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Mandatory: catches drift between documented counts (models, routers,
+    # roles, workflows) and the actual repository state. The script under
+    # scripts/check-docs-truth.mjs is the single source of truth.
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Run docs truth check
+        run: node scripts/check-docs-truth.mjs
+
   server-quality:
     name: Server quality gate
     runs-on: ubuntu-latest
