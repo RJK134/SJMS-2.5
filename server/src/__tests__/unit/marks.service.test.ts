@@ -348,7 +348,8 @@ describe('marks.service', () => {
   //   SUBMITTED → MARKED, DEFERRED
   //   MARKED    → MODERATED, DEFERRED
   //   MODERATED → CONFIRMED, REFERRED, DEFERRED
-  //   CONFIRMED → REFERRED
+  //   CONFIRMED → (terminal — no outgoing transitions; post-confirmation
+  //                corrections must create a fresh AssessmentAttempt row)
   //   REFERRED  → SUBMITTED
   //   DEFERRED  → SUBMITTED
   describe('lifecycle state machine', () => {
@@ -363,7 +364,6 @@ describe('marks.service', () => {
       { from: 'MODERATED', to: 'CONFIRMED' },
       { from: 'MODERATED', to: 'REFERRED' },
       { from: 'MODERATED', to: 'DEFERRED' },
-      { from: 'CONFIRMED', to: 'REFERRED' },
       { from: 'REFERRED', to: 'SUBMITTED' },
       { from: 'DEFERRED', to: 'SUBMITTED' },
     ];
@@ -389,7 +389,9 @@ describe('marks.service', () => {
     }
 
     const invalidEdges: Edge[] = [
-      { from: 'CONFIRMED', to: 'PENDING' },     // cannot un-confirm to start
+      { from: 'CONFIRMED', to: 'PENDING' },     // CONFIRMED is terminal
+      { from: 'CONFIRMED', to: 'REFERRED' },    // CONFIRMED is terminal — fresh attempt row required
+      { from: 'CONFIRMED', to: 'DEFERRED' },    // CONFIRMED is terminal
       { from: 'MARKED', to: 'CONFIRMED' },      // cannot skip moderation
       { from: 'DEFERRED', to: 'CONFIRMED' },    // deferred must re-enter via SUBMITTED
     ];

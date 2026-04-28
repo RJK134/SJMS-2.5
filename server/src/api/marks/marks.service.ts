@@ -15,9 +15,16 @@ import { resolveGradeFromMark } from '../../utils/grade-boundaries';
 // is the source of truth: PENDING | SUBMITTED | MARKED | MODERATED |
 // CONFIRMED | REFERRED | DEFERRED.
 //
-// The CONFIRMED → REFERRED edge handles post-confirmation referrals
-// (e.g. plagiarism findings surfaced after the exam board). REFERRED
-// and DEFERRED both flow back to SUBMITTED on resit / late submission.
+// CONFIRMED is a TERMINAL state. Once an attempt is confirmed by an exam
+// board, the row is immutable in lifecycle terms — any post-confirmation
+// correction (plagiarism finding, missed mark, board decision overturned)
+// must be expressed as a fresh AssessmentAttempt row, not by re-marking
+// the existing one. This protects the "confirmed marks are immutable"
+// guarantee that auditors and exam-board minutes assume.
+//
+// REFERRED and DEFERRED are explicit cycle states. Both flow back to
+// SUBMITTED on resit / late submission, then progress through the graph
+// again as a separate attempt instance.
 type AttemptStatusName =
   | 'PENDING'
   | 'SUBMITTED'
@@ -32,7 +39,7 @@ const VALID_ATTEMPT_TRANSITIONS: Record<AttemptStatusName, readonly AttemptStatu
   SUBMITTED: ['MARKED', 'DEFERRED'],
   MARKED: ['MODERATED', 'DEFERRED'],
   MODERATED: ['CONFIRMED', 'REFERRED', 'DEFERRED'],
-  CONFIRMED: ['REFERRED'],
+  CONFIRMED: [], // terminal — no outgoing transitions
   REFERRED: ['SUBMITTED'],
   DEFERRED: ['SUBMITTED'],
 };
