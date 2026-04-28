@@ -80,6 +80,13 @@ const EVENT_ROUTES: Record<string, string> = {
   'marks.status_changed':             '/webhook/sjms/marks/status-changed',
   'marks.deleted':                    '/webhook/sjms/marks/deleted',
 
+  // ── Module results ────────────────────────────────────────────────────
+  'module_results.created':           '/webhook/sjms/module-results/created',
+  'module_results.updated':           '/webhook/sjms/module-results/updated',
+  'module_results.status_changed':    '/webhook/sjms/module-results/status-changed',
+  'module_results.ratified':          '/webhook/sjms/module-results/ratified',
+  'module_results.deleted':           '/webhook/sjms/module-results/deleted',
+
   // ── Exam boards ───────────────────────────────────────────────────────
   'exam_board.scheduled':             '/webhook/sjms/exam-board/scheduled',
   'exam_board.updated':               '/webhook/sjms/exam-board/updated',
