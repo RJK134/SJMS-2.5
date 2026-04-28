@@ -97,7 +97,8 @@ describe('module-results.service', () => {
   // ── Phase 17B — lifecycle state machine ──────────────────────────────────
   // Canonical ModuleResultStatus transition graph:
   //   PROVISIONAL → CONFIRMED, REFERRED, DEFERRED
-  //   CONFIRMED   → REFERRED                    (post-confirmation referral)
+  //   CONFIRMED   → (terminal — no outgoing transitions; post-ratification
+  //                  corrections must create a fresh ModuleResult row)
   //   REFERRED    → PROVISIONAL                  (resit cycle)
   //   DEFERRED    → PROVISIONAL                  (deferred submission cycle)
   describe('lifecycle state machine', () => {
@@ -106,7 +107,6 @@ describe('module-results.service', () => {
       { from: 'PROVISIONAL', to: 'CONFIRMED' },
       { from: 'PROVISIONAL', to: 'REFERRED' },
       { from: 'PROVISIONAL', to: 'DEFERRED' },
-      { from: 'CONFIRMED', to: 'REFERRED' },
       { from: 'REFERRED', to: 'PROVISIONAL' },
       { from: 'DEFERRED', to: 'PROVISIONAL' },
     ];
@@ -129,8 +129,9 @@ describe('module-results.service', () => {
     }
 
     const invalidEdges: Edge[] = [
-      { from: 'CONFIRMED', to: 'PROVISIONAL' },     // cannot un-confirm directly
-      { from: 'CONFIRMED', to: 'DEFERRED' },        // cannot defer once confirmed
+      { from: 'CONFIRMED', to: 'PROVISIONAL' },     // CONFIRMED is terminal
+      { from: 'CONFIRMED', to: 'REFERRED' },        // CONFIRMED is terminal — fresh row required
+      { from: 'CONFIRMED', to: 'DEFERRED' },        // CONFIRMED is terminal
       { from: 'REFERRED', to: 'CONFIRMED' },        // resit must re-enter via PROVISIONAL
       { from: 'DEFERRED', to: 'CONFIRMED' },        // deferred must re-enter via PROVISIONAL
     ];
@@ -221,15 +222,20 @@ describe('module-results.service', () => {
       expect(mockedAttemptRepo.countNonConfirmedByModuleRegistration).not.toHaveBeenCalled();
     });
 
-    it('does not run the cross-entity check on CONFIRMED → REFERRED (post-confirmation referral)', async () => {
+    it('does not run the cross-entity check when the transition guard rejects first (CONFIRMED is terminal)', async () => {
+      // CONFIRMED → REFERRED is now an invalid transition (CONFIRMED is terminal).
+      // The transition guard must reject before assertAllAttemptsConfirmed runs,
+      // so the expensive count query is never issued for an already-rejected
+      // request.
       const previous = { ...fakeModuleResult, status: 'CONFIRMED' };
-      const updated = { ...fakeModuleResult, status: 'REFERRED' };
       mockedRepo.getById.mockResolvedValue(previous as any);
-      mockedRepo.update.mockResolvedValue(updated as any);
 
-      await moduleResultsService.update('mr-1', { status: 'REFERRED' } as any, 'user-1', fakeReq);
+      await expect(
+        moduleResultsService.update('mr-1', { status: 'REFERRED' } as any, 'user-1', fakeReq),
+      ).rejects.toThrow(ValidationError);
 
       expect(mockedAttemptRepo.countNonConfirmedByModuleRegistration).not.toHaveBeenCalled();
+      expect(mockedRepo.update).not.toHaveBeenCalled();
     });
   });
 
@@ -262,8 +268,10 @@ describe('module-results.service', () => {
       expect(eventNames).not.toContain('module_results.ratified');
     });
 
-    it('does NOT emit module_results.ratified on CONFIRMED → REFERRED', async () => {
-      const previous = { ...fakeModuleResult, status: 'CONFIRMED' };
+    it('does NOT emit module_results.ratified on PROVISIONAL → REFERRED', async () => {
+      // The .ratified event is reserved for PROVISIONAL → CONFIRMED only.
+      // Other PROVISIONAL transitions emit .status_changed but never .ratified.
+      const previous = { ...fakeModuleResult, status: 'PROVISIONAL' };
       const updated = { ...fakeModuleResult, status: 'REFERRED' };
       mockedRepo.getById.mockResolvedValue(previous as any);
       mockedRepo.update.mockResolvedValue(updated as any);

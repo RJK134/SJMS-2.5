@@ -13,6 +13,13 @@ import { NotFoundError, ValidationError } from '../../utils/errors';
 // Schema enum (prisma/schema.prisma:310): PROVISIONAL | CONFIRMED |
 // REFERRED | DEFERRED.
 //
+// CONFIRMED is a TERMINAL state — same rule as AssessmentAttempt in 17A.
+// Once a module result is ratified by the exam board, the row is
+// immutable in lifecycle terms; any post-ratification correction must
+// be expressed as a fresh ModuleResult row, not by mutating the
+// existing one. This protects the "ratified module results are
+// immutable" guarantee that progression and award decisions rely on.
+//
 // PROVISIONAL → CONFIRMED is gated by a cross-entity check: every
 // AssessmentAttempt under the same moduleRegistrationId must already be
 // CONFIRMED. The check is enforced in update() before repo.update fires.
@@ -20,7 +27,7 @@ type ModuleResultStatusName = 'PROVISIONAL' | 'CONFIRMED' | 'REFERRED' | 'DEFERR
 
 const VALID_MODULE_RESULT_TRANSITIONS: Record<ModuleResultStatusName, readonly ModuleResultStatusName[]> = {
   PROVISIONAL: ['CONFIRMED', 'REFERRED', 'DEFERRED'],
-  CONFIRMED: ['REFERRED'],
+  CONFIRMED: [], // terminal — no outgoing transitions
   REFERRED: ['PROVISIONAL'],
   DEFERRED: ['PROVISIONAL'],
 };
