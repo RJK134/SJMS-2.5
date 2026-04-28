@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, ValidationError } from '../../utils/errors';
 
 // ── Mock dependencies before importing the service under test ──────────────
 vi.mock('../../repositories/assessmentAttempt.repository', () => ({
@@ -339,6 +339,141 @@ describe('marks.service', () => {
       );
 
       expect(result.rawMark).toBe(999);
+    });
+  });
+
+  // ── Phase 17A — lifecycle state machine ──────────────────────────────────
+  // Canonical AttemptStatus transition graph (mirrors marks.service.ts):
+  //   PENDING   → SUBMITTED, DEFERRED
+  //   SUBMITTED → MARKED, DEFERRED
+  //   MARKED    → MODERATED, DEFERRED
+  //   MODERATED → CONFIRMED, REFERRED, DEFERRED
+  //   CONFIRMED → REFERRED
+  //   REFERRED  → SUBMITTED
+  //   DEFERRED  → SUBMITTED
+  describe('lifecycle state machine', () => {
+    type Edge = { from: string; to: string };
+    const validEdges: Edge[] = [
+      { from: 'PENDING', to: 'SUBMITTED' },
+      { from: 'PENDING', to: 'DEFERRED' },
+      { from: 'SUBMITTED', to: 'MARKED' },
+      { from: 'SUBMITTED', to: 'DEFERRED' },
+      { from: 'MARKED', to: 'MODERATED' },
+      { from: 'MARKED', to: 'DEFERRED' },
+      { from: 'MODERATED', to: 'CONFIRMED' },
+      { from: 'MODERATED', to: 'REFERRED' },
+      { from: 'MODERATED', to: 'DEFERRED' },
+      { from: 'CONFIRMED', to: 'REFERRED' },
+      { from: 'REFERRED', to: 'SUBMITTED' },
+      { from: 'DEFERRED', to: 'SUBMITTED' },
+    ];
+
+    for (const edge of validEdges) {
+      it(`emits marks.status_changed on valid ${edge.from} → ${edge.to}`, async () => {
+        const previous = { ...fakeAttempt, status: edge.from };
+        const updated = { ...fakeAttempt, status: edge.to };
+        mockedRepo.getById.mockResolvedValue(previous as any);
+        mockedRepo.update.mockResolvedValue(updated as any);
+
+        await marksService.update('attempt-1', { status: edge.to } as any, 'user-1', fakeReq);
+
+        const events = mockedEmitEvent.mock.calls.map((c) =>
+          typeof c[0] === 'object' ? c[0] : null,
+        );
+        const statusChanged = events.find((e) => e && e.event === 'marks.status_changed');
+        expect(statusChanged).toBeDefined();
+        expect(statusChanged?.data).toEqual(
+          expect.objectContaining({ previousStatus: edge.from, newStatus: edge.to }),
+        );
+      });
+    }
+
+    const invalidEdges: Edge[] = [
+      { from: 'CONFIRMED', to: 'PENDING' },     // cannot un-confirm to start
+      { from: 'MARKED', to: 'CONFIRMED' },      // cannot skip moderation
+      { from: 'DEFERRED', to: 'CONFIRMED' },    // deferred must re-enter via SUBMITTED
+    ];
+
+    for (const edge of invalidEdges) {
+      it(`rejects invalid ${edge.from} → ${edge.to} transition with ValidationError`, async () => {
+        const previous = { ...fakeAttempt, status: edge.from };
+        mockedRepo.getById.mockResolvedValue(previous as any);
+
+        await expect(
+          marksService.update('attempt-1', { status: edge.to } as any, 'user-1', fakeReq),
+        ).rejects.toThrow(ValidationError);
+
+        expect(mockedRepo.update).not.toHaveBeenCalled();
+      });
+    }
+
+    it('skips the guard when no status field is supplied (rawMark-only update)', async () => {
+      const previous = { ...fakeAttempt, status: 'CONFIRMED' };
+      const updated = { ...fakeAttempt, status: 'CONFIRMED', rawMark: 75 };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      // Without status, the guard must never fire even though previous status
+      // is CONFIRMED (which has only one outgoing edge — REFERRED).
+      await expect(
+        marksService.update('attempt-1', { rawMark: 75 } as any, 'user-1', fakeReq),
+      ).resolves.toBeDefined();
+
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? c[0].event : c[0],
+      );
+      expect(events).not.toContain('marks.status_changed');
+    });
+
+    it('skips the guard when status is supplied but unchanged', async () => {
+      const previous = { ...fakeAttempt, status: 'MARKED' };
+      const updated = { ...fakeAttempt, status: 'MARKED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await expect(
+        marksService.update('attempt-1', { status: 'MARKED' } as any, 'user-1', fakeReq),
+      ).resolves.toBeDefined();
+
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? c[0].event : c[0],
+      );
+      expect(events).not.toContain('marks.status_changed');
+    });
+
+    it('emits both the specific event and marks.status_changed on a SUBMITTED → MARKED edge that has no specific mapping', async () => {
+      // The pre-17A statusEventMap covers SUBMITTED, MODERATED, CONFIRMED.
+      // MARKED has no specific event today, so the only emission should be
+      // the new generic marks.status_changed.
+      const previous = { ...fakeAttempt, status: 'SUBMITTED' };
+      const updated = { ...fakeAttempt, status: 'MARKED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await marksService.update('attempt-1', { status: 'MARKED' } as any, 'user-1', fakeReq);
+
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? c[0].event : c[0],
+      );
+      expect(events).toContain('marks.status_changed');
+      // Existing surface preserved: there is no marks.marked event today,
+      // and Phase 17A deliberately does not invent one.
+      expect(events).not.toContain('marks.marked');
+    });
+
+    it('preserves existing marks.submitted emission alongside marks.status_changed', async () => {
+      const previous = { ...fakeAttempt, status: 'PENDING' };
+      const updated = { ...fakeAttempt, status: 'SUBMITTED' };
+      mockedRepo.getById.mockResolvedValue(previous as any);
+      mockedRepo.update.mockResolvedValue(updated as any);
+
+      await marksService.update('attempt-1', { status: 'SUBMITTED' } as any, 'user-1', fakeReq);
+
+      const events = mockedEmitEvent.mock.calls.map((c) =>
+        typeof c[0] === 'object' ? c[0].event : c[0],
+      );
+      expect(events).toContain('marks.submitted');
+      expect(events).toContain('marks.status_changed');
     });
   });
 });

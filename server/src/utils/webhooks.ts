@@ -77,6 +77,7 @@ const EVENT_ROUTES: Record<string, string> = {
   'marks.moderated':                  '/webhook/sjms/marks/moderated',
   'marks.ratified':                   '/webhook/sjms/marks/ratified',
   'marks.released':                   '/webhook/sjms/marks/released',
+  'marks.status_changed':             '/webhook/sjms/marks/status-changed',
   'marks.deleted':                    '/webhook/sjms/marks/deleted',
 
   // ── Exam boards ───────────────────────────────────────────────────────
