@@ -1,0 +1,14 @@
+# .github/ISSUE_TEMPLATE/config.yml
+# Controls the issue template chooser shown on the "New Issue" page.
+blank_issues_enabled: false
+
+contact_links:
+  - name: "Security vulnerability"
+    url: "https://github.com/OWNER/REPO/security/advisories/new"
+    about: "Please report security vulnerabilities via the private Security Advisory form."
+  - name: "General question / discussion"
+    url: "https://github.com/OWNER/REPO/discussions"
+    about: "For usage questions, ideas, and general discussion use GitHub Discussions."
+  - name: "Documentation issue"
+    url: "https://github.com/OWNER/REPO/issues/new?template=bug_report.yml&labels=documentation"
+    about: "Found a mistake in the docs? Use the bug report template with the documentation label."

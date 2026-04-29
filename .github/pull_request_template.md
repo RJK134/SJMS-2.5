@@ -1,79 +1,44 @@
-## Review Scope — SJMS 2.5
+## Description
 
-> ⚠️ Review only the diff in this PR and the control files it updates.
+<!-- Summarise the changes in this PR and the motivation behind them. -->
 
-**BLOCKING findings ONLY if they affect:**
-1. Authentication, authorisation, or data scoping correctness
-2. Missing validation, audit logging, or webhook emission on touched mutations
-3. Hard deletes or destructive finance/marks retention behaviour
-4. Broken CI, build, verification, or release-discipline automation
-5. Broken routes, portal entry points, or workflow/event regressions introduced by this PR
-6. Security-critical configuration drift (secrets, CSP/CORS, auth bypass, request correlation, workflow credentials)
+Closes #<!-- issue number -->
 
-**NON-BLOCKING findings:**
-- repository-layer bypasses
-- missing tests where the diff introduces logic
-- documentation drift outside the touched files
-- style or naming issues directly in the diff
-- backlog-worthy concerns that do not block merge
+## Type of change
 
-**DO NOT:**
-- request broad refactors outside this PR's scope
-- reopen already-accepted architectural decisions unless this PR regresses them
-- comment on untouched files
-- suggest new frameworks or dependencies unless required to fix a blocking issue
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Refactor / code cleanup (no functional change)
+- [ ] Documentation update
+- [ ] CI / build / dependency update
 
-**OUTPUT LIMITS:**
-- Maximum 5 blocking findings
-- Maximum 5 non-blocking findings
-- State `BLOCKING` or `NON-BLOCKING` on every finding
-- State `must fix before merge`, `fix if quick`, or `backlog` on every finding
+## Checklist
 
----
+### Code quality
+- [ ] My code follows the project style guidelines (`lint` / `format` passes locally)
+- [ ] I have performed a self-review of my code
+- [ ] I have added comments in hard-to-understand areas
 
-## Phase Details
+### Tests
+- [ ] I have added tests that prove my fix/feature works
+- [ ] New and existing unit tests pass locally (`test` command succeeds)
+- [ ] Test coverage has not decreased
 
-**Phase objective:**
-<!-- Describe the business outcome for this phase or batch -->
+### Documentation
+- [ ] I have updated the README or relevant docs where necessary
+- [ ] I have updated the CHANGELOG (if the project maintains one)
+- [ ] Public API changes are reflected in type definitions / docstrings
 
-**Branch:**
-<!-- e.g. phase-14/governance-baseline -->
+### Security & compatibility
+- [ ] My changes do not introduce new security vulnerabilities
+- [ ] I have checked for breaking changes and communicated them in the description
+- [ ] Dependencies added/updated are pinned or version-bounded appropriately
 
-**Batches completed:**
-<!-- List each batch with its scope and commit SHA, for example:
-- Batch 1A — CI workflow hardening (0d570c0)
-- Batch 1B — .claude/worktrees cleanup (49cd99e)
--->
+## Screenshots / recordings (if applicable)
 
-## Acceptance gates
+<!-- Before / After screenshots, GIFs, or video for UI changes. -->
 
-- [ ] `cd server && npx tsc --noEmit`
-- [ ] `cd client && npx tsc --noEmit`
-- [ ] `DATABASE_URL=... npx prisma validate --schema=prisma/schema.prisma`
-- [ ] `npx prisma generate --schema=prisma/schema.prisma`
-- [ ] Relevant Vitest suites pass
-- [ ] Relevant Playwright suites pass (when user journeys are touched)
-- [ ] `docs/VERIFICATION-PROTOCOL.md` gates reviewed
-- [ ] Repository hygiene: no new `.claude/worktrees/` entries, no stray chat transcripts, no dangling gitlinks (`git ls-files -s | awk '$1=="160000"'` empty)
-- [ ] BugBot HIGH findings: 0 open
-- [ ] GitGuardian / secret checks: no blocking findings
+## Additional notes
 
-## Known issues resolved
-
-- [ ] KI-...
-
-## Known issues deferred
-
-- [ ] KI-... — reason and target phase
-
-## Testing evidence
-
-<!--
-List the exact commands run and their outcomes. For CI-only changes,
-point at the CI run URL and, where relevant, the coverage artefact
-published from the `server-coverage` upload step.
--->
-
-## Reviewer notes
-
-<!-- Call out any specific areas BugBot or human reviewers should focus on -->
+<!-- Anything else reviewers should know. -->
