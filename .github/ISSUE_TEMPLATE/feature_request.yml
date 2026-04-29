@@ -1,0 +1,73 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-flight checklist
+      options:
+        - label: I have searched existing issues and this feature has not been requested.
+          required: true
+        - label: I have read the contributing guidelines.
+          required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: |
+        What problem does this feature solve? Describe the pain point clearly.
+        Example: "I'm always frustrated when I have to manually..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe what you'd like to see implemented.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: List any alternative solutions or workarounds you have considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: user_impact
+    attributes:
+      label: User impact
+      description: |
+        Who benefits from this change? How many users does it affect?
+        Include any data or context about the impact.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: |
+        What does "done" look like? List concrete, testable criteria.
+      placeholder: |
+        - [ ] Given X, when Y, then Z
+        - [ ] Feature is documented in the README
+        - [ ] Unit tests cover the new behavior
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, mockups, references, or related issues.
+    validations:
+      required: false
