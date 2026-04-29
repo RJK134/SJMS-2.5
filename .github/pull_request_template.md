@@ -2,7 +2,7 @@
 
 <!-- Summarise the changes in this PR and the motivation behind them. -->
 
-Closes #<!-- issue number -->
+Closes #123
 
 ## Type of change
 
