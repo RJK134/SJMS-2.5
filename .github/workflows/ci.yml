@@ -50,9 +50,15 @@ jobs:
 
       # Prisma downloads platform-specific query-engine binaries on first
       # `prisma generate`. Caching them shaves ~5–10s off every Prisma-
-      # touching job without affecting correctness — the cache key is
-      # bound to the schema content, the Prisma version in the lockfile,
-      # and the runner OS, so any drift invalidates the cache cleanly.
+      # touching job without affecting correctness. The exact-match key
+      # is bound to the schema content, the Prisma version in the
+      # lockfile, and the runner OS, so a real drift in any of those
+      # produces a fresh exact-key cache. `restore-keys` is a best-
+      # effort fallback: on an exact-key miss, any prior
+      # `prisma-engines-<os>-*` cache is restored as a starting point,
+      # `prisma generate` re-downloads only the binaries the new schema
+      # / Prisma version actually need, and the cache is rewritten
+      # under the new exact key at job end.
       - name: Cache Prisma engines
         uses: actions/cache@v4
         with:
