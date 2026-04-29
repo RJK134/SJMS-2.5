@@ -48,6 +48,25 @@ jobs:
       - name: Install workspace dependencies
         run: npm ci --no-audit --no-fund
 
+      # Prisma downloads platform-specific query-engine binaries on first
+      # `prisma generate`. Caching them shaves ~5–10s off every Prisma-
+      # touching job without affecting correctness. The exact-match key
+      # is bound to the schema content, the Prisma version in the
+      # lockfile, and the runner OS, so a real drift in any of those
+      # produces a fresh exact-key cache. `restore-keys` is a best-
+      # effort fallback: on an exact-key miss, any prior
+      # `prisma-engines-<os>-*` cache is restored as a starting point,
+      # `prisma generate` re-downloads only the binaries the new schema
+      # / Prisma version actually need, and the cache is rewritten
+      # under the new exact key at job end.
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/prisma
+          key: prisma-engines-${{ runner.os }}-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
+          restore-keys: |
+            prisma-engines-${{ runner.os }}-
+
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
 
@@ -65,6 +84,23 @@ jobs:
         # Coverage thresholds are owned by server/vitest.config.ts so
         # local runs match CI exactly. Do not add CLI overrides here.
         run: npx vitest run --config vitest.config.ts --coverage --reporter=default
+
+      - name: Build server (tsc emit)
+        # `tsc --noEmit` above only checks types. The emit build catches
+        # a separate class of failure (declaration-emit errors, output
+        # path collisions, isolated-modules violations) that the noEmit
+        # pass cannot see. Production-grade gate must verify both.
+        working-directory: server
+        run: npm run build
+
+      - name: Upload server build artefact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-dist
+          path: server/dist
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Publish server coverage summary
         if: always()
@@ -114,7 +150,7 @@ jobs:
   client-quality:
     name: Client quality gate
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
@@ -127,12 +163,42 @@ jobs:
       - name: Install workspace dependencies
         run: npm ci --no-audit --no-fund
 
+      # See server-quality for the rationale; the same cache is reused
+      # here because the client typecheck pulls Prisma type imports
+      # transitively via the shared workspace install.
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/prisma
+          key: prisma-engines-${{ runner.os }}-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
+          restore-keys: |
+            prisma-engines-${{ runner.os }}-
+
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
 
       - name: TypeScript check (client)
         working-directory: client
         run: npx tsc --noEmit
+
+      - name: Build client (vite production build)
+        # `tsc --noEmit` above only verifies types. `npm run build` runs
+        # `tsc -b && vite build`, which is the closest thing CI can do
+        # to the real production output: it triggers JSX/transform
+        # validation, asset resolution, env-var inlining, and bundle
+        # generation. A green typecheck does not guarantee a green
+        # bundle, so this is a separate gate.
+        working-directory: client
+        run: npm run build
+
+      - name: Upload client build artefact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: client-dist
+          path: client/dist
+          if-no-files-found: warn
+          retention-days: 7
 
   lint-advisory:
     name: Lint (advisory)
@@ -154,6 +220,14 @@ jobs:
 
       - name: Install workspace dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/prisma
+          key: prisma-engines-${{ runner.os }}-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
+          restore-keys: |
+            prisma-engines-${{ runner.os }}-
 
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
@@ -228,3 +302,67 @@ jobs:
           name: lint-reports
           path: .lint-reports
           if-no-files-found: warn
+
+  quality-gate:
+    name: Quality gate
+    # Aggregator for branch protection. Lists every job that must be
+    # green for a PR to merge into main, so the branch-protection rule
+    # only has to require a single status check (`Quality gate`)
+    # instead of having to enumerate each downstream job. Advisory
+    # jobs are deliberately excluded:
+    #   - lint-advisory  → KI-P14-001 / KI-P15-002 (bootstrap, not yet
+    #     triaged); ratchet to blocking is sequenced separately.
+    #   - security-audit → KI-P15-001 (baseline triage pending); runs
+    #     in `.github/workflows/security-audit.yml`.
+    #   - codeql         → advisory by Phase 15A policy.
+    # Adding any of those here would silently weaken the PR gate the
+    # day the next dependabot bump or upstream rule change introduces
+    # a finding the project hasn't yet decided how to handle, so they
+    # stay out until each KI is closed.
+    needs: [docs-truth, server-quality, client-quality]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify required jobs succeeded
+        env:
+          DOCS_RESULT: ${{ needs.docs-truth.result }}
+          SERVER_RESULT: ${{ needs.server-quality.result }}
+          CLIENT_RESULT: ${{ needs.client-quality.result }}
+        run: |
+          set -u
+          fail=0
+          check() {
+            local name="$1"
+            local result="$2"
+            if [ "$result" = "success" ]; then
+              echo "::notice::$name: $result"
+            else
+              echo "::error::$name failed with result '$result'"
+              fail=1
+            fi
+          }
+          check "docs-truth"     "$DOCS_RESULT"
+          check "server-quality" "$SERVER_RESULT"
+          check "client-quality" "$CLIENT_RESULT"
+          if [ "$fail" -ne 0 ]; then
+            {
+              echo '## Quality gate'
+              echo ''
+              echo '| Job | Result |'
+              echo '| --- | --- |'
+              echo "| docs-truth | $DOCS_RESULT |"
+              echo "| server-quality | $SERVER_RESULT |"
+              echo "| client-quality | $CLIENT_RESULT |"
+              echo ''
+              echo '> One or more required jobs did not succeed. Fix the failures above before merging.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          {
+            echo '## Quality gate'
+            echo ''
+            echo 'All required jobs passed: docs-truth, server-quality, client-quality.'
+            echo ''
+            echo '> Advisory jobs (lint, security audit, CodeQL) are reported separately and do not gate this check.'
+          } >> "$GITHUB_STEP_SUMMARY"
