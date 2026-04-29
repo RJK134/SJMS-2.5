@@ -45,20 +45,21 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Install workspace dependencies
-        run: npm ci --no-audit --no-fund
-
-      # Prisma downloads platform-specific query-engine binaries on first
-      # `prisma generate`. Caching them shaves ~5–10s off every Prisma-
-      # touching job without affecting correctness. The exact-match key
-      # is bound to the schema content, the Prisma version in the
-      # lockfile, and the runner OS, so a real drift in any of those
-      # produces a fresh exact-key cache. `restore-keys` is a best-
-      # effort fallback: on an exact-key miss, any prior
-      # `prisma-engines-<os>-*` cache is restored as a starting point,
-      # `prisma generate` re-downloads only the binaries the new schema
-      # / Prisma version actually need, and the cache is rewritten
-      # under the new exact key at job end.
+      # Restore the Prisma engine-binary cache BEFORE `npm ci`: the
+      # `@prisma/engines` package's postinstall hook runs during the
+      # workspace install and downloads platform-specific query-engine
+      # binaries to `~/.cache/prisma/<channel>/<sha>/<platform>/`. With
+      # the cache restored first, postinstall finds the binaries on
+      # disk and skips the CDN fetch; placing this step after `npm ci`
+      # would defeat the cache because the install would already have
+      # gone to the network. The exact-match key is bound to the
+      # schema content, the Prisma version in the lockfile, and the
+      # runner OS, so a real drift in any of those produces a fresh
+      # exact-key cache. `restore-keys` is a best-effort fallback: on
+      # an exact-key miss, any prior `prisma-engines-<os>-*` cache is
+      # restored as a starting point, postinstall fetches only the
+      # binaries the new Prisma version actually needs, and the cache
+      # is rewritten under the new exact key at job end.
       - name: Cache Prisma engines
         uses: actions/cache@v4
         with:
@@ -66,6 +67,9 @@ jobs:
           key: prisma-engines-${{ runner.os }}-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
           restore-keys: |
             prisma-engines-${{ runner.os }}-
+
+      - name: Install workspace dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
@@ -160,12 +164,9 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Install workspace dependencies
-        run: npm ci --no-audit --no-fund
-
-      # See server-quality for the rationale; the same cache is reused
-      # here because the client typecheck pulls Prisma type imports
-      # transitively via the shared workspace install.
+      # See server-quality for the rationale; the same cache must be
+      # restored before `npm ci` so the `@prisma/engines` postinstall
+      # finds the binaries on disk instead of going to the CDN.
       - name: Cache Prisma engines
         uses: actions/cache@v4
         with:
@@ -173,6 +174,9 @@ jobs:
           key: prisma-engines-${{ runner.os }}-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
           restore-keys: |
             prisma-engines-${{ runner.os }}-
+
+      - name: Install workspace dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
@@ -218,9 +222,8 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Install workspace dependencies
-        run: npm ci --no-audit --no-fund
-
+      # Restore the Prisma engine cache before `npm ci` — see
+      # server-quality for the full rationale.
       - name: Cache Prisma engines
         uses: actions/cache@v4
         with:
@@ -228,6 +231,9 @@ jobs:
           key: prisma-engines-${{ runner.os }}-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
           restore-keys: |
             prisma-engines-${{ runner.os }}-
+
+      - name: Install workspace dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
