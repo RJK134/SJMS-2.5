@@ -22,7 +22,7 @@ Closes #123
 
 ### Tests
 - [ ] I have added tests that prove my fix/feature works
-- [ ] New and existing unit tests pass locally (`test` command succeeds)
+- [ ] New and existing tests pass locally (run the relevant workspace test commands, e.g. server `test` and client `test:e2e`)
 - [ ] Test coverage has not decreased
 
 ### Documentation
