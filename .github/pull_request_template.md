@@ -16,7 +16,7 @@ Closes #123
 ## Checklist
 
 ### Code quality
-- [ ] My code follows the project style guidelines (`lint` / `format` passes locally)
+- [ ] My code follows the project style guidelines (`lint` passes locally)
 - [ ] I have performed a self-review of my code
 - [ ] I have added comments in hard-to-understand areas
 
