@@ -62,3 +62,26 @@ export async function update(id: string, data: Prisma.AssessmentAttemptUpdateInp
 export async function softDelete(id: string) {
   return prisma.assessmentAttempt.update({ where: { id }, data: { deletedAt: new Date() } });
 }
+
+/**
+ * Phase 17B — cross-entity guard helper.
+ *
+ * Returns the number of non-deleted AssessmentAttempt rows for the given
+ * moduleRegistrationId whose status is anything other than CONFIRMED.
+ * The ModuleResult cascade uses this to refuse PROVISIONAL → CONFIRMED
+ * transitions while attempts remain open.
+ *
+ * Returning a count (not a list) keeps the helper cheap on hot paths and
+ * avoids dragging the include tree through unnecessary joins.
+ */
+export async function countNonConfirmedByModuleRegistration(
+  moduleRegistrationId: string,
+): Promise<number> {
+  return prisma.assessmentAttempt.count({
+    where: {
+      moduleRegistrationId,
+      deletedAt: null,
+      status: { not: 'CONFIRMED' as Prisma.AssessmentAttemptWhereInput['status'] },
+    },
+  });
+}
