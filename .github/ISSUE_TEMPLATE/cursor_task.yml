@@ -1,0 +1,78 @@
+name: Cursor Agent Task
+description: Ask the SJMS-Agent (Cursor Background Agent) to implement, fix, or explain something
+title: "[Cursor]: "
+labels: ["cursor"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template applies the `cursor` label, which dispatches the SJMS-Agent automatically.
+
+        **Title prefix routes the action:**
+        - `bug:` / `fix:` → fix mode
+        - `q:` / `explain:` / contains `?` → read-only explain mode
+        - anything else → implement mode
+
+        See `.cursor/agents/SJMS-Agent.md` for persona rules and forbidden domains (auth, schema migrations, marks retention).
+
+  - type: dropdown
+    id: action
+    attributes:
+      label: Desired action
+      options:
+        - implement
+        - fix
+        - explain (read-only — no PR, just a comment)
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What file, module, or behaviour should the agent touch? Be specific.
+      placeholder: |
+        e.g. `server/src/api/communications/communications.service.ts`
+        Add Zod input schema validation to the `send()` function.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Bullet list of what "done" means.
+      placeholder: |
+        - [ ] Zod schema in communications.schema.ts
+        - [ ] Service throws ValidationError on invalid input
+        - [ ] Unit tests cover both happy path and one failure
+        - [ ] `npm run build -w @sjms/server` passes
+        - [ ] No changes to repository or DB layer
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Explicitly list what the agent should NOT touch (so the PR stays small).
+      placeholder: |
+        - No schema migrations
+        - No changes to auth or RBAC
+        - No new external dependencies
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: persona_check
+    attributes:
+      label: Persona pre-check
+      description: Confirm before submitting.
+      options:
+        - label: This task does NOT touch authentication, RBAC, schema migrations, marks retention, payments, or production credentials. (If it does, add the `requires-human-review` label as well.)
+          required: true
+        - label: No real PII is referenced in this issue body or in the task scope.
+          required: true
